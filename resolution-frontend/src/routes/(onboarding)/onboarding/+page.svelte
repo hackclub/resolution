@@ -13,7 +13,7 @@
 
 <div class="onboarding">
 	<div class="bg-first"></div>
-	<ResolutionPaper visible={showPaper} text="Your resolution here" />
+	<ResolutionPaper visible={showPaper} />
 </div>
 
 <style>
