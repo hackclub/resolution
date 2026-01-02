@@ -1,5 +1,5 @@
 <script lang="ts">
-	import note3 from '$lib/assets/236737bf76b26382113a8a12aa20c3369b57daaa.png';
+	import note3 from '$lib/assets/sticky_note_3.png';
 
 	let {
 		title = "Event 3"

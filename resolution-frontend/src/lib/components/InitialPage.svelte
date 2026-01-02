@@ -1,14 +1,14 @@
 <script lang="ts">
-	import heroBg from '$lib/assets/50921f22a05d44613c03ef40313b4bc63628a689.png';
-	import darkBg from '$lib/assets/77316c3cefa69a5f71a74bfc3fbf6e3ced95c9f1.png';
-	import swirlBg from '$lib/assets/7d2cd0c523acbf0e9b3b9e299fa0ef829a7b2216.png';
-	import lightBlueBg from '$lib/assets/7123a57408508b2bae073d991dcf7c17c7f763db.png';
-	import fireworks from '$lib/assets/e6e6af4f4af7ca8575187a49893a053c27a7a364.png';
-	import sparklyBorder from '$lib/assets/17ec48a0bb8b41dcf6f66b30c45989d5bf71a03a.png';
-	import fireworksGif from '$lib/assets/d1b77bc7ffefad4500eb8f570293aeb906cdd6c7.png';
-	import stair from '$lib/assets/488278dc5d3cbf49ab57ddf735369a5419789dc6.png';
-	import running from '$lib/assets/00918d266837a309ad05ff4cce9ab7eca6910219.png';
-	import vectorLine from '$lib/assets/5dbe0fc43441b95045a7fe03b6870a2d6ca497ac.svg';
+	import heroBg from '$lib/assets/hero_bg.png';
+	import darkBg from '$lib/assets/dark_bg.png';
+	import swirlBg from '$lib/assets/swirl_overlay.png';
+	import lightBlueBg from '$lib/assets/light_blue_bg.png';
+	import fireworks from '$lib/assets/firework_burst.png';
+	import sparklyBorder from '$lib/assets/gold_glitter_border.png';
+	import fireworksGif from '$lib/assets/fireworks_gif.png';
+	import stair from '$lib/assets/stair.png';
+	import running from '$lib/assets/running_person.png';
+	import vectorLine from '$lib/assets/vector_divider.svg';
 	
 	import EventCard1 from './EventCard1.svelte';
 	import EventCard2 from './EventCard2.svelte';
@@ -31,13 +31,13 @@
 	}
 
 	let {
-		heroDescription = "Bet on yourself. When others quit, their stakes become your reward.",
+		heroDescription = "Ship every week. Earn prizes. When others quit, their share becomes yours.",
 		ctaText = "STAKE YOUR CLAIM",
 		ctaHref = "/onboarding",
 		steps = [
-			{ title: "⭐ One Star", description: "~2hr/week • 8 weeks • $80 stake. Light commitment, real results." },
-			{ title: "⭐⭐ Two Star", description: "~5hr/week • 8 weeks • $200 stake. Serious growth, bigger rewards." },
-			{ title: "⭐⭐⭐ Three Star", description: "~9hr/week • 8 weeks • $360 stake. Maximum effort, maximum payout." }
+			{ title: "⭐ One Star", description: "~2hr/week • 8 weeks • $80 prize pool. Light commitment, real rewards." },
+			{ title: "⭐⭐ Two Star", description: "~5hr/week • 8 weeks • $200 prize pool. Serious growth, bigger prizes." },
+			{ title: "⭐⭐⭐ Three Star", description: "~9hr/week • 8 weeks • $360 prize pool. Maximum effort, maximum payout." }
 		] as Step[],
 		events = [
 			{ title: "Event 1", description: "Lorem ipsum dolor sit amet consectetur adipiscing elit" },

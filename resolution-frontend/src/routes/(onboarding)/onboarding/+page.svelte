@@ -27,7 +27,7 @@
 	.bg-first {
 		position: absolute;
 		inset: 0;
-		background-image: url('$lib/assets/Frame 1.png');
+		background-image: url('$lib/assets/onboarding_bg.png');
 		background-size: cover;
 		background-position: center;
 		background-repeat: no-repeat;
