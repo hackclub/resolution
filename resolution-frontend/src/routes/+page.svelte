@@ -3,13 +3,13 @@
 </script>
 
 <InitialPage
-	heroDescription="A sentence or two about what it is Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt"
-	ctaText="I'M INSPIRED"
+	heroDescription="Bet on yourself. When others quit, their stakes become your reward."
+	ctaText="STAKE YOUR CLAIM"
 	ctaHref="/onboarding"
 	steps={[
-		{ number: 1, title: "Step 1", description: "Capture Your Intentions - Resolution helps you turn fleeting thoughts into concrete goals." },
-		{ number: 2, title: "Step 2", description: "Track Your Progress - Follow your journey from the first spark to full realization." },
-		{ number: 3, title: "Step 3", description: "Celebrate Success - Every milestone reached is a reason to celebrate." }
+		{ title: "⭐ One Star", description: "~2hr/week • 8 weeks • $80 stake. Light commitment, real results." },
+		{ title: "⭐⭐ Two Star", description: "~5hr/week • 8 weeks • $200 stake. Serious growth, bigger rewards." },
+		{ title: "⭐⭐⭐ Three Star", description: "~9hr/week • 8 weeks • $360 stake. Maximum effort, maximum payout." }
 	]}
 	events={[
 		{ title: "Event 1", description: "Join our community workshop on goal setting and accountability." },
