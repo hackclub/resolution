@@ -1,4 +1,4 @@
-import { AIRTABLE_API_TOKEN, AIRTABLE_BASE_ID, AIRTABLE_TABLE_ID } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import Airtable from 'airtable';
 import { json } from '@sveltejs/kit';
 
@@ -13,9 +13,9 @@ export async function POST({ request, getClientAddress }) {
 
         console.log(`Submitting email: ${email} from IP: ${ip}`);
 
-        const base = new Airtable({ apiKey: AIRTABLE_API_TOKEN }).base(AIRTABLE_BASE_ID);
+        const base = new Airtable({ apiKey: env.AIRTABLE_API_TOKEN }).base(env.AIRTABLE_BASE_ID!);
 
-        await base(AIRTABLE_TABLE_ID).create([
+        await base(env.AIRTABLE_TABLE_ID!).create([
             {
                 "fields": {
                     "Email": email,
