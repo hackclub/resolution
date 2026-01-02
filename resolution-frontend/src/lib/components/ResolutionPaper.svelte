@@ -5,9 +5,12 @@
 
 	let submitted = $state(false);
 	let error = $state("");
+	let isSubmitting = $state(false);
 
-	function handleSubmit(e: SubmitEvent) {
+	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
+		if (isSubmitting) return;
+
 		const form = e.target as HTMLFormElement;
 		const formData = new FormData(form);
 		const rawEmail = formData.get("email") as string;
@@ -26,8 +29,28 @@
 			return;
 		}
 
-		console.log("Email submitted:", cleanEmail);
-		submitted = true;
+		isSubmitting = true;
+
+		try {
+			const res = await fetch("/api/submit-resolution", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email: cleanEmail }),
+			});
+
+			if (!res.ok) {
+				const data = await res.json();
+				throw new Error(data.error || "Submission failed");
+			}
+
+			console.log("Email submitted:", cleanEmail);
+			submitted = true;
+		} catch (err: any) {
+			console.error(err);
+			error = err.message || "Something went wrong. Please try again.";
+		} finally {
+			isSubmitting = false;
+		}
 	}
 </script>
 
@@ -54,7 +77,17 @@
 						class="email-input"
 						required
 					/>
-					<button type="submit" class="submit-btn">→</button>
+					<button
+						type="submit"
+						class="submit-btn"
+						disabled={isSubmitting}
+					>
+						{#if isSubmitting}
+							...
+						{:else}
+							→
+						{/if}
+					</button>
 				</div>
 				{#if error}
 					<p class="error-text">{error}</p>
