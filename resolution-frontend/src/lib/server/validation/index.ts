@@ -14,7 +14,7 @@ export function validate<T extends z.ZodSchema>(
 	const result = schema.safeParse(data);
 
 	if (!result.success) {
-		const messages = result.error.errors.map((e) => e.message).join(', ');
+		const messages = result.error.issues.map((e: { message: string }) => e.message).join(', ');
 		throw error(400, { message: `Validation failed: ${messages}` });
 	}
 

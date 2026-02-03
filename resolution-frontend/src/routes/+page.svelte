@@ -12,7 +12,6 @@
 		ctaText="START BUILDING"
 		ctaHref="/api/auth/login"
 		showSteps={true}
-		showEvents={true}
 		showFaq={true}
 		steps={[
 			{ 
@@ -27,25 +26,6 @@
 				title: "Level Up", 
 				description: "Do more, earn more. Complete all 8 weeks for bonus prizes" 
 			}
-		]}
-		events={[
-			{ 
-				title: "Beginner", 
-				description: "Just getting started? Perfect. These workshops walk you through everything step by step.",
-				starCount: 1
-			},
-			{ 
-				title: "Intermediate", 
-				description: "Know the basics? Level up with projects that push you a bit further.", 
-				rotation: 12,
-				starCount: 2
-			},
-			{ 
-				title: "Advanced", 
-				description: "Ready for a real challenge? These workshops don't hold your hand.", 
-				rotation: -21,
-				starCount: 3
-			},
 		]}
 		faqs={[
 			{ 
