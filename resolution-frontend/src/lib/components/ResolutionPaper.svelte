@@ -1,5 +1,5 @@
 <script lang="ts">
-	import DOMPurify from "dompurify";
+	import DOMPurify from 'dompurify';
 	import type { Snippet } from 'svelte';
 
 	interface Props {
@@ -9,10 +9,10 @@
 		onSuccess?: () => void;
 	}
 
-	let { visible = false, children, text = "", onSuccess }: Props = $props();
+	let { visible = false, children, text = '', onSuccess }: Props = $props();
 
 	let submitted = $state(false);
-	let error = $state("");
+	let error = $state('');
 	let isSubmitting = $state(false);
 
 	async function handleSubmit(e: SubmitEvent) {
@@ -21,42 +21,42 @@
 
 		const form = e.target as HTMLFormElement;
 		const formData = new FormData(form);
-		const rawEmail = formData.get("email") as string;
+		const rawEmail = formData.get('email') as string;
 		const cleanEmail = DOMPurify.sanitize(rawEmail.trim()).slice(0, 254);
 
-		error = "";
+		error = '';
 
 		if (!cleanEmail) {
-			error = "Please enter your email";
+			error = 'Please enter your email';
 			return;
 		}
 
 		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 		if (!emailRegex.test(cleanEmail)) {
-			error = "Please enter a valid email";
+			error = 'Please enter a valid email';
 			return;
 		}
 
 		isSubmitting = true;
 
 		try {
-			const res = await fetch("/api/submit-resolution", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email: cleanEmail }),
+			const res = await fetch('/api/submit-resolution', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email: cleanEmail })
 			});
 
 			if (!res.ok) {
 				const data = await res.json();
-				throw new Error(data.error || "Submission failed");
+				throw new Error(data.error || 'Submission failed');
 			}
 
-			console.log("Email submitted:", cleanEmail);
+			console.log('Email submitted:', cleanEmail);
 			submitted = true;
 			onSuccess?.();
-		} catch (err: any) {
+		} catch (err: unknown) {
 			console.error(err);
-			error = err.message || "Something went wrong. Please try again.";
+			error = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
 		} finally {
 			isSubmitting = false;
 		}
@@ -86,11 +86,7 @@
 						class="email-input"
 						required
 					/>
-					<button
-						type="submit"
-						class="submit-btn"
-						disabled={isSubmitting}
-					>
+					<button type="submit" class="submit-btn" disabled={isSubmitting}>
 						{#if isSubmitting}
 							...
 						{:else}
@@ -110,7 +106,7 @@
 	.resolution-paper {
 		position: absolute;
 		inset: 0;
-		background-image: url("$lib/assets/resolution_paper.png");
+		background-image: url('$lib/assets/resolution_paper.png');
 		background-size: cover;
 		background-position: center;
 		background-repeat: no-repeat;

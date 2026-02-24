@@ -28,7 +28,6 @@
 
 	const noteImage = $derived(noteImages[variant]);
 	const rotationStyle = $derived(rotation !== 0 ? `transform: rotate(${rotation}deg)` : '');
-	const counterRotationStyle = $derived(rotation !== 0 ? `transform: rotate(${-rotation}deg)` : '');
 </script>
 
 <div class="event-card" class:has-rotation={rotation !== 0}>

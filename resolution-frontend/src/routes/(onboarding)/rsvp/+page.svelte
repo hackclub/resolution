@@ -27,7 +27,10 @@
 
 <svelte:head>
 	<title>Join Resolution - Stake Your Claim</title>
-	<meta name="description" content="Sign up for Resolution - an 8-week personal goal-setting challenge. Ship every week, earn prizes, and be part of the few who follow through." />
+	<meta
+		name="description"
+		content="Sign up for Resolution - an 8-week personal goal-setting challenge. Ship every week, earn prizes, and be part of the few who follow through."
+	/>
 </svelte:head>
 
 <div class="onboarding">

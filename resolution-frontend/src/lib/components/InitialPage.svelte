@@ -10,6 +10,7 @@
 	import stair from '$lib/assets/stair.png';
 	import running from '$lib/assets/running_person.png';
 	import vectorLine from '$lib/assets/vector_divider.svg';
+	import { resolve } from '$app/paths';
 	import EventCard from './EventCard.svelte';
 
 	interface Props {
@@ -25,25 +26,33 @@
 	}
 
 	let {
-		heroDescription = "Ship every week. Earn prizes. Most people quit. Will you be different?",
+		heroDescription = 'Ship every week. Earn prizes. Most people quit. Will you be different?',
 		ctaText = "I'M INSPIRED",
-		ctaHref = "/rsvp",
+		ctaHref = '/rsvp',
 		steps = [
-			{ title: "Step 1", description: "asfdskfhsdsdfasdfsdafdsdsfasdfsdaf" },
-			{ title: "Step 2", description: "asfdskfhsdsdfasdfsdafdsdsfasdfsdaf" },
-			{ title: "Step 3", description: "asfdskfhsdsdfasdfsdafdsdsfasdfsdaf" }
+			{ title: 'Step 1', description: 'asfdskfhsdsdfasdfsdafdsdsfasdfsdaf' },
+			{ title: 'Step 2', description: 'asfdskfhsdsdfasdfsdafdsdsfasdfsdaf' },
+			{ title: 'Step 3', description: 'asfdskfhsdsdfasdfsdafdsdsfasdfsdaf' }
 		],
 		events = [
-			{ title: "Event 1", description: "Lorem ipsum dolor sit amet consectetur adipiscing elit" },
-			{ title: "Event 2", description: "Lorem ipsum dolor sit amet consectetur adipiscing elit", rotation: 12 },
-			{ title: "Event 3", description: "Lorem ipsum dolor sit amet consectetur adipiscing elit", rotation: -21 }
+			{ title: 'Event 1', description: 'Lorem ipsum dolor sit amet consectetur adipiscing elit' },
+			{
+				title: 'Event 2',
+				description: 'Lorem ipsum dolor sit amet consectetur adipiscing elit',
+				rotation: 12
+			},
+			{
+				title: 'Event 3',
+				description: 'Lorem ipsum dolor sit amet consectetur adipiscing elit',
+				rotation: -21
+			}
 		],
 		faqs = [
-			{ question: "Question 1" },
-			{ question: "Question 2" },
-			{ question: "Question 3" },
-			{ question: "Question 4" },
-			{ question: "Question 5" }
+			{ question: 'Question 1' },
+			{ question: 'Question 2' },
+			{ question: 'Question 3' },
+			{ question: 'Question 4' },
+			{ question: 'Question 5' }
 		],
 		showSteps = false,
 		showEvents = false,
@@ -55,7 +64,7 @@
 	<!-- HERO SECTION -->
 	<section class="hero">
 		<img src={heroBg} alt="" class="hero-bg" />
-		
+
 		<div class="decoration fireworks-left">
 			<img src={fireworksGif} alt="" />
 		</div>
@@ -66,7 +75,7 @@
 		<div class="hero-content">
 			<p class="hero-description">{heroDescription}</p>
 
-			<a href={ctaHref} class="cta-button">
+			<a href={resolve(ctaHref)} class="cta-button">
 				<span>{ctaText}</span>
 			</a>
 		</div>
@@ -84,7 +93,7 @@
 				<img src={darkBg} alt="" class="dark-bg dark-bg-2" />
 				<img src={swirlBg} alt="" class="swirl-overlay" />
 			</div>
-			
+
 			<div class="decoration big-firework">
 				<img src={fireworks} alt="" />
 			</div>
@@ -95,15 +104,15 @@
 
 			<div class="steps-content">
 				<div class="step step-1">
-					<p class="step-text">{steps[0]?.title}:<br/>{steps[0]?.description}</p>
+					<p class="step-text">{steps[0]?.title}:<br />{steps[0]?.description}</p>
 				</div>
 
 				<div class="step step-2">
-					<p class="step-text">{steps[1]?.title}:<br/>{steps[1]?.description}</p>
+					<p class="step-text">{steps[1]?.title}:<br />{steps[1]?.description}</p>
 				</div>
 
 				<div class="step step-3">
-					<p class="step-text">{steps[2]?.title}:<br/>{steps[2]?.description}</p>
+					<p class="step-text">{steps[2]?.title}:<br />{steps[2]?.description}</p>
 				</div>
 			</div>
 		</section>
@@ -113,22 +122,24 @@
 	{#if showEvents || showFaq}
 		<section class="events-faq-section">
 			<img src={lightBlueBg} alt="" class="section-bg" />
-			
+
 			{#if showEvents}
 				<div class="events-content">
 					<h2 class="events-title">
 						<svg viewBox="-50 0 700 150" class="curved-text">
-							<path id="curve" d="M 0,100 Q 300,140 600,0" fill="transparent"/>
+							<path id="curve" d="M 0,100 Q 300,140 600,0" fill="transparent" />
 							<text>
-								<textPath href="#curve" startOffset="50%" text-anchor="middle">Stories from Past Events</textPath>
+								<textPath href="#curve" startOffset="50%" text-anchor="middle"
+									>Stories from Past Events</textPath
+								>
 							</text>
 						</svg>
 					</h2>
 
 					<div class="events-grid">
 						<div class="event-card-wrapper event-1">
-							<EventCard 
-								title={events[0]?.title ?? "Event 1"} 
+							<EventCard
+								title={events[0]?.title ?? 'Event 1'}
 								description={events[0]?.description}
 								imageSrc={events[0]?.image}
 								variant="yellow"
@@ -137,8 +148,8 @@
 						</div>
 
 						<div class="event-card-wrapper event-2">
-							<EventCard 
-								title={events[1]?.title ?? "Event 2"} 
+							<EventCard
+								title={events[1]?.title ?? 'Event 2'}
 								description={events[1]?.description}
 								imageSrc={events[1]?.image}
 								variant="pink"
@@ -147,8 +158,8 @@
 						</div>
 
 						<div class="event-card-wrapper event-3">
-							<EventCard 
-								title={events[2]?.title ?? "Event 3"} 
+							<EventCard
+								title={events[2]?.title ?? 'Event 3'}
 								description={events[2]?.description}
 								imageSrc={events[2]?.image}
 								variant="blue"
@@ -169,7 +180,7 @@
 
 					<div class="faq-content">
 						<div class="faq-list">
-							{#each faqs as faq, i}
+							{#each faqs as faq, i (faq.question)}
 								<div class="faq-item">
 									<span class="faq-question">{faq.question}</span>
 								</div>

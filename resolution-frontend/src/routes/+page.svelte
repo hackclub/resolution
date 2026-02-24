@@ -15,21 +15,21 @@
 		showEvents={true}
 		showFaq={true}
 		steps={[
-			{ title: "Step 1", description: "Put something here" },
-			{ title: "Step 2", description: "Put something here" },
-			{ title: "Step 3", description: "Put something here" }
+			{ title: 'Step 1', description: 'Put something here' },
+			{ title: 'Step 2', description: 'Put something here' },
+			{ title: 'Step 3', description: 'Put something here' }
 		]}
 		events={[
-			{ title: "Event 1", description: "Put something here." },
-			{ title: "Event 2", description: "Put something here.", rotation: 12 },
-			{ title: "Event 3", description: "Put something here.", rotation: -21 }
+			{ title: 'Event 1', description: 'Put something here.' },
+			{ title: 'Event 2', description: 'Put something here.', rotation: 12 },
+			{ title: 'Event 3', description: 'Put something here.', rotation: -21 }
 		]}
 		faqs={[
-			{ question: "Question 1" },
-			{ question: "Question 2" },
-			{ question: "Question 3" },
-			{ question: "Question 4" },
-			{ question: "Question 5" }
+			{ question: 'Question 1' },
+			{ question: 'Question 2' },
+			{ question: 'Question 3' },
+			{ question: 'Question 4' },
+			{ question: 'Question 5' }
 		]}
 	/>
 </div>
