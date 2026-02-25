@@ -21,6 +21,7 @@
 		"@types/jsonwebtoken": "^9.0.10",
 		"@types/pg": "^8.16.0",
 		"@types/simple-oauth2": "^5.0.8",
+		"@types/xml2js": "^0.4.14",
 		"drizzle-kit": "^0.31.8",
 		"svelte": "^5.46.4",
 		"svelte-check": "^4.3.4",
@@ -50,6 +51,7 @@
 		"tsparticles": "^3.9.1",
 		"tsparticles-preset-fireworks": "^2.12.0",
 		"uuid": "^13.0.0",
+		"xml2js": "^0.6.2",
 		"zod": "^4.3.5"
 	}
 }
