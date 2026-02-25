@@ -271,3 +271,16 @@ export const referralSignupRelations = relations(referralSignup, ({ one }) => ({
 	referralLink: one(referralLink, { fields: [referralSignup.referralLinkId], references: [referralLink.id] }),
 	user: one(user, { fields: [referralSignup.userId], references: [user.id] })
 }));
+
+// Warehouse items - inventory managed by admins
+export const warehouseItem = pgTable('warehouse_item', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	name: text('name').notNull(),
+	sku: text('sku').notNull().unique(),
+	sizing: text('sizing'),
+	weightOz: real('weight_oz').notNull(),
+	costCents: integer('cost_cents').notNull(),
+	quantity: integer('quantity').notNull().default(0),
+	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
+});
