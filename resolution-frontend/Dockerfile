@@ -30,11 +30,20 @@ COPY --from=builder /app/build ./build
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
+# Copy drizzle files needed for migrations
+COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder /app/src/lib/server/db/schema.ts ./src/lib/server/db/schema.ts
+
+# Copy entrypoint script
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
 # Expose the port the app runs on (SvelteKit node adapter starts on 3000 by default)
 EXPOSE 3000
 
 # Set Node environment to production
 ENV NODE_ENV=production
 
-# Start the application
-CMD ["node", "build"]
+# Start the application with migrations
+CMD ["./entrypoint.sh"]
