@@ -10,6 +10,9 @@
 	let confirmDelete = $state<string | null>(null);
 	let imagePreview = $state<string | null>(null);
 	let expandedImage = $state<string | null>(null);
+	let editingItem = $state<string | null>(null);
+	let editImagePreview = $state<string | null>(null);
+	let isEditSubmitting = $state(false);
 
 	function formatCost(cents: number) {
 		return `$${(cents / 100).toFixed(2)}`;
@@ -26,6 +29,20 @@
 			reader.readAsDataURL(file);
 		} else {
 			imagePreview = null;
+		}
+	}
+
+	function handleEditImageChange(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (file) {
+			const reader = new FileReader();
+			reader.onload = () => {
+				editImagePreview = reader.result as string;
+			};
+			reader.readAsDataURL(file);
+		} else {
+			editImagePreview = null;
 		}
 	}
 </script>
@@ -174,11 +191,77 @@
 													<button type="button" class="action-btn" onclick={() => confirmDelete = null}>Cancel</button>
 												</form>
 											{:else}
+												<button type="button" class="action-btn" onclick={() => { editingItem = item.id; editImagePreview = null; }}>Edit</button>
 												<button type="button" class="action-btn danger" onclick={() => confirmDelete = item.id}>Delete</button>
 											{/if}
 										</td>
 									{/if}
 								</tr>
+								{#if editingItem === item.id && data.isAdmin}
+									<tr class="edit-row">
+										<td colspan={data.isAdmin ? 8 : 7}>
+											<form
+												method="POST"
+												action="?/editItem"
+												enctype="multipart/form-data"
+												use:enhance={() => {
+													isEditSubmitting = true;
+													return async ({ update, result }) => {
+														await update();
+														isEditSubmitting = false;
+														if (result.type === 'success') {
+															editingItem = null;
+															editImagePreview = null;
+														}
+													};
+												}}
+											>
+												<input type="hidden" name="itemId" value={item.id} />
+												<div class="form-grid">
+													<div class="form-field">
+														<label for="edit-name-{item.id}">Item Name</label>
+														<input type="text" id="edit-name-{item.id}" name="name" required value={item.name} />
+													</div>
+													<div class="form-field">
+														<label for="edit-sku-{item.id}">SKU</label>
+														<input type="text" id="edit-sku-{item.id}" name="sku" required value={item.sku} />
+													</div>
+													<div class="form-field">
+														<label for="edit-sizing-{item.id}">Sizing</label>
+														<input type="text" id="edit-sizing-{item.id}" name="sizing" value={item.sizing || ''} />
+													</div>
+													<div class="form-field">
+														<label for="edit-weight-{item.id}">Weight (g)</label>
+														<input type="number" id="edit-weight-{item.id}" name="weightGrams" required step="0.1" min="0" value={item.weightGrams} />
+													</div>
+													<div class="form-field">
+														<label for="edit-cost-{item.id}">Cost ($)</label>
+														<input type="number" id="edit-cost-{item.id}" name="cost" required step="0.01" min="0" value={(item.costCents / 100).toFixed(2)} />
+													</div>
+													<div class="form-field">
+														<label for="edit-qty-{item.id}">Quantity</label>
+														<input type="number" id="edit-qty-{item.id}" name="quantity" min="0" value={item.quantity} />
+													</div>
+													<div class="form-field form-field-full">
+														<label for="edit-image-{item.id}">Photo (leave empty to keep current)</label>
+														<input type="file" id="edit-image-{item.id}" name="image" accept="image/jpeg,image/png,image/gif,image/webp" onchange={handleEditImageChange} />
+														{#if editImagePreview}
+															<img src={editImagePreview} alt="Preview" class="image-preview" />
+														{:else if item.imageUrl}
+															<img src={item.imageUrl} alt="Current" class="image-preview" />
+														{/if}
+													</div>
+												</div>
+												<div class="edit-actions">
+													<button type="submit" class="submit-btn" disabled={isEditSubmitting}>
+														{isEditSubmitting ? 'Saving...' : 'Save Changes'}
+													</button>
+													<button type="button" class="action-btn" onclick={() => { editingItem = null; editImagePreview = null; }}>Cancel</button>
+												</div>
+											</form>
+										</td>
+									</tr>
+								{/if}
 							{/each}
 						</tbody>
 					</table>
@@ -446,6 +529,17 @@
 	.action-btn.danger:hover {
 		background: #ec3750;
 		color: white;
+	}
+
+	.edit-row td {
+		padding: 1rem;
+		background: rgba(175, 152, 255, 0.05);
+	}
+
+	.edit-actions {
+		display: flex;
+		gap: 0.75rem;
+		align-items: center;
 	}
 
 	.lightbox {

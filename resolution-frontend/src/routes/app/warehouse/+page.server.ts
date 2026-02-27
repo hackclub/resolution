@@ -103,6 +103,79 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
+	editItem: async ({ request, locals }) => {
+		if (!locals.user?.isAdmin) {
+			return fail(403, { error: 'Only admins can edit items' });
+		}
+
+		const formData = await request.formData();
+		const itemId = formData.get('itemId') as string;
+		const name = formData.get('name') as string;
+		const sku = formData.get('sku') as string;
+		const sizing = formData.get('sizing') as string | null;
+		const weightGrams = parseFloat(formData.get('weightGrams') as string);
+		const costCents = Math.round(parseFloat(formData.get('cost') as string) * 100);
+		const quantity = parseInt(formData.get('quantity') as string) || 0;
+		const imageFile = formData.get('image') as File | null;
+
+		if (!itemId || !name || !sku || isNaN(weightGrams) || isNaN(costCents)) {
+			return fail(400, { error: 'Item ID, name, SKU, weight, and cost are required' });
+		}
+
+		let imageUrl: string | undefined;
+
+		if (imageFile && imageFile.size > 0) {
+			if (!ALLOWED_TYPES.includes(imageFile.type)) {
+				return fail(400, { error: 'Image must be JPEG, PNG, GIF, or WebP' });
+			}
+			if (imageFile.size > MAX_SIZE) {
+				return fail(400, { error: 'Image must be under 5MB' });
+			}
+
+			const cdnKey = env.HACK_CLUB_CDN_API_KEY;
+			if (!cdnKey) {
+				return fail(500, { error: 'CDN not configured' });
+			}
+
+			const uploadForm = new FormData();
+			uploadForm.append('file', imageFile);
+
+			const cdnResponse = await fetch('https://cdn.hackclub.com/api/v4/upload', {
+				method: 'POST',
+				headers: { 'Authorization': `Bearer ${cdnKey}` },
+				body: uploadForm
+			});
+
+			if (!cdnResponse.ok) {
+				const cdnError = await cdnResponse.json().catch(() => ({}));
+				return fail(500, { error: cdnError.error || 'Failed to upload image' });
+			}
+
+			const cdnResult = await cdnResponse.json();
+			imageUrl = cdnResult.url;
+		}
+
+		try {
+			const updateData: Record<string, unknown> = {
+				name,
+				sku,
+				sizing: sizing || null,
+				weightGrams,
+				costCents,
+				quantity,
+				updatedAt: new Date()
+			};
+			if (imageUrl !== undefined) {
+				updateData.imageUrl = imageUrl;
+			}
+			await db.update(warehouseItem).set(updateData).where(eq(warehouseItem.id, itemId));
+		} catch {
+			return fail(400, { error: 'Failed to update item. SKU may already exist.' });
+		}
+
+		return { success: true };
+	},
+
 	deleteItem: async ({ request, locals }) => {
 		if (!locals.user?.isAdmin) {
 			return fail(403, { error: 'Only admins can delete items' });
