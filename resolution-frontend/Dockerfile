@@ -30,10 +30,13 @@ COPY --from=builder /app/build ./build
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
-# Copy drizzle files needed for migrations
+# Copy drizzle files needed for push
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder /app/src/lib/server/db/schema.ts ./src/lib/server/db/schema.ts
+
+# Install drizzle-kit for runtime schema push (pruned as devDependency)
+RUN npm install drizzle-kit
 
 # Copy entrypoint script
 COPY entrypoint.sh ./entrypoint.sh
