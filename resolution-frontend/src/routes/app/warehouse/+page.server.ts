@@ -3,6 +3,10 @@ import { db } from '$lib/server/db';
 import { warehouseItem, ambassadorPathway } from '$lib/server/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
+
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { user } = await parent();
@@ -40,12 +44,46 @@ export const actions: Actions = {
 		const name = formData.get('name') as string;
 		const sku = formData.get('sku') as string;
 		const sizing = formData.get('sizing') as string | null;
-		const weightOz = parseFloat(formData.get('weightOz') as string);
+		const weightGrams = parseFloat(formData.get('weightGrams') as string);
 		const costCents = Math.round(parseFloat(formData.get('cost') as string) * 100);
 		const quantity = parseInt(formData.get('quantity') as string) || 0;
+		const imageFile = formData.get('image') as File | null;
 
-		if (!name || !sku || isNaN(weightOz) || isNaN(costCents)) {
+		if (!name || !sku || isNaN(weightGrams) || isNaN(costCents)) {
 			return fail(400, { error: 'Name, SKU, weight, and cost are required' });
+		}
+
+		let imageUrl: string | null = null;
+
+		if (imageFile && imageFile.size > 0) {
+			if (!ALLOWED_TYPES.includes(imageFile.type)) {
+				return fail(400, { error: 'Image must be JPEG, PNG, GIF, or WebP' });
+			}
+			if (imageFile.size > MAX_SIZE) {
+				return fail(400, { error: 'Image must be under 5MB' });
+			}
+
+			const cdnKey = env.HACK_CLUB_CDN_API_KEY;
+			if (!cdnKey) {
+				return fail(500, { error: 'CDN not configured' });
+			}
+
+			const uploadForm = new FormData();
+			uploadForm.append('file', imageFile);
+
+			const cdnResponse = await fetch('https://cdn.hackclub.com/api/v4/upload', {
+				method: 'POST',
+				headers: { 'Authorization': `Bearer ${cdnKey}` },
+				body: uploadForm
+			});
+
+			if (!cdnResponse.ok) {
+				const cdnError = await cdnResponse.json().catch(() => ({}));
+				return fail(500, { error: cdnError.error || 'Failed to upload image' });
+			}
+
+			const cdnResult = await cdnResponse.json();
+			imageUrl = cdnResult.url;
 		}
 
 		try {
@@ -53,9 +91,10 @@ export const actions: Actions = {
 				name,
 				sku,
 				sizing: sizing || null,
-				weightOz,
+				weightGrams,
 				costCents,
-				quantity
+				quantity,
+				imageUrl
 			});
 		} catch {
 			return fail(400, { error: 'SKU already exists' });

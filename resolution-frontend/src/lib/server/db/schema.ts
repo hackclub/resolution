@@ -278,9 +278,10 @@ export const warehouseItem = pgTable('warehouse_item', {
 	name: text('name').notNull(),
 	sku: text('sku').notNull().unique(),
 	sizing: text('sizing'),
-	weightOz: real('weight_oz').notNull(),
+	weightGrams: real('weight_grams').notNull(),
 	costCents: integer('cost_cents').notNull(),
 	quantity: integer('quantity').notNull().default(0),
+	imageUrl: text('image_url'),
 	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
 });

@@ -8,9 +8,25 @@
 	let showAddForm = $state(false);
 	let isSubmitting = $state(false);
 	let confirmDelete = $state<string | null>(null);
+	let imagePreview = $state<string | null>(null);
+	let expandedImage = $state<string | null>(null);
 
 	function formatCost(cents: number) {
 		return `$${(cents / 100).toFixed(2)}`;
+	}
+
+	function handleImageChange(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (file) {
+			const reader = new FileReader();
+			reader.onload = () => {
+				imagePreview = reader.result as string;
+			};
+			reader.readAsDataURL(file);
+		} else {
+			imagePreview = null;
+		}
 	}
 </script>
 
@@ -32,7 +48,7 @@
 					<p class="subtitle">Inventory management</p>
 				</div>
 				{#if data.isAdmin}
-					<button class="add-btn" onclick={() => showAddForm = !showAddForm}>
+					<button class="add-btn" onclick={() => { showAddForm = !showAddForm; imagePreview = null; }}>
 						<img src="https://icons.hackclub.com/api/icons/338eda/{showAddForm ? 'view-close' : 'add'}" alt="" width="18" height="18" />
 						{showAddForm ? 'Cancel' : 'Add Item'}
 					</button>
@@ -46,12 +62,16 @@
 				<form
 					method="POST"
 					action="?/addItem"
+					enctype="multipart/form-data"
 					use:enhance={() => {
 						isSubmitting = true;
 						return async ({ update, result }) => {
 							await update();
 							isSubmitting = false;
-							if (result.type === 'success') showAddForm = false;
+							if (result.type === 'success') {
+								showAddForm = false;
+								imagePreview = null;
+							}
 						};
 					}}
 				>
@@ -69,8 +89,8 @@
 							<input type="text" id="sizing" name="sizing" placeholder="e.g. S, M, L, XL" />
 						</div>
 						<div class="form-field">
-							<label for="weightOz">Weight (oz)</label>
-							<input type="number" id="weightOz" name="weightOz" required step="0.1" min="0" placeholder="e.g. 8.0" />
+							<label for="weightGrams">Weight (g)</label>
+							<input type="number" id="weightGrams" name="weightGrams" required step="0.1" min="0" placeholder="e.g. 227" />
 						</div>
 						<div class="form-field">
 							<label for="cost">Cost ($)</label>
@@ -79,6 +99,13 @@
 						<div class="form-field">
 							<label for="quantity">Quantity</label>
 							<input type="number" id="quantity" name="quantity" min="0" value="0" />
+						</div>
+						<div class="form-field form-field-full">
+							<label for="image">Photo</label>
+							<input type="file" id="image" name="image" accept="image/jpeg,image/png,image/gif,image/webp" onchange={handleImageChange} />
+							{#if imagePreview}
+								<img src={imagePreview} alt="Preview" class="image-preview" />
+							{/if}
 						</div>
 					</div>
 					<button type="submit" class="submit-btn" disabled={isSubmitting}>
@@ -103,6 +130,7 @@
 					<table class="items-table">
 						<thead>
 							<tr>
+								<th>Photo</th>
 								<th>Name</th>
 								<th>SKU</th>
 								<th>Sizing</th>
@@ -117,10 +145,19 @@
 						<tbody>
 							{#each data.items as item (item.id)}
 								<tr>
+									<td class="item-photo">
+										{#if item.imageUrl}
+											<button class="photo-thumb-btn" onclick={() => expandedImage = item.imageUrl}>
+												<img src={item.imageUrl} alt={item.name} class="photo-thumb" />
+											</button>
+										{:else}
+											<span class="no-photo">—</span>
+										{/if}
+									</td>
 									<td class="item-name">{item.name}</td>
 									<td><code>{item.sku}</code></td>
 									<td>{item.sizing || '—'}</td>
-									<td>{item.weightOz} oz</td>
+									<td>{item.weightGrams} g</td>
 									<td>{formatCost(item.costCents)}</td>
 									<td>{item.quantity}</td>
 									{#if data.isAdmin}
@@ -149,6 +186,12 @@
 			</section>
 		{/if}
 	</div>
+
+	{#if expandedImage}
+		<button class="lightbox" onclick={() => expandedImage = null}>
+			<img src={expandedImage} alt="Expanded view" />
+		</button>
+	{/if}
 </PlatformBackground>
 
 <style>
@@ -240,6 +283,10 @@
 		gap: 0.375rem;
 	}
 
+	.form-field-full {
+		grid-column: 1 / -1;
+	}
+
 	.form-field label {
 		font-size: 0.8rem;
 		font-weight: 600;
@@ -252,6 +299,20 @@
 		border-radius: 8px;
 		font-family: inherit;
 		font-size: 0.9rem;
+	}
+
+	.form-field input[type="file"] {
+		padding: 0.375rem;
+		font-size: 0.8rem;
+	}
+
+	.image-preview {
+		max-width: 200px;
+		max-height: 150px;
+		border-radius: 8px;
+		border: 1px solid #af98ff;
+		object-fit: cover;
+		margin-top: 0.5rem;
 	}
 
 	.submit-btn {
@@ -325,6 +386,29 @@
 		font-weight: 500;
 	}
 
+	.item-photo {
+		width: 60px;
+	}
+
+	.photo-thumb-btn {
+		background: none;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+	}
+
+	.photo-thumb {
+		width: 48px;
+		height: 48px;
+		object-fit: cover;
+		border-radius: 6px;
+		border: 1px solid #e0e0e0;
+	}
+
+	.no-photo {
+		color: #8492a6;
+	}
+
 	code {
 		background: #f0f0f0;
 		padding: 0.125rem 0.375rem;
@@ -362,6 +446,26 @@
 	.action-btn.danger:hover {
 		background: #ec3750;
 		color: white;
+	}
+
+	.lightbox {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.8);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+		cursor: pointer;
+		border: none;
+		padding: 2rem;
+	}
+
+	.lightbox img {
+		max-width: 90vw;
+		max-height: 90vh;
+		object-fit: contain;
+		border-radius: 8px;
 	}
 
 	@media (max-width: 768px) {
