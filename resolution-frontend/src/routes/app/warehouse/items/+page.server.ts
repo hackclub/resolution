@@ -112,15 +112,16 @@ export const actions: Actions = {
 		const sku = formData.get('sku') as string;
 		const categoryId = formData.get('categoryId') as string | null;
 		const sizing = formData.get('sizing') as string | null;
+		const packageType = (formData.get('packageType') as string) || 'box';
 		const lengthIn = parseFloat(formData.get('lengthIn') as string);
 		const widthIn = parseFloat(formData.get('widthIn') as string);
-		const heightIn = parseFloat(formData.get('heightIn') as string);
+		const heightIn = packageType === 'flat' ? 0 : parseFloat(formData.get('heightIn') as string);
 		const weightGrams = parseFloat(formData.get('weightGrams') as string);
 		const costCents = Math.round(parseFloat(formData.get('cost') as string) * 100);
 		const quantity = parseInt(formData.get('quantity') as string) || 0;
 		const imageFile = formData.get('image') as File | null;
 
-		if (!name || !sku || isNaN(lengthIn) || isNaN(widthIn) || isNaN(heightIn) || isNaN(weightGrams) || isNaN(costCents)) {
+		if (!name || !sku || isNaN(lengthIn) || isNaN(widthIn) || (packageType !== 'flat' && isNaN(heightIn)) || isNaN(weightGrams) || isNaN(costCents)) {
 			return fail(400, { error: 'Name, SKU, dimensions, weight, and cost are required' });
 		}
 
@@ -163,6 +164,7 @@ export const actions: Actions = {
 				sku,
 				categoryId: categoryId || null,
 				sizing: sizing || null,
+				packageType,
 				lengthIn,
 				widthIn,
 				heightIn,
@@ -189,16 +191,17 @@ export const actions: Actions = {
 		const sku = formData.get('sku') as string;
 		const categoryId = formData.get('categoryId') as string | null;
 		const sizing = formData.get('sizing') as string | null;
+		const packageType = (formData.get('packageType') as string) || 'box';
 		const lengthIn = parseFloat(formData.get('lengthIn') as string);
 		const widthIn = parseFloat(formData.get('widthIn') as string);
-		const heightIn = parseFloat(formData.get('heightIn') as string);
+		const heightIn = packageType === 'flat' ? 0 : parseFloat(formData.get('heightIn') as string);
 		const weightGrams = parseFloat(formData.get('weightGrams') as string);
 		const costCents = Math.round(parseFloat(formData.get('cost') as string) * 100);
 		const quantity = parseInt(formData.get('quantity') as string) || 0;
 		const imageFile = formData.get('image') as File | null;
 		const shouldRemoveImage = formData.get('removeImage') === 'true';
 
-		if (!itemId || !name || !sku || isNaN(lengthIn) || isNaN(widthIn) || isNaN(heightIn) || isNaN(weightGrams) || isNaN(costCents)) {
+		if (!itemId || !name || !sku || isNaN(lengthIn) || isNaN(widthIn) || (packageType !== 'flat' && isNaN(heightIn)) || isNaN(weightGrams) || isNaN(costCents)) {
 			return fail(400, { error: 'Item ID, name, SKU, dimensions, weight, and cost are required' });
 		}
 
@@ -243,6 +246,7 @@ export const actions: Actions = {
 				sku,
 				categoryId: categoryId || null,
 				sizing: sizing || null,
+				packageType,
 				lengthIn,
 				widthIn,
 				heightIn,

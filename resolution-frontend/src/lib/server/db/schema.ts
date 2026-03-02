@@ -9,6 +9,7 @@ export const pathwayEnum = pgEnum('pathway', ['PYTHON', 'WEB_DEV', 'GAME_DEV', '
 export const difficultyEnum = pgEnum('difficulty', ['BEGINNER', 'INTERMEDIATE', 'ADVANCED']);
 export const shipStatusEnum = pgEnum('ship_status', ['PLANNED', 'IN_PROGRESS', 'SHIPPED', 'MISSED']);
 export const payoutStatusEnum = pgEnum('payout_status', ['DRAFT', 'PENDING', 'PAID', 'CANCELED']);
+export const warehouseOrderStatusEnum = pgEnum('warehouse_order_status', ['DRAFT', 'ESTIMATED', 'APPROVED', 'SHIPPED', 'CANCELED']);
 
 // Tables
 export const user = pgTable('user', {
@@ -287,6 +288,7 @@ export const warehouseItem = pgTable('warehouse_item', {
 	name: text('name').notNull(),
 	sku: text('sku').notNull().unique(),
 	sizing: text('sizing'),
+	packageType: text('package_type').notNull().default('box'),
 	lengthIn: real('length_in').notNull(),
 	widthIn: real('width_in').notNull(),
 	heightIn: real('height_in').notNull(),
@@ -297,3 +299,49 @@ export const warehouseItem = pgTable('warehouse_item', {
 	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
 });
+
+// Warehouse orders
+export const warehouseOrder = pgTable('warehouse_order', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	createdById: text('created_by_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	status: warehouseOrderStatusEnum('status').notNull().default('DRAFT'),
+	firstName: text('first_name').notNull(),
+	lastName: text('last_name').notNull(),
+	email: text('email').notNull(),
+	phone: text('phone'),
+	addressLine1: text('address_line_1').notNull(),
+	addressLine2: text('address_line_2'),
+	city: text('city').notNull(),
+	stateProvince: text('state_province').notNull(),
+	postalCode: text('postal_code'),
+	country: text('country').notNull(),
+	estimatedShippingCents: integer('estimated_shipping_cents'),
+	estimatedServiceName: text('estimated_service_name'),
+	estimatedPackageType: text('estimated_package_type'),
+	estimatedTotalLengthIn: real('estimated_total_length_in'),
+	estimatedTotalWidthIn: real('estimated_total_width_in'),
+	estimatedTotalHeightIn: real('estimated_total_height_in'),
+	estimatedTotalWeightGrams: real('estimated_total_weight_grams'),
+	notes: text('notes'),
+	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
+});
+
+// Warehouse order line items
+export const warehouseOrderItem = pgTable('warehouse_order_item', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	orderId: text('order_id').notNull().references(() => warehouseOrder.id, { onDelete: 'cascade' }),
+	warehouseItemId: text('warehouse_item_id').notNull().references(() => warehouseItem.id, { onDelete: 'restrict' }),
+	quantity: integer('quantity').notNull().default(1),
+	sizingChoice: text('sizing_choice')
+});
+
+export const warehouseOrderRelations = relations(warehouseOrder, ({ one, many }) => ({
+	createdBy: one(user, { fields: [warehouseOrder.createdById], references: [user.id] }),
+	items: many(warehouseOrderItem)
+}));
+
+export const warehouseOrderItemRelations = relations(warehouseOrderItem, ({ one }) => ({
+	order: one(warehouseOrder, { fields: [warehouseOrderItem.orderId], references: [warehouseOrder.id] }),
+	warehouseItem: one(warehouseItem, { fields: [warehouseOrderItem.warehouseItemId], references: [warehouseItem.id] })
+}));

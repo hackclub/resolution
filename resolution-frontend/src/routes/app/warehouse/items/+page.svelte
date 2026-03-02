@@ -6,6 +6,8 @@
 
 	let showAddForm = $state(false);
 	let isSubmitting = $state(false);
+	let addPackageType = $state('box');
+	let editPackageType = $state('box');
 	let confirmDelete = $state<string | null>(null);
 	let imagePreview = $state<string | null>(null);
 	let expandedImage = $state<string | null>(null);
@@ -187,6 +189,7 @@
 						showAddForm = false;
 						imagePreview = null;
 						addOptions = [''];
+						addPackageType = 'box';
 					}
 				};
 			}}
@@ -223,6 +226,13 @@
 					<button type="button" class="option-btn add-option-btn" onclick={() => addOptions = [...addOptions, '']}>+</button>
 				</div>
 				<div class="form-field">
+					<label for="packageType">Package Type</label>
+					<select id="packageType" name="packageType" bind:value={addPackageType}>
+						<option value="box">Box</option>
+						<option value="flat">Flat (postcards, stickers)</option>
+					</select>
+				</div>
+				<div class="form-field">
 					<label for="lengthIn">Length (in)</label>
 					<input type="number" id="lengthIn" name="lengthIn" required step="0.1" min="0" placeholder="e.g. 10" />
 				</div>
@@ -230,10 +240,12 @@
 					<label for="widthIn">Width (in)</label>
 					<input type="number" id="widthIn" name="widthIn" required step="0.1" min="0" placeholder="e.g. 8" />
 				</div>
-				<div class="form-field">
-					<label for="heightIn">Height (in)</label>
-					<input type="number" id="heightIn" name="heightIn" required step="0.1" min="0" placeholder="e.g. 2" />
-				</div>
+				{#if addPackageType !== 'flat'}
+					<div class="form-field">
+						<label for="heightIn">Height (in)</label>
+						<input type="number" id="heightIn" name="heightIn" required step="0.1" min="0" placeholder="e.g. 2" />
+					</div>
+				{/if}
 				<div class="form-field">
 					<label for="weightGrams">Weight (g)</label>
 					<input type="number" id="weightGrams" name="weightGrams" required step="0.1" min="0" placeholder="e.g. 227" />
@@ -309,7 +321,7 @@
 									<td class="item-name">{item.name}</td>
 									<td><code>{item.sku}</code></td>
 									<td>{item.sizing || '—'}</td>
-									<td>{item.lengthIn}×{item.widthIn}×{item.heightIn} in</td>
+									<td>{item.packageType === 'flat' ? `${item.lengthIn}×${item.widthIn} in (flat)` : `${item.lengthIn}×${item.widthIn}×${item.heightIn} in`}</td>
 									<td>{item.weightGrams} g</td>
 									<td>{formatCost(item.costCents)}</td>
 									<td>{item.quantity}</td>
@@ -327,7 +339,7 @@
 													<button type="button" class="action-btn" onclick={() => confirmDelete = null}>Cancel</button>
 												</form>
 											{:else}
-												<button type="button" class="action-btn" onclick={() => { editingItem = item.id; editImagePreview = null; removeImage = false; editOptions = item.sizing ? item.sizing.split(',').map((s: string) => s.trim()) : ['']; }}>Edit</button>
+												<button type="button" class="action-btn" onclick={() => { editingItem = item.id; editImagePreview = null; removeImage = false; editPackageType = item.packageType ?? 'box'; editOptions = item.sizing ? item.sizing.split(',').map((s: string) => s.trim()) : ['']; }}>Edit</button>
 												<button type="button" class="action-btn danger" onclick={() => confirmDelete = item.id}>Delete</button>
 											{/if}
 										</td>
@@ -385,6 +397,13 @@
 														<button type="button" class="option-btn add-option-btn" onclick={() => editOptions = [...editOptions, '']}>+</button>
 													</div>
 													<div class="form-field">
+														<label for="edit-packageType-{item.id}">Package Type</label>
+														<select id="edit-packageType-{item.id}" name="packageType" bind:value={editPackageType}>
+															<option value="box">Box</option>
+															<option value="flat">Flat (postcards, stickers)</option>
+														</select>
+													</div>
+													<div class="form-field">
 														<label for="edit-length-{item.id}">Length (in)</label>
 														<input type="number" id="edit-length-{item.id}" name="lengthIn" required step="0.1" min="0" value={item.lengthIn} />
 													</div>
@@ -392,10 +411,12 @@
 														<label for="edit-width-{item.id}">Width (in)</label>
 														<input type="number" id="edit-width-{item.id}" name="widthIn" required step="0.1" min="0" value={item.widthIn} />
 													</div>
-													<div class="form-field">
-														<label for="edit-height-{item.id}">Height (in)</label>
-														<input type="number" id="edit-height-{item.id}" name="heightIn" required step="0.1" min="0" value={item.heightIn} />
-													</div>
+													{#if editPackageType !== 'flat'}
+														<div class="form-field">
+															<label for="edit-height-{item.id}">Height (in)</label>
+															<input type="number" id="edit-height-{item.id}" name="heightIn" required step="0.1" min="0" value={item.heightIn} />
+														</div>
+													{/if}
 													<div class="form-field">
 														<label for="edit-weight-{item.id}">Weight (g)</label>
 														<input type="number" id="edit-weight-{item.id}" name="weightGrams" required step="0.1" min="0" value={item.weightGrams} />
