@@ -17,6 +17,8 @@
 	let editOptions = $state<string[]>(['']);
 	let showCategoryForm = $state(false);
 	let confirmDeleteCategory = $state<string | null>(null);
+	let editingCategory = $state<string | null>(null);
+	let editCategoryName = $state('');
 
 	function formatCost(cents: number) {
 		return `$${(cents / 100).toFixed(2)}`;
@@ -111,28 +113,60 @@
 		</form>
 		{#if data.categories.length > 0}
 			<ul class="category-list">
-				{#each data.categories as cat (cat.id)}
+				{#each data.categories as cat, i (cat.id)}
 					<li>
-						<span>{cat.name}</span>
-						{#if confirmDeleteCategory === cat.id}
-							<form method="POST" action="?/deleteCategory" use:enhance={() => {
+						{#if editingCategory === cat.id}
+							<form method="POST" action="?/editCategory" use:enhance={() => {
 								return async ({ update }) => {
 									await update();
-									confirmDeleteCategory = null;
+									editingCategory = null;
 								};
-							}} class="inline-form">
+							}} class="category-edit-form">
 								<input type="hidden" name="categoryId" value={cat.id} />
-								<button type="submit" class="action-btn danger">Confirm</button>
-								<button type="button" class="action-btn" onclick={() => confirmDeleteCategory = null}>Cancel</button>
+								<input type="hidden" name="sortOrder" value={cat.sortOrder} />
+								<input type="text" name="categoryName" bind:value={editCategoryName} required class="category-name-input" />
+								<button type="submit" class="action-btn">Save</button>
+								<button type="button" class="action-btn" onclick={() => editingCategory = null}>Cancel</button>
 							</form>
 						{:else}
-							<button type="button" class="action-btn danger" onclick={() => confirmDeleteCategory = cat.id}>Delete</button>
+							<span>{cat.name}</span>
+						{/if}
+						{#if editingCategory !== cat.id}
+							<div class="category-actions">
+								<form method="POST" action="?/editCategory" use:enhance class="inline-form">
+									<input type="hidden" name="categoryId" value={cat.id} />
+									<input type="hidden" name="categoryName" value={cat.name} />
+									<input type="hidden" name="sortOrder" value={i > 0 ? data.categories[i - 1].sortOrder - 1 : cat.sortOrder - 1} />
+									<button type="submit" class="action-btn move-btn" disabled={i === 0} title="Move up">↑</button>
+								</form>
+								<form method="POST" action="?/editCategory" use:enhance class="inline-form">
+									<input type="hidden" name="categoryId" value={cat.id} />
+									<input type="hidden" name="categoryName" value={cat.name} />
+									<input type="hidden" name="sortOrder" value={i < data.categories.length - 1 ? data.categories[i + 1].sortOrder + 1 : cat.sortOrder + 1} />
+									<button type="submit" class="action-btn move-btn" disabled={i === data.categories.length - 1} title="Move down">↓</button>
+								</form>
+								<button type="button" class="action-btn" onclick={() => { editingCategory = cat.id; editCategoryName = cat.name; }}>Rename</button>
+								{#if confirmDeleteCategory === cat.id}
+									<form method="POST" action="?/deleteCategory" use:enhance={() => {
+										return async ({ update }) => {
+											await update();
+											confirmDeleteCategory = null;
+										};
+									}} class="inline-form">
+										<input type="hidden" name="categoryId" value={cat.id} />
+										<button type="submit" class="action-btn danger">Confirm</button>
+										<button type="button" class="action-btn" onclick={() => confirmDeleteCategory = null}>Cancel</button>
+									</form>
+								{:else}
+									<button type="button" class="action-btn danger" onclick={() => confirmDeleteCategory = cat.id}>Delete</button>
+								{/if}
+							</div>
 						{/if}
 					</li>
 				{/each}
 			</ul>
 		{:else}
-			<p class="hint">No categories yet.</p>
+			<p class="hint">No categories yet. Add one above, then assign items to it.</p>
 		{/if}
 	</section>
 {/if}
@@ -498,6 +532,39 @@
 
 	.inline-form {
 		display: inline;
+	}
+
+	.category-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.category-edit-form {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex: 1;
+	}
+
+	.category-name-input {
+		flex: 1;
+		padding: 0.375rem 0.625rem;
+		border: 1px solid #af98ff;
+		border-radius: 8px;
+		font-family: inherit;
+		font-size: 0.9rem;
+	}
+
+	.move-btn {
+		padding: 0.25rem 0.5rem;
+		font-size: 0.8rem;
+		line-height: 1;
+	}
+
+	.move-btn:disabled {
+		opacity: 0.3;
+		cursor: not-allowed;
 	}
 
 	.category-heading {

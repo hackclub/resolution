@@ -58,6 +58,33 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
+	editCategory: async ({ request, locals }) => {
+		if (!locals.user?.isAdmin) {
+			return fail(403, { error: 'Only admins can edit categories' });
+		}
+
+		const formData = await request.formData();
+		const categoryId = formData.get('categoryId') as string;
+		const name = (formData.get('categoryName') as string)?.trim();
+		const sortOrder = parseInt(formData.get('sortOrder') as string);
+
+		if (!categoryId) {
+			return fail(400, { error: 'Category ID required' });
+		}
+
+		const updateData: Record<string, unknown> = {};
+		if (name) updateData.name = name;
+		if (!isNaN(sortOrder)) updateData.sortOrder = sortOrder;
+
+		if (Object.keys(updateData).length === 0) {
+			return fail(400, { error: 'Nothing to update' });
+		}
+
+		await db.update(warehouseCategory).set(updateData).where(eq(warehouseCategory.id, categoryId));
+
+		return { success: true };
+	},
+
 	deleteCategory: async ({ request, locals }) => {
 		if (!locals.user?.isAdmin) {
 			return fail(403, { error: 'Only admins can delete categories' });
