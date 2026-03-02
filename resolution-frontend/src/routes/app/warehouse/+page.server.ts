@@ -44,13 +44,16 @@ export const actions: Actions = {
 		const name = formData.get('name') as string;
 		const sku = formData.get('sku') as string;
 		const sizing = formData.get('sizing') as string | null;
+		const lengthIn = parseFloat(formData.get('lengthIn') as string);
+		const widthIn = parseFloat(formData.get('widthIn') as string);
+		const heightIn = parseFloat(formData.get('heightIn') as string);
 		const weightGrams = parseFloat(formData.get('weightGrams') as string);
 		const costCents = Math.round(parseFloat(formData.get('cost') as string) * 100);
 		const quantity = parseInt(formData.get('quantity') as string) || 0;
 		const imageFile = formData.get('image') as File | null;
 
-		if (!name || !sku || isNaN(weightGrams) || isNaN(costCents)) {
-			return fail(400, { error: 'Name, SKU, weight, and cost are required' });
+		if (!name || !sku || isNaN(lengthIn) || isNaN(widthIn) || isNaN(heightIn) || isNaN(weightGrams) || isNaN(costCents)) {
+			return fail(400, { error: 'Name, SKU, dimensions, weight, and cost are required' });
 		}
 
 		let imageUrl: string | null = null;
@@ -91,6 +94,9 @@ export const actions: Actions = {
 				name,
 				sku,
 				sizing: sizing || null,
+				lengthIn,
+				widthIn,
+				heightIn,
 				weightGrams,
 				costCents,
 				quantity,
@@ -113,13 +119,16 @@ export const actions: Actions = {
 		const name = formData.get('name') as string;
 		const sku = formData.get('sku') as string;
 		const sizing = formData.get('sizing') as string | null;
+		const lengthIn = parseFloat(formData.get('lengthIn') as string);
+		const widthIn = parseFloat(formData.get('widthIn') as string);
+		const heightIn = parseFloat(formData.get('heightIn') as string);
 		const weightGrams = parseFloat(formData.get('weightGrams') as string);
 		const costCents = Math.round(parseFloat(formData.get('cost') as string) * 100);
 		const quantity = parseInt(formData.get('quantity') as string) || 0;
 		const imageFile = formData.get('image') as File | null;
 
-		if (!itemId || !name || !sku || isNaN(weightGrams) || isNaN(costCents)) {
-			return fail(400, { error: 'Item ID, name, SKU, weight, and cost are required' });
+		if (!itemId || !name || !sku || isNaN(lengthIn) || isNaN(widthIn) || isNaN(heightIn) || isNaN(weightGrams) || isNaN(costCents)) {
+			return fail(400, { error: 'Item ID, name, SKU, dimensions, weight, and cost are required' });
 		}
 
 		let imageUrl: string | undefined;
@@ -160,6 +169,9 @@ export const actions: Actions = {
 				name,
 				sku,
 				sizing: sizing || null,
+				lengthIn,
+				widthIn,
+				heightIn,
 				weightGrams,
 				costCents,
 				quantity,

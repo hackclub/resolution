@@ -118,6 +118,18 @@
 							<button type="button" class="option-btn add-option-btn" onclick={() => addOptions = [...addOptions, '']}>+</button>
 						</div>
 						<div class="form-field">
+							<label for="lengthIn">Length (in)</label>
+							<input type="number" id="lengthIn" name="lengthIn" required step="0.1" min="0" placeholder="e.g. 10" />
+						</div>
+						<div class="form-field">
+							<label for="widthIn">Width (in)</label>
+							<input type="number" id="widthIn" name="widthIn" required step="0.1" min="0" placeholder="e.g. 8" />
+						</div>
+						<div class="form-field">
+							<label for="heightIn">Height (in)</label>
+							<input type="number" id="heightIn" name="heightIn" required step="0.1" min="0" placeholder="e.g. 2" />
+						</div>
+						<div class="form-field">
 							<label for="weightGrams">Weight (g)</label>
 							<input type="number" id="weightGrams" name="weightGrams" required step="0.1" min="0" placeholder="e.g. 227" />
 						</div>
@@ -163,6 +175,7 @@
 								<th>Name</th>
 								<th>SKU</th>
 								<th>Options</th>
+								<th>Dimensions</th>
 								<th>Weight</th>
 								<th>Cost</th>
 								<th>Qty</th>
@@ -186,6 +199,7 @@
 									<td class="item-name">{item.name}</td>
 									<td><code>{item.sku}</code></td>
 									<td>{item.sizing || '—'}</td>
+									<td>{item.lengthIn}×{item.widthIn}×{item.heightIn} in</td>
 									<td>{item.weightGrams} g</td>
 									<td>{formatCost(item.costCents)}</td>
 									<td>{item.quantity}</td>
@@ -211,7 +225,7 @@
 								</tr>
 								{#if editingItem === item.id && data.isAdmin}
 									<tr class="edit-row">
-										<td colspan={data.isAdmin ? 8 : 7}>
+										<td colspan={data.isAdmin ? 9 : 8}>
 											<form
 												method="POST"
 												action="?/editItem"
@@ -250,6 +264,18 @@
 															</div>
 														{/each}
 														<button type="button" class="option-btn add-option-btn" onclick={() => editOptions = [...editOptions, '']}>+</button>
+													</div>
+													<div class="form-field">
+														<label for="edit-length-{item.id}">Length (in)</label>
+														<input type="number" id="edit-length-{item.id}" name="lengthIn" required step="0.1" min="0" value={item.lengthIn} />
+													</div>
+													<div class="form-field">
+														<label for="edit-width-{item.id}">Width (in)</label>
+														<input type="number" id="edit-width-{item.id}" name="widthIn" required step="0.1" min="0" value={item.widthIn} />
+													</div>
+													<div class="form-field">
+														<label for="edit-height-{item.id}">Height (in)</label>
+														<input type="number" id="edit-height-{item.id}" name="heightIn" required step="0.1" min="0" value={item.heightIn} />
 													</div>
 													<div class="form-field">
 														<label for="edit-weight-{item.id}">Weight (g)</label>
