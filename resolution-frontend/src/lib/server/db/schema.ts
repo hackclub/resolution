@@ -272,9 +272,18 @@ export const referralSignupRelations = relations(referralSignup, ({ one }) => ({
 	user: one(user, { fields: [referralSignup.userId], references: [user.id] })
 }));
 
+// Warehouse categories
+export const warehouseCategory = pgTable('warehouse_category', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	name: text('name').notNull(),
+	sortOrder: integer('sort_order').notNull().default(0),
+	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow()
+});
+
 // Warehouse items - inventory managed by admins
 export const warehouseItem = pgTable('warehouse_item', {
 	id: text('id').primaryKey().$defaultFn(() => createId()),
+	categoryId: text('category_id').references(() => warehouseCategory.id, { onDelete: 'set null' }),
 	name: text('name').notNull(),
 	sku: text('sku').notNull().unique(),
 	sizing: text('sizing'),
