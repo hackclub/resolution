@@ -126,14 +126,17 @@ export const actions: Actions = {
 		const costCents = Math.round(parseFloat(formData.get('cost') as string) * 100);
 		const quantity = parseInt(formData.get('quantity') as string) || 0;
 		const imageFile = formData.get('image') as File | null;
+		const shouldRemoveImage = formData.get('removeImage') === 'true';
 
 		if (!itemId || !name || !sku || isNaN(lengthIn) || isNaN(widthIn) || isNaN(heightIn) || isNaN(weightGrams) || isNaN(costCents)) {
 			return fail(400, { error: 'Item ID, name, SKU, dimensions, weight, and cost are required' });
 		}
 
-		let imageUrl: string | undefined;
+		let imageUrl: string | undefined | null;
 
-		if (imageFile && imageFile.size > 0) {
+		if (shouldRemoveImage) {
+			imageUrl = null;
+		} else if (imageFile && imageFile.size > 0) {
 			if (!ALLOWED_TYPES.includes(imageFile.type)) {
 				return fail(400, { error: 'Image must be JPEG, PNG, GIF, or WebP' });
 			}

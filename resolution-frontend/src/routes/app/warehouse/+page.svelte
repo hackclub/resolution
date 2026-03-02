@@ -13,6 +13,7 @@
 	let editingItem = $state<string | null>(null);
 	let editImagePreview = $state<string | null>(null);
 	let isEditSubmitting = $state(false);
+	let removeImage = $state(false);
 	let addOptions = $state<string[]>(['']);
 	let editOptions = $state<string[]>(['']);
 
@@ -217,7 +218,7 @@
 													<button type="button" class="action-btn" onclick={() => confirmDelete = null}>Cancel</button>
 												</form>
 											{:else}
-												<button type="button" class="action-btn" onclick={() => { editingItem = item.id; editImagePreview = null; editOptions = item.sizing ? item.sizing.split(',').map((s: string) => s.trim()) : ['']; }}>Edit</button>
+												<button type="button" class="action-btn" onclick={() => { editingItem = item.id; editImagePreview = null; removeImage = false; editOptions = item.sizing ? item.sizing.split(',').map((s: string) => s.trim()) : ['']; }}>Edit</button>
 												<button type="button" class="action-btn danger" onclick={() => confirmDelete = item.id}>Delete</button>
 											{/if}
 										</td>
@@ -291,11 +292,24 @@
 													</div>
 													<div class="form-field form-field-full">
 														<label for="edit-image-{item.id}">Photo (leave empty to keep current)</label>
-														<input type="file" id="edit-image-{item.id}" name="image" accept="image/jpeg,image/png,image/gif,image/webp" onchange={handleEditImageChange} />
+														{#if removeImage}
+															<input type="hidden" name="removeImage" value="true" />
+														{/if}
+														{#if !removeImage}
+															<input type="file" id="edit-image-{item.id}" name="image" accept="image/jpeg,image/png,image/gif,image/webp" onchange={handleEditImageChange} />
+														{/if}
 														{#if editImagePreview}
-															<img src={editImagePreview} alt="Preview" class="image-preview" />
-														{:else if item.imageUrl}
-															<img src={item.imageUrl} alt="Current" class="image-preview" />
+															<div class="image-preview-wrapper">
+																<img src={editImagePreview} alt="Preview" class="image-preview" />
+																<button type="button" class="remove-image-btn" onclick={() => { editImagePreview = null; removeImage = true; }}>✕</button>
+															</div>
+														{:else if item.imageUrl && !removeImage}
+															<div class="image-preview-wrapper">
+																<img src={item.imageUrl} alt="Current" class="image-preview" />
+																<button type="button" class="remove-image-btn" onclick={() => { removeImage = true; }}>✕</button>
+															</div>
+														{:else if removeImage}
+															<p class="image-removed-hint">Image will be removed on save. <button type="button" class="undo-remove-btn" onclick={() => { removeImage = false; }}>Undo</button></p>
 														{/if}
 													</div>
 												</div>
@@ -492,6 +506,52 @@
 
 	.add-option-btn {
 		margin-top: 0.375rem;
+	}
+
+	.image-preview-wrapper {
+		position: relative;
+		display: inline-block;
+		margin-top: 0.5rem;
+	}
+
+	.remove-image-btn {
+		position: absolute;
+		top: -6px;
+		right: -6px;
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		background: #ec3750;
+		color: white;
+		border: 2px solid white;
+		font-size: 0.7rem;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+		line-height: 1;
+	}
+
+	.remove-image-btn:hover {
+		background: #d32f2f;
+	}
+
+	.image-removed-hint {
+		font-size: 0.8rem;
+		color: #8492a6;
+		margin: 0.5rem 0 0 0;
+	}
+
+	.undo-remove-btn {
+		background: none;
+		border: none;
+		color: #338eda;
+		cursor: pointer;
+		font-family: inherit;
+		font-size: 0.8rem;
+		padding: 0;
+		text-decoration: underline;
 	}
 
 	.submit-btn {
