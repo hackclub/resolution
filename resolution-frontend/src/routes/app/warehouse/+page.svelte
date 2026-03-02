@@ -13,6 +13,8 @@
 	let editingItem = $state<string | null>(null);
 	let editImagePreview = $state<string | null>(null);
 	let isEditSubmitting = $state(false);
+	let addOptions = $state<string[]>(['']);
+	let editOptions = $state<string[]>(['']);
 
 	function formatCost(cents: number) {
 		return `$${(cents / 100).toFixed(2)}`;
@@ -88,6 +90,7 @@
 							if (result.type === 'success') {
 								showAddForm = false;
 								imagePreview = null;
+								addOptions = [''];
 							}
 						};
 					}}
@@ -102,8 +105,17 @@
 							<input type="text" id="sku" name="sku" required placeholder="e.g. HC-TSHIRT-BLK-M" />
 						</div>
 						<div class="form-field">
-							<label for="sizing">Sizing</label>
-							<input type="text" id="sizing" name="sizing" placeholder="e.g. S, M, L, XL" />
+							<label>Options</label>
+							<input type="hidden" name="sizing" value={addOptions.filter(o => o.trim()).join(', ')} />
+							{#each addOptions as option, i}
+								<div class="option-row">
+									<input type="text" placeholder="e.g. S" bind:value={addOptions[i]} />
+									{#if addOptions.length > 1}
+										<button type="button" class="option-btn remove-btn" onclick={() => addOptions = addOptions.filter((_, idx) => idx !== i)}>−</button>
+									{/if}
+								</div>
+							{/each}
+							<button type="button" class="option-btn add-option-btn" onclick={() => addOptions = [...addOptions, '']}>+</button>
 						</div>
 						<div class="form-field">
 							<label for="weightGrams">Weight (g)</label>
@@ -150,7 +162,7 @@
 								<th>Photo</th>
 								<th>Name</th>
 								<th>SKU</th>
-								<th>Sizing</th>
+								<th>Options</th>
 								<th>Weight</th>
 								<th>Cost</th>
 								<th>Qty</th>
@@ -191,7 +203,7 @@
 													<button type="button" class="action-btn" onclick={() => confirmDelete = null}>Cancel</button>
 												</form>
 											{:else}
-												<button type="button" class="action-btn" onclick={() => { editingItem = item.id; editImagePreview = null; }}>Edit</button>
+												<button type="button" class="action-btn" onclick={() => { editingItem = item.id; editImagePreview = null; editOptions = item.sizing ? item.sizing.split(',').map((s: string) => s.trim()) : ['']; }}>Edit</button>
 												<button type="button" class="action-btn danger" onclick={() => confirmDelete = item.id}>Delete</button>
 											{/if}
 										</td>
@@ -227,8 +239,17 @@
 														<input type="text" id="edit-sku-{item.id}" name="sku" required value={item.sku} />
 													</div>
 													<div class="form-field">
-														<label for="edit-sizing-{item.id}">Sizing</label>
-														<input type="text" id="edit-sizing-{item.id}" name="sizing" value={item.sizing || ''} />
+														<label>Options</label>
+														<input type="hidden" name="sizing" value={editOptions.filter(o => o.trim()).join(', ')} />
+														{#each editOptions as option, i}
+															<div class="option-row">
+																<input type="text" placeholder="e.g. S" bind:value={editOptions[i]} />
+																{#if editOptions.length > 1}
+																	<button type="button" class="option-btn remove-btn" onclick={() => editOptions = editOptions.filter((_, idx) => idx !== i)}>−</button>
+																{/if}
+															</div>
+														{/each}
+														<button type="button" class="option-btn add-option-btn" onclick={() => editOptions = [...editOptions, '']}>+</button>
 													</div>
 													<div class="form-field">
 														<label for="edit-weight-{item.id}">Weight (g)</label>
@@ -396,6 +417,55 @@
 		border: 1px solid #af98ff;
 		object-fit: cover;
 		margin-top: 0.5rem;
+	}
+
+	.option-row {
+		display: flex;
+		gap: 0.375rem;
+		align-items: center;
+	}
+
+	.option-row + .option-row {
+		margin-top: 0.375rem;
+	}
+
+	.option-row input {
+		flex: 1;
+	}
+
+	.option-btn {
+		width: 28px;
+		height: 28px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid #af98ff;
+		border-radius: 6px;
+		background: rgba(255, 255, 255, 0.8);
+		color: #af98ff;
+		font-size: 1rem;
+		cursor: pointer;
+		font-family: inherit;
+		padding: 0;
+		flex-shrink: 0;
+	}
+
+	.option-btn:hover {
+		background: rgba(255, 255, 255, 1);
+	}
+
+	.remove-btn {
+		border-color: #ec3750;
+		color: #ec3750;
+	}
+
+	.remove-btn:hover {
+		background: #ec3750;
+		color: white;
+	}
+
+	.add-option-btn {
+		margin-top: 0.375rem;
 	}
 
 	.submit-btn {
