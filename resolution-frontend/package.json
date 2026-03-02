@@ -9,23 +9,30 @@
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"test": "vitest run",
+		"test:coverage": "vitest run --coverage"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^7.0.0",
 		"@sveltejs/adapter-node": "^5.5.1",
 		"@sveltejs/kit": "^2.49.5",
 		"@sveltejs/vite-plugin-svelte": "^6.2.1",
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/svelte": "^5.3.1",
 		"@types/bcrypt": "^6.0.0",
 		"@types/dompurify": "^3.2.0",
 		"@types/jsonwebtoken": "^9.0.10",
 		"@types/pg": "^8.16.0",
 		"@types/simple-oauth2": "^5.0.8",
+		"@types/xml2js": "^0.4.14",
 		"drizzle-kit": "^0.31.8",
+		"jsdom": "^28.1.0",
 		"svelte": "^5.46.4",
 		"svelte-check": "^4.3.4",
 		"typescript": "^5.9.3",
-		"vite": "^7.2.6"
+		"vite": "^7.2.6",
+		"vitest": "^4.0.18"
 	},
 	"dependencies": {
 		"@lucia-auth/adapter-drizzle": "^1.1.0",
@@ -50,6 +57,7 @@
 		"tsparticles": "^3.9.1",
 		"tsparticles-preset-fireworks": "^2.12.0",
 		"uuid": "^13.0.0",
+		"xml2js": "^0.6.2",
 		"zod": "^4.3.5"
 	}
 }

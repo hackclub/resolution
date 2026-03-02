@@ -36,6 +36,29 @@ export const workshopIdSchema = z.object({
 	workshopId: z.string().min(1, 'Workshop ID is required')
 });
 
+const envelopeSchema = z.object({
+	packageType: z.literal('envelope'),
+	length: z.number().positive('Length must be positive'),
+	width: z.number().positive('Width must be positive')
+});
+
+const boxSchema = z.object({
+	packageType: z.literal('box'),
+	length: z.number().positive('Length must be positive'),
+	width: z.number().positive('Width must be positive'),
+	height: z.number().positive('Height must be positive')
+});
+
+export const shippingRateSchema = z.object({
+	country: z.string().length(2, 'Country must be a 2-letter ISO code').toUpperCase(),
+	street: z.string().min(1, 'Street is required'),
+	city: z.string().min(1, 'City is required'),
+	province: z.string().min(1, 'Province/State is required'),
+	postalCode: z.string().optional(),
+	weight: z.number().positive('Weight must be positive')
+}).and(z.discriminatedUnion('packageType', [envelopeSchema, boxSchema]));
+
+export type ShippingRateInput = z.infer<typeof shippingRateSchema>;
 export type CreateShipInput = z.infer<typeof createShipSchema>;
 export type MarkShippedInput = z.infer<typeof markShippedSchema>;
 export type UpdateShipStatusInput = z.infer<typeof updateShipStatusSchema>;

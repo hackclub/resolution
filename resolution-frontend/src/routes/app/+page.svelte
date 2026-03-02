@@ -52,6 +52,9 @@
 		<header>
 			<h1>Welcome, {data.user.firstName || data.user.email}!</h1>
 			<div class="header-actions">
+				{#if data.isAmbassador || data.user.isAdmin}
+					<a href="/app/warehouse" class="warehouse-btn">Warehouse</a>
+				{/if}
 				{#if data.isAmbassador}
 					<a href="/app/ambassador" class="ambassador-btn">Ambassador</a>
 				{/if}
@@ -201,7 +204,8 @@
 	}
 
 	.admin-btn,
-	.ambassador-btn {
+	.ambassador-btn,
+	.warehouse-btn {
 		padding: 0.5rem 1rem;
 		background: rgba(255, 255, 255, 0.8);
 		border-radius: 20px;
@@ -219,8 +223,14 @@
 		color: #a633d6;
 	}
 
+	.warehouse-btn {
+		border: 1px solid #338eda;
+		color: #338eda;
+	}
+
 	.admin-btn:hover,
-	.ambassador-btn:hover {
+	.ambassador-btn:hover,
+	.warehouse-btn:hover {
 		background: rgba(255, 255, 255, 1);
 	}
 
