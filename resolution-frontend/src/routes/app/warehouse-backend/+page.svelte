@@ -479,10 +479,15 @@
 
 	/* Actions */
 	.actions-cell {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
 		white-space: nowrap;
+	}
+
+	.actions-cell :global(form) {
+		display: inline;
+	}
+
+	.actions-cell .btn {
+		margin-right: 0.25rem;
 	}
 
 	.inline-form {
