@@ -28,7 +28,7 @@
 
 		if (selectedPathways.includes(id)) {
 			selectedPathways = selectedPathways.filter((p) => p !== id);
-		} else if (selectedPathways.length < 3) {
+		} else {
 			selectedPathways = [...selectedPathways, id];
 		}
 	}
@@ -67,7 +67,7 @@
 		<main>
 			<div class="pathway-section">
 				<div class="pathway-header">
-					<h2>{isEditing ? 'Choose up to 3 pathways (You can change these later)' : 'Your Pathways'}</h2>
+					<h2>{isEditing ? 'Choose your pathways (You can change these later)' : 'Your Pathways'}</h2>
 					{#if !isEditing && data.selectedPathways.length > 0}
 						<button type="button" class="edit-btn" onclick={startEditing}>
 							<img src="https://icons.hackclub.com/api/icons/8492a6/edit" alt="Edit" width="16" height="16" />
@@ -79,9 +79,26 @@
 				<div class="options-grid">
 					{#each pathways as pathway}
 						{@const isSelected = selectedPathways.includes(pathway.id)}
-						{@const isLocked = !isEditing && !isSelected && data.selectedPathways.length > 0}
-						{@const isClickable = !isEditing && isSelected}
-						{#if isClickable}
+						{#if isEditing}
+							<button
+								type="button"
+								class="option-card"
+								class:selected={isSelected}
+								class:editing={true}
+								class:selectable={!isSelected}
+								onclick={() => togglePathway(pathway.id)}
+							>
+								<img
+									src="https://icons.hackclub.com/api/icons/{isSelected ? pathway.color : '8492a6'}/{pathway.icon}"
+									alt={pathway.label}
+									class="icon"
+								/>
+								<span class="label">{pathway.label}</span>
+								{#if isSelected}
+									<span class="check-badge">✓</span>
+								{/if}
+							</button>
+						{:else if isSelected}
 							<a
 								href="/app/pathway/{pathway.id.toLowerCase()}"
 								class="option-card selected"
@@ -93,31 +110,6 @@
 								/>
 								<span class="label">{pathway.label}</span>
 							</a>
-						{:else}
-							<button
-								type="button"
-								class="option-card"
-								class:selected={isSelected}
-								class:editing={isEditing}
-								class:locked={isLocked}
-								class:selectable={isEditing && !isSelected && selectedPathways.length < 3}
-								disabled={isLocked}
-								onclick={() => togglePathway(pathway.id)}
-							>
-								{#if isLocked}
-									<img src="https://icons.hackclub.com/api/icons/8492a6/private" alt="Locked" class="icon locked-icon" />
-								{:else}
-									<img
-										src="https://icons.hackclub.com/api/icons/{isSelected || !isEditing ? pathway.color : '8492a6'}/{pathway.icon}"
-										alt={pathway.label}
-										class="icon"
-									/>
-								{/if}
-								<span class="label" class:locked-label={isLocked}>{pathway.label}</span>
-								{#if isSelected && isEditing}
-									<span class="check-badge">✓</span>
-								{/if}
-							</button>
 						{/if}
 					{/each}
 				</div>
@@ -292,16 +284,6 @@
 		background: rgba(51, 214, 166, 0.1);
 	}
 
-	.option-card.locked {
-		opacity: 0.5;
-		cursor: not-allowed;
-		border-color: #8492a6;
-	}
-
-	.option-card.locked:hover {
-		transform: none;
-	}
-
 	.option-card.selectable {
 		border-style: dashed;
 	}
@@ -315,10 +297,6 @@
 		font-size: 1.1rem;
 		font-weight: 600;
 		color: #1a1a2e;
-	}
-
-	.option-card .locked-label {
-		color: #8492a6;
 	}
 
 	.check-badge {

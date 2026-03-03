@@ -46,10 +46,6 @@ export const actions: Actions = {
 
 		const pathways = JSON.parse(pathwaysJson) as string[];
 
-		if (pathways.length > 3) {
-			return fail(400, { error: 'Maximum 3 pathways allowed' });
-		}
-
 		const validPathways = ['PYTHON', 'WEB_DEV', 'GAME_DEV', 'HARDWARE', 'DESIGN', 'GENERAL_CODING'];
 		if (!pathways.every((p) => validPathways.includes(p))) {
 			return fail(400, { error: 'Invalid pathway selected' });
