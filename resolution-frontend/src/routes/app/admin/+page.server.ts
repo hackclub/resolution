@@ -4,7 +4,7 @@ import { user, programEnrollment, workshopCompletion, weeklyShip, programSeason,
 import { eq, count, sql, desc } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 
-const validPathways = ['PYTHON', 'WEB_DEV', 'GAME_DEV', 'HARDWARE', 'DESIGN', 'GENERAL_CODING'] as const;
+const validPathways = ['PYTHON', 'RUST', 'GAME_DEV', 'HARDWARE', 'DESIGN', 'GENERAL_CODING'] as const;
 type Pathway = typeof validPathways[number];
 
 export const load: PageServerLoad = async ({ parent }) => {

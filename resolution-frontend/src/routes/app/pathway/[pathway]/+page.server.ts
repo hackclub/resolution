@@ -6,14 +6,14 @@ import { redirect, error } from '@sveltejs/kit';
 
 const pathwayCurators: Record<string, string> = {
 	PYTHON: 'Hack Club',
-	WEB_DEV: 'Hack Club',
+	RUST: 'Hack Club',
 	GAME_DEV: 'Hack Club',
 	HARDWARE: 'Hack Club',
 	DESIGN: 'Hack Club',
 	GENERAL_CODING: 'Hack Club'
 };
 
-const validPathways = ['PYTHON', 'WEB_DEV', 'GAME_DEV', 'HARDWARE', 'DESIGN', 'GENERAL_CODING'] as const;
+const validPathways = ['PYTHON', 'RUST', 'GAME_DEV', 'HARDWARE', 'DESIGN', 'GENERAL_CODING'] as const;
 
 export const load: PageServerLoad = async ({ params, parent }) => {
 	const { user } = await parent();

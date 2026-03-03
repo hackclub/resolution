@@ -65,7 +65,7 @@ export const actions: Actions = {
 		const label = formData.get('label') as string | null;
 		const customSlug = (formData.get('slug') as string | null)?.trim() || null;
 
-		const validPathways = ['PYTHON', 'WEB_DEV', 'GAME_DEV', 'HARDWARE', 'DESIGN', 'GENERAL_CODING'];
+		const validPathways = ['PYTHON', 'RUST', 'GAME_DEV', 'HARDWARE', 'DESIGN', 'GENERAL_CODING'];
 		if (!pathway || !validPathways.includes(pathway)) {
 			return fail(400, { error: 'Invalid pathway' });
 		}
