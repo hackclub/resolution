@@ -1,16 +1,8 @@
 <script lang="ts">
 	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
-	import { page } from '$app/stores';
 	import type { Snippet } from 'svelte';
 
 	let { children }: { children: Snippet } = $props();
-
-	const tabs = [
-		{ label: 'Items', href: '/app/warehouse-backend/items' },
-		{ label: 'Orders', href: '/app/warehouse-backend/orders' },
-		{ label: 'Batches', href: '/app/warehouse-backend/batches' },
-		{ label: 'Order Templates', href: '/app/warehouse-backend/order-templates' }
-	];
 </script>
 
 <svelte:head>
@@ -28,14 +20,6 @@
 			<h1>Warehouse Backend</h1>
 			<p class="subtitle">Admin inventory management</p>
 		</header>
-
-		<nav class="tab-nav">
-			{#each tabs as tab}
-				<a href={tab.href} class="tab" class:active={$page.url.pathname.startsWith(tab.href)}>
-					{tab.label}
-				</a>
-			{/each}
-		</nav>
 
 		{@render children()}
 	</div>
@@ -76,32 +60,5 @@
 	.subtitle {
 		color: #8492a6;
 		margin: 0;
-	}
-
-	.tab-nav {
-		display: flex;
-		gap: 0;
-		border-bottom: 1px solid #e0e0e0;
-		margin-bottom: 1.5rem;
-	}
-
-	.tab {
-		padding: 0.625rem 1.25rem;
-		text-decoration: none;
-		color: #8492a6;
-		font-size: 0.9rem;
-		border-bottom: 2px solid transparent;
-		margin-bottom: -1px;
-		font-family: 'Kodchasan', sans-serif;
-	}
-
-	.tab:hover {
-		color: #1a1a2e;
-	}
-
-	.tab.active {
-		color: #338eda;
-		border-bottom-color: #338eda;
-		font-weight: 600;
 	}
 </style>

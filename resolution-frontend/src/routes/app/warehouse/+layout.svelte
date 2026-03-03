@@ -7,7 +7,9 @@
 
 	const tabs = [
 		{ label: 'Items', href: '/app/warehouse/items' },
-		{ label: 'Orders', href: '/app/warehouse/orders' }
+		{ label: 'Orders', href: '/app/warehouse/orders' },
+		{ label: 'Batches', href: '/app/warehouse/batches' },
+		{ label: 'Order Templates', href: '/app/warehouse/order-templates' }
 	];
 </script>
 
