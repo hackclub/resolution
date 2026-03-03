@@ -44,6 +44,10 @@
 	);
 </script>
 
+<div class="page-actions">
+	<a href="/app/warehouse/orders/new" class="new-order-btn">+ New Order</a>
+</div>
+
 {#if data.allTags.length > 0}
 	<section class="tags-filter">
 		<span class="filter-label">Filter by tag:</span>
@@ -355,6 +359,25 @@
 		color: #6c5ce7;
 		border-radius: 4px;
 		font-size: 0.7rem;
+	}
+
+	.page-actions {
+		margin-bottom: 1rem;
+	}
+
+	.new-order-btn {
+		display: inline-block;
+		background: #338eda;
+		color: white;
+		text-decoration: none;
+		border-radius: 8px;
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-family: inherit;
+	}
+
+	.new-order-btn:hover {
+		opacity: 0.9;
 	}
 
 	@media (max-width: 768px) {
