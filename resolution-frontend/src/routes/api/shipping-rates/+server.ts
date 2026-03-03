@@ -216,9 +216,34 @@ export const POST: RequestHandler = async (event) => {
 	}
 
 	const weightKg = data.weight * GRAMS_TO_KG;
-	const lengthCm = inchesToCm(data.length);
-	const widthCm = inchesToCm(data.width);
-	const heightCm = data.packageType === 'box' ? inchesToCm(data.height) : 0.5;
+
+	// For flats/envelopes, snap to available envelope sizes (4x6in or 6x9in).
+	// If too large for 6x9, treat as a bubble packet with 0.5in thickness.
+	let effectiveLength = data.length;
+	let effectiveWidth = data.width;
+	let effectivePackageType = data.packageType;
+	if (data.packageType === 'flat' || data.packageType === 'envelope') {
+		const l = Math.max(data.length, data.width);
+		const w = Math.min(data.length, data.width);
+		if (l <= 6 && w <= 4) {
+			effectiveLength = 6;
+			effectiveWidth = 4;
+		} else if (l <= 9 && w <= 6) {
+			effectiveLength = 9;
+			effectiveWidth = 6;
+		} else {
+			// Too large for available envelopes — treat as bubble packet
+			effectiveLength = l;
+			effectiveWidth = w;
+			effectivePackageType = 'box';
+		}
+	}
+
+	const lengthCm = inchesToCm(effectiveLength);
+	const widthCm = inchesToCm(effectiveWidth);
+	const heightCm = effectivePackageType === 'box'
+		? inchesToCm(data.packageType === 'box' ? data.height : 0.5)
+		: 0.5;
 
 	const lettermailOptions = getLetterMailOptions(data.weight, lengthCm, widthCm, heightCm, data.country);
 

@@ -92,14 +92,24 @@ function estimatePackageDimensions(
 	totalHeight = Math.round(totalHeight * 100) / 100;
 	totalWeight = Math.round(totalWeight * 100) / 100;
 
-	const packageType = allFlats && totalHeight <= 0.5 ? 'flat' : 'box';
+	if (allFlats && totalHeight <= 0.5) {
+		// Snap to available envelope sizes: 4x6in or 6x9in
+		if (maxLength <= 6 && maxWidth <= 4) {
+			return { lengthIn: 6, widthIn: 4, heightIn: 0, weightGrams: totalWeight, packageType: 'flat' as const };
+		} else if (maxLength <= 9 && maxWidth <= 6) {
+			return { lengthIn: 9, widthIn: 6, heightIn: 0, weightGrams: totalWeight, packageType: 'flat' as const };
+		} else {
+			// Too large for available envelopes — use bubble packet
+			return { lengthIn: maxLength, widthIn: maxWidth, heightIn: 0.5, weightGrams: totalWeight, packageType: 'box' as const };
+		}
+	}
 
 	return {
 		lengthIn: maxLength,
 		widthIn: maxWidth,
-		heightIn: packageType === 'flat' ? 0 : Math.max(totalHeight, 0.5),
+		heightIn: Math.max(totalHeight, 0.5),
 		weightGrams: totalWeight,
-		packageType
+		packageType: 'box' as const
 	};
 }
 
