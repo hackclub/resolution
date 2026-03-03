@@ -10,7 +10,8 @@ defaults:
     working-directory: resolution-frontend
 
 jobs:
-  lint-and-check:
+  typecheck:
+    name: Typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,6 +24,7 @@ jobs:
       - run: npm run check
 
   test:
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,8 +36,22 @@ jobs:
       - run: npm ci
       - run: npm test -- --coverage
 
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: resolution-frontend/package-lock.json
+      - run: npm ci
+      - run: npm audit --audit-level=high
+
   build:
-    needs: lint-and-check
+    name: Build
+    needs: [typecheck, test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
