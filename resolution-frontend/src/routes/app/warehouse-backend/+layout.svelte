@@ -6,13 +6,15 @@
 	let { children }: { children: Snippet } = $props();
 
 	const tabs = [
-		{ label: 'Items', href: '/app/warehouse/items' },
-		{ label: 'Orders', href: '/app/warehouse/orders' }
+		{ label: 'Items', href: '/app/warehouse-backend/items' },
+		{ label: 'Orders', href: '/app/warehouse-backend/orders' },
+		{ label: 'Batches', href: '/app/warehouse-backend/batches' },
+		{ label: 'Order Templates', href: '/app/warehouse-backend/order-templates' }
 	];
 </script>
 
 <svelte:head>
-	<title>Warehouse - Resolution</title>
+	<title>Warehouse Backend - Resolution</title>
 </svelte:head>
 
 <PlatformBackground>
@@ -23,8 +25,8 @@
 		</a>
 
 		<header>
-			<h1>Warehouse</h1>
-			<p class="subtitle">Inventory management</p>
+			<h1>Warehouse Backend</h1>
+			<p class="subtitle">Admin inventory management</p>
 		</header>
 
 		<nav class="tab-nav">
