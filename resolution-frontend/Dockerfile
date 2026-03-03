@@ -47,6 +47,8 @@ EXPOSE 3000
 
 # Set Node environment to production
 ENV NODE_ENV=production
+# Increase body size limit for image uploads (default 512K is too small)
+ENV BODY_SIZE_LIMIT=10M
 
 # Start the application with migrations
 CMD ["./entrypoint.sh"]
