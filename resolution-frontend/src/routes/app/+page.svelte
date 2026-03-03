@@ -28,7 +28,7 @@
 
 		if (selectedPathways.includes(id)) {
 			selectedPathways = selectedPathways.filter((p) => p !== id);
-		} else if (selectedPathways.length < 3) {
+		} else {
 			selectedPathways = [...selectedPathways, id];
 		}
 	}
@@ -67,7 +67,7 @@
 		<main>
 			<div class="pathway-section">
 				<div class="pathway-header">
-					<h2>{isEditing ? 'Choose up to 3 pathways (You can change these later)' : 'Your Pathways'}</h2>
+					<h2>{isEditing ? 'Choose your pathways (You can change these later)' : 'Your Pathways'}</h2>
 					{#if !isEditing && data.selectedPathways.length > 0}
 						<button type="button" class="edit-btn" onclick={startEditing}>
 							<img src="https://icons.hackclub.com/api/icons/8492a6/edit" alt="Edit" width="16" height="16" />
@@ -100,7 +100,7 @@
 								class:selected={isSelected}
 								class:editing={isEditing}
 								class:locked={isLocked}
-								class:selectable={isEditing && !isSelected && selectedPathways.length < 3}
+								class:selectable={isEditing && !isSelected}
 								disabled={isLocked}
 								onclick={() => togglePathway(pathway.id)}
 							>
