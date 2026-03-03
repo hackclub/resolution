@@ -59,6 +59,7 @@
 					<a href="/app/ambassador" class="ambassador-btn">Ambassador</a>
 				{/if}
 				{#if data.user.isAdmin}
+					<a href="/app/warehouse-backend" class="warehouse-backend-btn">Warehouse Backend</a>
 					<a href="/app/admin" class="admin-btn">Admin</a>
 				{/if}
 				<form method="POST" action="/api/auth/logout">
@@ -205,7 +206,8 @@
 
 	.admin-btn,
 	.ambassador-btn,
-	.warehouse-btn {
+	.warehouse-btn,
+	.warehouse-backend-btn {
 		padding: 0.5rem 1rem;
 		background: rgba(255, 255, 255, 0.8);
 		border-radius: 20px;
@@ -228,9 +230,15 @@
 		color: #338eda;
 	}
 
+	.warehouse-backend-btn {
+		border: 1px solid #ff8c37;
+		color: #ff8c37;
+	}
+
 	.admin-btn:hover,
 	.ambassador-btn:hover,
-	.warehouse-btn:hover {
+	.warehouse-btn:hover,
+	.warehouse-backend-btn:hover {
 		background: rgba(255, 255, 255, 1);
 	}
 
