@@ -1,7 +1,7 @@
 import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
-import { warehouseItem, warehouseOrder, warehouseOrderItem, ambassadorPathway } from '$lib/server/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { warehouseItem, warehouseOrder, warehouseOrderItem, warehouseOrderTag, ambassadorPathway } from '$lib/server/db/schema';
+import { eq, desc, sql } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ parent }) => {
@@ -31,14 +31,21 @@ export const load: PageServerLoad = async ({ parent }) => {
 				with: {
 					warehouseItem: true
 				}
-			}
+			},
+			tags: true
 		},
 		orderBy: [desc(warehouseOrder.createdAt)]
 	});
 
+	const allTags = await db
+		.selectDistinct({ tag: warehouseOrderTag.tag })
+		.from(warehouseOrderTag)
+		.orderBy(warehouseOrderTag.tag);
+
 	return {
 		items,
 		orders,
+		allTags: allTags.map((t) => t.tag),
 		isAdmin: user.isAdmin
 	};
 };
@@ -326,6 +333,41 @@ export const actions: Actions = {
 				sizingChoice: oi.sizingChoice
 			});
 		}
+
+		return { success: true };
+	},
+
+	addTag: async ({ request, locals }) => {
+		if (!locals.user) throw error(401, 'Unauthorized');
+		if (!locals.user.isAdmin) return fail(403, { error: 'Access denied' });
+
+		const formData = await request.formData();
+		const orderId = formData.get('orderId') as string;
+		const tag = (formData.get('tag') as string)?.trim().toLowerCase();
+
+		if (!orderId || !tag) return fail(400, { error: 'Order ID and tag required' });
+
+		try {
+			await db.insert(warehouseOrderTag).values({ orderId, tag });
+		} catch {
+			return fail(400, { error: 'Tag already exists on this order' });
+		}
+
+		return { success: true };
+	},
+
+	removeTag: async ({ request, locals }) => {
+		if (!locals.user) throw error(401, 'Unauthorized');
+		if (!locals.user.isAdmin) return fail(403, { error: 'Access denied' });
+
+		const formData = await request.formData();
+		const orderId = formData.get('orderId') as string;
+		const tag = formData.get('tag') as string;
+
+		if (!orderId || !tag) return fail(400, { error: 'Order ID and tag required' });
+
+		await db.delete(warehouseOrderTag)
+			.where(sql`${warehouseOrderTag.orderId} = ${orderId} AND ${warehouseOrderTag.tag} = ${tag}`);
 
 		return { success: true };
 	},

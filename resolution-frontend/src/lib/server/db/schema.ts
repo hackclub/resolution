@@ -149,7 +149,8 @@ export const userRelations = relations(user, ({ many }) => ({
   completions: many(workshopCompletion),
   weeklyShips: many(weeklyShip),
   payouts: many(ambassadorPayout),
-  referralLinks: many(referralLink)
+  referralLinks: many(referralLink),
+  warehouseOrders: many(warehouseOrder),
   }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -336,12 +337,27 @@ export const warehouseOrderItem = pgTable('warehouse_order_item', {
 	sizingChoice: text('sizing_choice')
 });
 
+// Warehouse order tags for filtering
+export const warehouseOrderTag = pgTable('warehouse_order_tag', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	orderId: text('order_id').notNull().references(() => warehouseOrder.id, { onDelete: 'cascade' }),
+	tag: text('tag').notNull()
+}, (table) => [
+	uniqueIndex('warehouse_order_tag_unique_idx').on(table.orderId, table.tag),
+	index('warehouse_order_tag_tag_idx').on(table.tag)
+]);
+
 export const warehouseOrderRelations = relations(warehouseOrder, ({ one, many }) => ({
 	createdBy: one(user, { fields: [warehouseOrder.createdById], references: [user.id] }),
-	items: many(warehouseOrderItem)
+	items: many(warehouseOrderItem),
+	tags: many(warehouseOrderTag)
 }));
 
 export const warehouseOrderItemRelations = relations(warehouseOrderItem, ({ one }) => ({
 	order: one(warehouseOrder, { fields: [warehouseOrderItem.orderId], references: [warehouseOrder.id] }),
 	warehouseItem: one(warehouseItem, { fields: [warehouseOrderItem.warehouseItemId], references: [warehouseItem.id] })
+}));
+
+export const warehouseOrderTagRelations = relations(warehouseOrderTag, ({ one }) => ({
+	order: one(warehouseOrder, { fields: [warehouseOrderTag.orderId], references: [warehouseOrder.id] })
 }));

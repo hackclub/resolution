@@ -11,6 +11,8 @@
 	let orderLines = $state<Array<{ itemId: string; qty: number; sizing: string }>>([
 		{ itemId: '', qty: 1, sizing: '' }
 	]);
+	let newTagInputs = $state<Record<string, string>>({});
+	let activeTagFilter = $state<string | null>(null);
 
 	function formatCost(cents: number) {
 		return `$${(cents / 100).toFixed(2)}`;
@@ -55,6 +57,17 @@
 		};
 		return map[status] || '';
 	}
+
+	function formatCreatorName(creator: { firstName: string | null; lastName: string | null; email: string }): string {
+		const name = [creator.firstName, creator.lastName].filter(Boolean).join(' ');
+		return name || creator.email;
+	}
+
+	const filteredOrders = $derived(
+		activeTagFilter
+			? data.orders.filter((o: any) => o.tags.some((t: any) => t.tag === activeTagFilter))
+			: data.orders
+	);
 </script>
 
 <div class="header-top">
@@ -178,7 +191,27 @@
 	</section>
 {/if}
 
-{#if data.orders.length === 0}
+{#if data.allTags.length > 0}
+	<section class="tags-filter">
+		<span class="filter-label">Filter by tag:</span>
+		<div class="tag-buttons">
+			<button
+				class="tag-filter-btn"
+				class:active={!activeTagFilter}
+				onclick={() => activeTagFilter = null}
+			>All</button>
+			{#each data.allTags as tag}
+				<button
+					class="tag-filter-btn"
+					class:active={activeTagFilter === tag}
+					onclick={() => activeTagFilter = activeTagFilter === tag ? null : tag}
+				>{tag}</button>
+			{/each}
+		</div>
+	</section>
+{/if}
+
+{#if filteredOrders.length === 0}
 	<div class="empty-state">
 		<p>No orders yet.</p>
 		<p class="hint">Click "New Order" to create one.</p>
@@ -190,21 +223,26 @@
 				<thead>
 					<tr>
 						<th>Recipient</th>
+						<th>Ordered By</th>
 						<th>Destination</th>
 						<th>Items</th>
 						<th>Est. Shipping</th>
-						<th>Package</th>
 						<th>Status</th>
+						<th>Tags</th>
 						<th>Created</th>
 						<th>Actions</th>
 					</tr>
 				</thead>
 				<tbody>
-					{#each data.orders as order (order.id)}
+					{#each filteredOrders as order (order.id)}
 						<tr>
 							<td>
 								<span class="item-name">{order.firstName} {order.lastName}</span>
 								<br /><span class="hint">{order.email}</span>
+							</td>
+							<td>
+								<span class="item-name">{formatCreatorName(order.createdBy)}</span>
+								<br /><span class="hint">{order.createdBy.email}</span>
 							</td>
 							<td>
 								{order.city}, {order.stateProvince}
@@ -222,15 +260,36 @@
 									<span class="hint">Not estimated</span>
 								{/if}
 							</td>
-							<td>
-								{#if order.estimatedTotalLengthIn}
-									{order.estimatedTotalLengthIn}×{order.estimatedTotalWidthIn}{order.estimatedPackageType !== 'flat' ? `×${order.estimatedTotalHeightIn}` : ''} in
-									<br /><span class="hint">{order.estimatedTotalWeightGrams}g · {order.estimatedPackageType}</span>
-								{:else}
-									<span class="hint">—</span>
-								{/if}
-							</td>
 							<td><span class="status-badge {statusClass(order.status)}">{statusLabel(order.status)}</span></td>
+							<td>
+								<div class="tags-cell">
+									{#each order.tags as tagObj}
+										<span class="tag">
+											{tagObj.tag}
+											<form method="POST" action="?/removeTag" use:enhance class="inline-form">
+												<input type="hidden" name="orderId" value={order.id} />
+												<input type="hidden" name="tag" value={tagObj.tag} />
+												<button type="submit" class="tag-remove">×</button>
+											</form>
+										</span>
+									{/each}
+									<form method="POST" action="?/addTag" use:enhance={() => {
+										return async ({ update }) => {
+											await update();
+											newTagInputs[order.id] = '';
+										};
+									}} class="inline-form">
+										<input type="hidden" name="orderId" value={order.id} />
+										<input
+											type="text"
+											name="tag"
+											placeholder="+ tag"
+											class="tag-input"
+											bind:value={newTagInputs[order.id]}
+										/>
+									</form>
+								</div>
+							</td>
 							<td class="hint">{new Date(order.createdAt).toLocaleDateString()}</td>
 							<td class="actions">
 								<button type="button" class="action-btn" onclick={() => expandedOrder = expandedOrder === order.id ? null : order.id}>
@@ -251,7 +310,7 @@
 						</tr>
 						{#if expandedOrder === order.id}
 							<tr class="detail-row">
-								<td colspan="8">
+								<td colspan="9">
 									<div class="detail-grid">
 										<div class="detail-section">
 											<h4>Recipient</h4>
@@ -618,6 +677,104 @@
 	.detail-section p {
 		margin: 0 0 0.25rem 0;
 		font-size: 0.875rem;
+	}
+
+	.tags-filter {
+		background: rgba(255, 255, 255, 0.85);
+		border: 1px solid #af98ff;
+		border-radius: 12px;
+		padding: 0.75rem 1.25rem;
+		margin-bottom: 1rem;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.filter-label {
+		font-weight: 600;
+		font-size: 0.8rem;
+		color: #8492a6;
+		white-space: nowrap;
+	}
+
+	.tag-buttons {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.375rem;
+	}
+
+	.tag-filter-btn {
+		padding: 0.3rem 0.625rem;
+		font-size: 0.75rem;
+		background: rgba(255, 255, 255, 0.8);
+		border: 1px solid #af98ff;
+		color: #af98ff;
+		border-radius: 20px;
+		cursor: pointer;
+		font-family: inherit;
+	}
+
+	.tag-filter-btn:hover {
+		background: rgba(255, 255, 255, 1);
+	}
+
+	.tag-filter-btn.active {
+		background: #af98ff;
+		color: white;
+	}
+
+	.tags-cell {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem;
+		align-items: center;
+	}
+
+	.tag {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.2rem;
+		padding: 0.2rem 0.45rem;
+		background: #f0edff;
+		color: #6c5ce7;
+		border-radius: 4px;
+		font-size: 0.7rem;
+	}
+
+	.tag-remove {
+		background: none;
+		border: none;
+		color: #6c5ce7;
+		cursor: pointer;
+		font-size: 0.8rem;
+		padding: 0;
+		line-height: 1;
+		opacity: 0.6;
+	}
+
+	.tag-remove:hover {
+		opacity: 1;
+	}
+
+	.inline-form {
+		display: inline;
+	}
+
+	.tag-input {
+		width: 50px;
+		padding: 0.2rem 0.3rem;
+		border: 1px dashed #af98ff;
+		border-radius: 4px;
+		font-size: 0.7rem;
+		font-family: inherit;
+		background: transparent;
+	}
+
+	.tag-input:focus {
+		outline: none;
+		border-style: solid;
+		width: 80px;
 	}
 
 	@media (max-width: 768px) {
