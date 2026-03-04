@@ -300,16 +300,16 @@
 			<h3 class="section-heading">Recipient Info</h3>
 			<div class="form-grid">
 				<label class="field">
-					<span class="label">First Name</span>
+					<span class="label">First Name <span class="required">*</span></span>
 					<input type="text" bind:value={firstName} required />
 				</label>
 				<label class="field">
-					<span class="label">Last Name</span>
+					<span class="label">Last Name <span class="required">*</span></span>
 					<input type="text" bind:value={lastName} required />
 				</label>
 			</div>
 			<label class="field">
-				<span class="label">Email</span>
+				<span class="label">Email <span class="required">*</span></span>
 				<input type="email" bind:value={email} required />
 			</label>
 			<label class="field">
@@ -321,7 +321,7 @@
 		<section class="card">
 			<h3 class="section-heading">Shipping Address</h3>
 			<label class="field">
-				<span class="label">Address Line 1</span>
+				<span class="label">Address Line 1 <span class="required">*</span></span>
 				<input type="text" bind:value={addressLine1} required />
 			</label>
 			<label class="field">
@@ -330,21 +330,21 @@
 			</label>
 			<div class="form-grid">
 				<label class="field">
-					<span class="label">City</span>
+					<span class="label">City <span class="required">*</span></span>
 					<input type="text" bind:value={city} required />
 				</label>
 				<label class="field">
-					<span class="label">State / Province</span>
+					<span class="label">State / Province <span class="required">*</span></span>
 					<input type="text" bind:value={stateProvince} required />
 				</label>
 			</div>
 			<div class="form-grid">
 				<label class="field">
-					<span class="label">Postal Code</span>
+					<span class="label">Postal Code <span class="required">*</span></span>
 					<input type="text" bind:value={postalCode} required />
 				</label>
 				<label class="field">
-					<span class="label">Country</span>
+					<span class="label">Country <span class="required">*</span></span>
 					<select bind:value={country} required>
 						{#each countries as c}
 							<option value={c.code}>{c.name}</option>
@@ -746,6 +746,10 @@
 		font-size: 0.8rem;
 		font-weight: 600;
 		color: #8492a6;
+	}
+
+	.required {
+		color: #ec3750;
 	}
 
 	input[type='text'],
