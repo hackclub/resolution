@@ -136,8 +136,7 @@
 			itemQuantities[item.id] = 1;
 		}
 		searchQuery = '';
-		hasEstimated = false;
-		estimatedRates = [];
+		tryEstimate();
 	}
 
 	function computePackageTotals() {
@@ -161,17 +160,15 @@
 		return { weight: totalWeight, length: maxLength, width: maxWidth, height: totalHeight, packageType };
 	}
 
-	async function estimateShipping() {
+	function tryEstimate() {
 		const items = addedItems();
-		if (items.length === 0) {
-			estimateError = 'Add at least one item first.';
+		if (items.length === 0 || !addressLine1 || !city || !stateProvince || !country) {
 			return;
 		}
-		if (!addressLine1 || !city || !stateProvince || !country) {
-			estimateError = 'Fill in the shipping address first.';
-			return;
-		}
+		estimateShipping();
+	}
 
+	async function estimateShipping() {
 		estimateLoading = true;
 		estimateError = '';
 		estimatedRates = [];
@@ -342,14 +339,14 @@
 										class="qty-input"
 										min="1"
 										value={qty}
-										oninput={(e) => { itemQuantities[item.id] = parseInt((e.target as HTMLInputElement).value) || 0; hasEstimated = false; estimatedRates = []; }}
+										oninput={(e) => { itemQuantities[item.id] = parseInt((e.target as HTMLInputElement).value) || 0; tryEstimate(); }}
 									/>
 								</td>
 								<td>
 									<button
 										type="button"
 										class="remove-btn"
-										onclick={() => { itemQuantities[item.id] = 0; delete itemSizing[item.id]; hasEstimated = false; estimatedRates = []; }}
+										onclick={() => { itemQuantities[item.id] = 0; delete itemSizing[item.id]; tryEstimate(); }}
 									>✕</button>
 								</td>
 							</tr>
@@ -365,13 +362,11 @@
 
 	<section class="card">
 		<h3 class="section-heading">Shipping Estimate</h3>
-		<button type="button" class="estimate-btn" onclick={estimateShipping} disabled={estimateLoading}>
-			{estimateLoading ? 'Estimating...' : 'Estimate Shipping Cost'}
-		</button>
-		{#if estimateError}
+		{#if estimateLoading}
+			<p class="hint">Estimating shipping costs...</p>
+		{:else if estimateError}
 			<p class="estimate-error">{estimateError}</p>
-		{/if}
-		{#if hasEstimated && estimatedRates.length > 0}
+		{:else if hasEstimated && estimatedRates.length > 0}
 			<div class="rates-list">
 				{#each estimatedRates as rate}
 					<div class="rate-card">
@@ -389,7 +384,9 @@
 				{/each}
 			</div>
 		{:else if hasEstimated}
-			<p class="hint" style="margin-top: 0.75rem;">No shipping rates available for this destination.</p>
+			<p class="hint">No shipping rates available for this destination.</p>
+		{:else}
+			<p class="hint">Add items and fill in the shipping address to see estimates.</p>
 		{/if}
 	</section>
 
@@ -600,26 +597,6 @@
 		font-size: 0.875rem;
 		font-family: inherit;
 		text-align: center;
-	}
-
-	.estimate-btn {
-		background: #6c5ce7;
-		color: white;
-		border: none;
-		border-radius: 8px;
-		padding: 0.5rem 1.25rem;
-		font-size: 0.875rem;
-		cursor: pointer;
-		font-family: inherit;
-	}
-
-	.estimate-btn:hover {
-		opacity: 0.9;
-	}
-
-	.estimate-btn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
 	}
 
 	.estimate-error {
