@@ -220,7 +220,7 @@
 	});
 
 	function canAdvance(s: number): boolean {
-		if (s === 1) return !!firstName && !!lastName && !!email && !!addressLine1 && !!city && !!stateProvince && !!country;
+		if (s === 1) return !!firstName && !!lastName && !!email && !!addressLine1 && !!city && !!stateProvince && !!postalCode && !!country;
 		if (s === 2) return addedItems().length > 0;
 		if (s === 3) return !!selectedRate;
 		if (s === 4) return true;
@@ -311,7 +311,7 @@
 			<div class="form-grid">
 				<label class="field">
 					<span class="label">Postal Code</span>
-					<input type="text" bind:value={postalCode} />
+					<input type="text" bind:value={postalCode} required />
 				</label>
 				<label class="field">
 					<span class="label">Country</span>
