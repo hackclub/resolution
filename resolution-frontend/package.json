@@ -26,6 +26,7 @@
 		"@types/pg": "^8.16.0",
 		"@types/simple-oauth2": "^5.0.8",
 		"@types/xml2js": "^0.4.14",
+		"@vitest/coverage-v8": "^4.0.18",
 		"drizzle-kit": "^0.31.8",
 		"jsdom": "^28.1.0",
 		"svelte": "^5.46.4",

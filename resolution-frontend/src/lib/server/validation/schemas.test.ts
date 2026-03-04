@@ -115,6 +115,7 @@ describe('shippingRateSchema', () => {
 		street: '123 Main St',
 		city: 'Springfield',
 		province: 'IL',
+		postalCode: '62701',
 		weight: 2.5,
 		packageType: 'box' as const,
 		length: 10,
