@@ -286,6 +286,8 @@
 
 			<div class="field">
 				<span class="label">CSV File</span>
+				<a href="https://docs.google.com/spreadsheets/d/1XlGk_gY00d6BHmgN--zpZL8svwjqSWozNWCf9BPyReo/copy" target="_blank" rel="noopener" class="template-download">↓ Copy CSV template from Google Sheets</a>
+			<span class="hint">Only accessible with Resolution emails</span>
 				<input type="file" accept=".csv,text/csv" onchange={handleFileChange} required />
 				{#if csvFileName}
 					<p class="hint" style="margin-top: 0.375rem;">Loaded: {csvFileName}</p>
@@ -577,6 +579,18 @@
 
 	.field select {
 		appearance: auto;
+	}
+
+	.template-download {
+		display: inline-block;
+		font-size: 0.8rem;
+		color: #338eda;
+		text-decoration: none;
+		margin-bottom: 0.5rem;
+	}
+
+	.template-download:hover {
+		text-decoration: underline;
 	}
 
 	.form-actions {
