@@ -21,33 +21,22 @@
 
 	let itemQuantities = $state<Record<string, number>>({});
 	let itemSizing = $state<Record<string, string>>({});
+	let searchQuery = $state('');
 
-	type CategoryType = (typeof data.categories)[number];
+	type ItemType = (typeof data.items)[number];
 
-	let groupedItems = $derived(() => {
-		const groups: { category: CategoryType | null; items: typeof data.items }[] = [];
-		const categoryMap = new Map<string, typeof data.items>();
-		const uncategorized: typeof data.items = [];
+	let searchResults = $derived(() => {
+		const q = searchQuery.trim().toLowerCase();
+		if (!q) return [];
+		return data.items.filter(
+			(item) =>
+				item.name.toLowerCase().includes(q) ||
+				item.sku.toLowerCase().includes(q)
+		);
+	});
 
-		for (const item of data.items) {
-			if (item.categoryId) {
-				const existing = categoryMap.get(item.categoryId) || [];
-				existing.push(item);
-				categoryMap.set(item.categoryId, existing);
-			} else {
-				uncategorized.push(item);
-			}
-		}
-
-		for (const cat of data.categories) {
-			groups.push({ category: cat, items: categoryMap.get(cat.id) || [] });
-		}
-
-		if (uncategorized.length > 0) {
-			groups.push({ category: null, items: uncategorized });
-		}
-
-		return groups;
+	let addedItems = $derived(() => {
+		return data.items.filter((item) => (itemQuantities[item.id] || 0) > 0);
 	});
 
 	let selectedItems = $derived(() => {
@@ -59,6 +48,105 @@
 				sizingChoice: itemSizing[item.id] || null
 			}));
 	});
+
+	interface ShippingRate {
+		serviceName: string;
+		serviceCode: string;
+		priceDetails: { base: number; gst: number; pst: number; hst: number; total: number };
+		deliveryDate: string;
+		transitDays: string;
+		isLettermail?: boolean;
+		note?: string;
+	}
+
+	let estimateLoading = $state(false);
+	let estimateError = $state('');
+	let estimatedRates = $state<ShippingRate[]>([]);
+	let hasEstimated = $state(false);
+
+	function addItem(item: ItemType) {
+		if (!itemQuantities[item.id] || itemQuantities[item.id] === 0) {
+			itemQuantities[item.id] = 1;
+		}
+		searchQuery = '';
+		hasEstimated = false;
+		estimatedRates = [];
+	}
+
+	function computePackageTotals() {
+		const items = addedItems();
+		let totalWeight = 0;
+		let maxLength = 0;
+		let maxWidth = 0;
+		let totalHeight = 0;
+		let hasBox = false;
+
+		for (const item of items) {
+			const qty = itemQuantities[item.id] || 0;
+			totalWeight += item.weightGrams * qty;
+			maxLength = Math.max(maxLength, item.lengthIn);
+			maxWidth = Math.max(maxWidth, item.widthIn);
+			totalHeight += item.heightIn * qty;
+			if (item.packageType === 'box') hasBox = true;
+		}
+
+		const packageType = hasBox || totalHeight > 0.5 ? 'box' : 'flat';
+		return { weight: totalWeight, length: maxLength, width: maxWidth, height: totalHeight, packageType };
+	}
+
+	async function estimateShipping() {
+		const items = addedItems();
+		if (items.length === 0) {
+			estimateError = 'Add at least one item first.';
+			return;
+		}
+		if (!addressLine1 || !city || !stateProvince || !country) {
+			estimateError = 'Fill in the shipping address first.';
+			return;
+		}
+
+		estimateLoading = true;
+		estimateError = '';
+		estimatedRates = [];
+
+		try {
+			const pkg = computePackageTotals();
+			const body: Record<string, unknown> = {
+				country,
+				street: addressLine1,
+				city,
+				province: stateProvince,
+				postalCode: postalCode || undefined,
+				weight: pkg.weight,
+				packageType: pkg.packageType,
+				length: pkg.length,
+				width: pkg.width
+			};
+			if (pkg.packageType === 'box') {
+				body.height = pkg.height;
+			}
+
+			const res = await fetch('/api/shipping-rates', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(body)
+			});
+
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({ message: 'Estimation failed' }));
+				estimateError = err.message || 'Estimation failed';
+				return;
+			}
+
+			const result = await res.json();
+			estimatedRates = result.rates || [];
+			hasEstimated = true;
+		} catch {
+			estimateError = 'Failed to connect to shipping API.';
+		} finally {
+			estimateLoading = false;
+		}
+	}
 </script>
 
 <form method="POST" action="?/createOrder" use:enhance>
@@ -118,60 +206,120 @@
 
 	<section class="card">
 		<h3 class="section-heading">Select Items</h3>
-		{#each groupedItems() as group}
-			{#if group.items.length > 0}
-				<h4 class="category-heading">{group.category?.name || 'Uncategorized'}</h4>
-				<div class="items-table-wrapper">
-					<table class="items-table">
-						<thead>
-							<tr>
-								<th>Name</th>
-								<th>SKU</th>
-								<th>Sizing</th>
-								<th>Quantity</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each group.items as item (item.id)}
-								{@const sizingOptions = item.sizing ? item.sizing.split(',').map((s) => s.trim()) : []}
-								{@const qty = itemQuantities[item.id] || 0}
-								<tr>
-									<td class="item-name">{item.name}</td>
-									<td><code>{item.sku}</code></td>
-									<td>
-										{#if sizingOptions.length > 0}
-											<select
-												class="sizing-select"
-												value={itemSizing[item.id] || ''}
-												onchange={(e) => itemSizing[item.id] = (e.target as HTMLSelectElement).value}
-												required={qty > 0}
-											>
-												<option value="">Select size</option>
-												{#each sizingOptions as size}
-													<option value={size}>{size}</option>
-												{/each}
-											</select>
-										{:else}
-											<span class="hint">—</span>
-										{/if}
-									</td>
-									<td>
-										<input
-											type="number"
-											class="qty-input"
-											min="0"
-											value={qty}
-											oninput={(e) => itemQuantities[item.id] = parseInt((e.target as HTMLInputElement).value) || 0}
-										/>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
+		<div class="search-wrapper">
+			<input
+				type="text"
+				class="search-input"
+				placeholder="Search items by name or SKU..."
+				bind:value={searchQuery}
+			/>
+			{#if searchResults().length > 0}
+				<ul class="search-dropdown">
+					{#each searchResults() as item (item.id)}
+						<li>
+							<button type="button" class="search-result-btn" onclick={() => addItem(item)}>
+								<span class="result-name">{item.name}</span>
+								<code>{item.sku}</code>
+							</button>
+						</li>
+					{/each}
+				</ul>
+			{:else if searchQuery.trim().length > 0}
+				<div class="search-no-results">No items found</div>
 			{/if}
-		{/each}
+		</div>
+
+		{#if addedItems().length > 0}
+			<div class="items-table-wrapper">
+				<table class="items-table">
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>SKU</th>
+							<th>Sizing</th>
+							<th>Quantity</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each addedItems() as item (item.id)}
+							{@const sizingOptions = item.sizing ? item.sizing.split(',').map((s) => s.trim()) : []}
+							{@const qty = itemQuantities[item.id] || 0}
+							<tr>
+								<td class="item-name">{item.name}</td>
+								<td><code>{item.sku}</code></td>
+								<td>
+									{#if sizingOptions.length > 0}
+										<select
+											class="sizing-select"
+											value={itemSizing[item.id] || ''}
+											onchange={(e) => itemSizing[item.id] = (e.target as HTMLSelectElement).value}
+											required={qty > 0}
+										>
+											<option value="">Select size</option>
+											{#each sizingOptions as size}
+												<option value={size}>{size}</option>
+											{/each}
+										</select>
+									{:else}
+										<span class="hint">—</span>
+									{/if}
+								</td>
+								<td>
+									<input
+										type="number"
+										class="qty-input"
+										min="1"
+										value={qty}
+										oninput={(e) => { itemQuantities[item.id] = parseInt((e.target as HTMLInputElement).value) || 0; hasEstimated = false; estimatedRates = []; }}
+									/>
+								</td>
+								<td>
+									<button
+										type="button"
+										class="remove-btn"
+										onclick={() => { itemQuantities[item.id] = 0; delete itemSizing[item.id]; hasEstimated = false; estimatedRates = []; }}
+									>✕</button>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		{:else}
+			<p class="hint" style="margin-top: 1rem;">Search above to add items to your order.</p>
+		{/if}
 		<input type="hidden" name="items" value={JSON.stringify(selectedItems())} />
+	</section>
+
+	<section class="card">
+		<h3 class="section-heading">Shipping Estimate</h3>
+		<button type="button" class="estimate-btn" onclick={estimateShipping} disabled={estimateLoading}>
+			{estimateLoading ? 'Estimating...' : 'Estimate Shipping Cost'}
+		</button>
+		{#if estimateError}
+			<p class="estimate-error">{estimateError}</p>
+		{/if}
+		{#if hasEstimated && estimatedRates.length > 0}
+			<div class="rates-list">
+				{#each estimatedRates as rate}
+					<div class="rate-card">
+						<div class="rate-header">
+							<span class="rate-name">{rate.serviceName}</span>
+							<span class="rate-price">${rate.priceDetails.total.toFixed(2)} <span class="rate-currency">USD</span></span>
+						</div>
+						<div class="rate-details">
+							<span>Transit: {rate.transitDays} days</span>
+							{#if rate.note}
+								<span class="rate-note">{rate.note}</span>
+							{/if}
+						</div>
+					</div>
+				{/each}
+			</div>
+		{:else if hasEstimated}
+			<p class="hint" style="margin-top: 0.75rem;">No shipping rates available for this destination.</p>
+		{/if}
 	</section>
 
 	<section class="card">
@@ -209,15 +357,87 @@
 		margin: 0 0 1rem 0;
 	}
 
-	.category-heading {
-		font-size: 1rem;
-		font-weight: 600;
-		color: #338eda;
-		margin: 1rem 0 0.75rem 0;
+	.search-wrapper {
+		position: relative;
+		margin-bottom: 1rem;
 	}
 
-	.category-heading:first-of-type {
-		margin-top: 0;
+	.search-input {
+		padding: 0.5rem;
+		border: 1px solid #ccc;
+		border-radius: 8px;
+		font-size: 0.875rem;
+		font-family: inherit;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.search-dropdown {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		right: 0;
+		background: white;
+		border: 1px solid #ccc;
+		border-radius: 8px;
+		margin-top: 4px;
+		padding: 0;
+		list-style: none;
+		max-height: 200px;
+		overflow-y: auto;
+		z-index: 10;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	}
+
+	.search-dropdown li {
+		border-bottom: 1px solid #f0f0f0;
+	}
+
+	.search-dropdown li:last-child {
+		border-bottom: none;
+	}
+
+	.search-result-btn {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
+		padding: 0.625rem 0.75rem;
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-family: inherit;
+		font-size: 0.875rem;
+		text-align: left;
+	}
+
+	.search-result-btn:hover {
+		background: #f5f0ff;
+	}
+
+	.result-name {
+		font-weight: 500;
+	}
+
+	.search-no-results {
+		padding: 0.625rem 0.75rem;
+		color: #8492a6;
+		font-size: 0.85rem;
+		margin-top: 4px;
+	}
+
+	.remove-btn {
+		background: none;
+		border: none;
+		color: #e74c3c;
+		cursor: pointer;
+		font-size: 1rem;
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+	}
+
+	.remove-btn:hover {
+		background: #fdecea;
 	}
 
 	.form-grid {
@@ -309,6 +529,80 @@
 		font-size: 0.875rem;
 		font-family: inherit;
 		text-align: center;
+	}
+
+	.estimate-btn {
+		background: #6c5ce7;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		padding: 0.5rem 1.25rem;
+		font-size: 0.875rem;
+		cursor: pointer;
+		font-family: inherit;
+	}
+
+	.estimate-btn:hover {
+		opacity: 0.9;
+	}
+
+	.estimate-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.estimate-error {
+		color: #e74c3c;
+		font-size: 0.85rem;
+		margin-top: 0.5rem;
+	}
+
+	.rates-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin-top: 1rem;
+	}
+
+	.rate-card {
+		border: 1px solid #e0e0e0;
+		border-radius: 8px;
+		padding: 0.75rem 1rem;
+	}
+
+	.rate-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.rate-name {
+		font-weight: 500;
+		font-size: 0.875rem;
+	}
+
+	.rate-price {
+		font-weight: 600;
+		font-size: 0.95rem;
+		color: #338eda;
+	}
+
+	.rate-currency {
+		font-size: 0.75rem;
+		font-weight: 400;
+		color: #8492a6;
+	}
+
+	.rate-details {
+		display: flex;
+		gap: 1rem;
+		margin-top: 0.25rem;
+		font-size: 0.8rem;
+		color: #8492a6;
+	}
+
+	.rate-note {
+		font-style: italic;
 	}
 
 	.submit-btn {
