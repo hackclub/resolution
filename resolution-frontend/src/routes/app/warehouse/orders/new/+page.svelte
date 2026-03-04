@@ -19,7 +19,37 @@
 	let country = $state('US');
 
 	let notes = $state('');
-	let tags = $state('');
+	let tagsArray = $state<string[]>([]);
+	let tagInput = $state('');
+
+	let tagSuggestions = $derived(() => {
+		const q = tagInput.trim().toLowerCase();
+		if (!q) return [];
+		return data.allTags.filter(
+			(t) => t.toLowerCase().includes(q) && !tagsArray.includes(t)
+		);
+	});
+
+	function addTag(tag: string) {
+		const t = tag.trim().toLowerCase();
+		if (t && !tagsArray.includes(t)) {
+			tagsArray = [...tagsArray, t];
+		}
+		tagInput = '';
+	}
+
+	function removeTag(tag: string) {
+		tagsArray = tagsArray.filter((t) => t !== tag);
+	}
+
+	function handleTagKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			if (tagInput.trim()) addTag(tagInput);
+		} else if (e.key === 'Backspace' && !tagInput && tagsArray.length > 0) {
+			tagsArray = tagsArray.slice(0, -1);
+		}
+	}
 
 	const countries = [
 		{ code: 'US', name: 'United States' },
@@ -460,10 +490,37 @@
 				<span class="label">Notes</span>
 				<textarea bind:value={notes} rows="3"></textarea>
 			</label>
-			<label class="field">
+			<div class="field">
 				<span class="label">Tags</span>
-				<input type="text" bind:value={tags} placeholder="e.g. club-event, spring-2026" />
-			</label>
+				<div class="tag-input-wrapper">
+					{#each tagsArray as tag}
+						<span class="tag-chip">
+							{tag}
+							<button type="button" class="tag-remove" onclick={() => removeTag(tag)}>✕</button>
+						</span>
+					{/each}
+					<div class="tag-input-container">
+						<input
+							type="text"
+							class="tag-input"
+							placeholder={tagsArray.length === 0 ? 'Type a tag and press Enter...' : ''}
+							bind:value={tagInput}
+							onkeydown={handleTagKeydown}
+						/>
+						{#if tagSuggestions().length > 0}
+							<ul class="tag-suggestions">
+								{#each tagSuggestions() as suggestion}
+									<li>
+										<button type="button" class="tag-suggestion-btn" onclick={() => addTag(suggestion)}>
+											{suggestion}
+										</button>
+									</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+				</div>
+			</div>
 		</section>
 	{/if}
 
@@ -517,11 +574,17 @@
 				</div>
 			{/if}
 
-			{#if notes || tags}
+			{#if notes || tagsArray.length > 0}
 				<div class="summary-section">
 					<h4 class="summary-label">Notes & Tags</h4>
 					{#if notes}<p>{notes}</p>{/if}
-					{#if tags}<p class="hint">Tags: {tags}</p>{/if}
+					{#if tagsArray.length > 0}
+						<div class="summary-tags">
+							{#each tagsArray as tag}
+								<span class="tag-chip-readonly">{tag}</span>
+							{/each}
+						</div>
+					{/if}
 				</div>
 			{/if}
 
@@ -555,7 +618,7 @@
 		<input type="hidden" name="postalCode" value={postalCode} />
 		<input type="hidden" name="country" value={country} />
 		<input type="hidden" name="notes" value={notes} />
-		<input type="hidden" name="tags" value={tags} />
+		<input type="hidden" name="tags" value={tagsArray.join(',')} />
 		<input type="hidden" name="items" value={JSON.stringify(selectedItems())} />
 	{/if}
 
@@ -838,6 +901,119 @@
 		font-size: 0.875rem;
 		font-family: inherit;
 		text-align: center;
+	}
+
+	.tag-input-wrapper {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.375rem 0.5rem;
+		border: 1px solid #ccc;
+		border-radius: 8px;
+		background: white;
+		min-height: 38px;
+	}
+
+	.tag-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		background: #eee8ff;
+		color: #5b3cc4;
+		padding: 0.2rem 0.5rem;
+		border-radius: 6px;
+		font-size: 0.8rem;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.tag-remove {
+		background: none;
+		border: none;
+		color: #5b3cc4;
+		cursor: pointer;
+		font-size: 0.75rem;
+		padding: 0;
+		line-height: 1;
+		opacity: 0.6;
+	}
+
+	.tag-remove:hover {
+		opacity: 1;
+	}
+
+	.tag-chip-readonly {
+		display: inline-block;
+		background: #eee8ff;
+		color: #5b3cc4;
+		padding: 0.2rem 0.5rem;
+		border-radius: 6px;
+		font-size: 0.8rem;
+		font-weight: 500;
+	}
+
+	.summary-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.375rem;
+		margin-top: 0.25rem;
+	}
+
+	.tag-input-container {
+		position: relative;
+		flex: 1;
+		min-width: 120px;
+	}
+
+	.tag-input {
+		border: none;
+		outline: none;
+		font-size: 0.875rem;
+		font-family: inherit;
+		width: 100%;
+		padding: 0.125rem 0;
+		background: transparent;
+	}
+
+	.tag-suggestions {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		right: 0;
+		background: white;
+		border: 1px solid #ccc;
+		border-radius: 8px;
+		margin-top: 4px;
+		padding: 0;
+		list-style: none;
+		max-height: 150px;
+		overflow-y: auto;
+		z-index: 10;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	}
+
+	.tag-suggestions li {
+		border-bottom: 1px solid #f0f0f0;
+	}
+
+	.tag-suggestions li:last-child {
+		border-bottom: none;
+	}
+
+	.tag-suggestion-btn {
+		width: 100%;
+		padding: 0.5rem 0.75rem;
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-family: inherit;
+		font-size: 0.85rem;
+		text-align: left;
+	}
+
+	.tag-suggestion-btn:hover {
+		background: #f5f0ff;
 	}
 
 	.estimate-error {

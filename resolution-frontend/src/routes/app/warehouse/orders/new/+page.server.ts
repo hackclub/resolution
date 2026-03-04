@@ -19,12 +19,13 @@ export const load: PageServerLoad = async ({ parent }) => {
 		throw error(403, 'Access denied');
 	}
 
-	const [items, categories] = await Promise.all([
+	const [items, categories, existingTags] = await Promise.all([
 		db.select().from(warehouseItem).orderBy(asc(warehouseItem.name)),
-		db.select().from(warehouseCategory).orderBy(asc(warehouseCategory.sortOrder))
+		db.select().from(warehouseCategory).orderBy(asc(warehouseCategory.sortOrder)),
+		db.selectDistinct({ tag: warehouseOrderTag.tag }).from(warehouseOrderTag).orderBy(asc(warehouseOrderTag.tag))
 	]);
 
-	return { items, categories };
+	return { items, categories, allTags: existingTags.map((t) => t.tag) };
 };
 
 export const actions: Actions = {
