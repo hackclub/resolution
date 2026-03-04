@@ -138,7 +138,6 @@
 				</table>
 			</div>
 		</section>
-	</div>
 
 	{#if ambassadorModal}
 		{@const userPathways = getUserAmbassadorPathways(ambassadorModal.userId)}
