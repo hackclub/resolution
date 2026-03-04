@@ -135,7 +135,7 @@ export const actions: Actions = {
 			}
 		}
 
-		return { success: true };
+		return { success: true, batchId: batch.id };
 	},
 
 	mapFields: async ({ request, locals }) => {

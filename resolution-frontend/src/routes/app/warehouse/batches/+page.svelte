@@ -146,10 +146,42 @@
 		mode = 'create';
 	}
 
+	const autoMapAliases: Record<string, string[]> = {
+		firstName: ['first name', 'first_name', 'firstname'],
+		lastName: ['last name', 'last_name', 'lastname'],
+		email: ['email', 'e-mail', 'email address'],
+		addressLine1: ['line 1', 'line1', 'address line 1', 'address_line_1', 'address1', 'street', 'street address'],
+		addressLine2: ['line 2', 'line2', 'address line 2', 'address_line_2', 'address2', 'apt', 'suite', 'unit'],
+		city: ['city', 'town'],
+		stateProvince: ['state/province', 'state', 'province', 'state_province', 'state / province', 'region'],
+		postalCode: ['postal_code', 'postal code', 'postalcode', 'zip', 'zip code', 'zipcode', 'zip_code', 'postcode'],
+		country: ['country', 'country code'],
+		phone: ['phone number', 'phone', 'phone_number', 'telephone', 'tel', 'mobile']
+	};
+
+	function autoMapFields(headers: string[]): Record<string, string> {
+		const mapping: Record<string, string> = {};
+		const lowerHeaders = headers.map((h) => h.trim().toLowerCase());
+		for (const [field, aliases] of Object.entries(autoMapAliases)) {
+			const matchIndex = lowerHeaders.findIndex((h) => aliases.includes(h));
+			if (matchIndex !== -1) {
+				mapping[field] = headers[matchIndex];
+			}
+		}
+		return mapping;
+	}
+
 	function openMap(batchId: string) {
 		activeBatchId = batchId;
 		fieldMapping = {};
 		mode = 'map';
+		// Auto-map after state updates so csvHeaders() resolves
+		setTimeout(() => {
+			const headers = csvHeaders();
+			if (headers.length > 0) {
+				fieldMapping = autoMapFields(headers);
+			}
+		}, 0);
 	}
 
 	function openProcess(batchId: string) {
@@ -230,9 +262,11 @@
 	<section class="card">
 		<h3 class="section-heading">Create Batch</h3>
 		<form method="POST" action="?/createBatch" use:enhance={() => {
-			return async ({ update }) => {
+			return async ({ result, update }) => {
 				await update();
-				backToIndex();
+				if (result.type === 'success' && result.data?.batchId) {
+					openMap(result.data.batchId as string);
+				}
 			};
 		}}>
 			<label class="field">
@@ -311,9 +345,11 @@
 			Map each address field to a column from your CSV. CSV has {csvHeaders().length} column{csvHeaders().length !== 1 ? 's' : ''}.
 		</p>
 		<form method="POST" action="?/mapFields" use:enhance={() => {
-			return async ({ update }) => {
+			return async ({ result, update }) => {
 				await update();
-				backToIndex();
+				if (result.type === 'success' && activeBatchId) {
+					openProcess(activeBatchId);
+				}
 			};
 		}}>
 			<input type="hidden" name="batchId" value={activeBatch.id} />
