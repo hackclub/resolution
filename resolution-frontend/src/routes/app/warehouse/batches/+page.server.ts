@@ -60,6 +60,7 @@ export const load: PageServerLoad = async ({ parent }) => {
 	}
 
 	const batches = await db.query.warehouseBatch.findMany({
+		where: eq(warehouseBatch.createdById, user.id),
 		with: {
 			createdBy: true,
 			template: {
