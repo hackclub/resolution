@@ -10,6 +10,7 @@ export const difficultyEnum = pgEnum('difficulty', ['BEGINNER', 'INTERMEDIATE', 
 export const shipStatusEnum = pgEnum('ship_status', ['PLANNED', 'IN_PROGRESS', 'SHIPPED', 'MISSED']);
 export const payoutStatusEnum = pgEnum('payout_status', ['DRAFT', 'PENDING', 'PAID', 'CANCELED']);
 export const warehouseOrderStatusEnum = pgEnum('warehouse_order_status', ['DRAFT', 'ESTIMATED', 'APPROVED', 'SHIPPED', 'CANCELED']);
+export const warehouseBatchStatusEnum = pgEnum('warehouse_batch_status', ['AWAITING_MAPPING', 'MAPPED', 'PROCESSED']);
 
 // Tables
 export const user = pgTable('user', {
@@ -305,6 +306,7 @@ export const warehouseItem = pgTable('warehouse_item', {
 export const warehouseOrder = pgTable('warehouse_order', {
 	id: text('id').primaryKey().$defaultFn(() => createId()),
 	createdById: text('created_by_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	batchId: text('batch_id'),
 	status: warehouseOrderStatusEnum('status').notNull().default('DRAFT'),
 	firstName: text('first_name').notNull(),
 	lastName: text('last_name').notNull(),
@@ -360,4 +362,63 @@ export const warehouseOrderItemRelations = relations(warehouseOrderItem, ({ one 
 
 export const warehouseOrderTagRelations = relations(warehouseOrderTag, ({ one }) => ({
 	order: one(warehouseOrder, { fields: [warehouseOrderTag.orderId], references: [warehouseOrder.id] })
+}));
+
+// Order templates
+export const warehouseOrderTemplate = pgTable('warehouse_order_template', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	createdById: text('created_by_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	name: text('name').notNull(),
+	isPublic: boolean('is_public').notNull().default(false),
+	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
+});
+
+export const warehouseOrderTemplateItem = pgTable('warehouse_order_template_item', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	templateId: text('template_id').notNull().references(() => warehouseOrderTemplate.id, { onDelete: 'cascade' }),
+	warehouseItemId: text('warehouse_item_id').notNull().references(() => warehouseItem.id, { onDelete: 'restrict' }),
+	quantity: integer('quantity').notNull().default(1)
+});
+
+export const warehouseOrderTemplateRelations = relations(warehouseOrderTemplate, ({ one, many }) => ({
+	createdBy: one(user, { fields: [warehouseOrderTemplate.createdById], references: [user.id] }),
+	items: many(warehouseOrderTemplateItem)
+}));
+
+export const warehouseOrderTemplateItemRelations = relations(warehouseOrderTemplateItem, ({ one }) => ({
+	template: one(warehouseOrderTemplate, { fields: [warehouseOrderTemplateItem.templateId], references: [warehouseOrderTemplate.id] }),
+	warehouseItem: one(warehouseItem, { fields: [warehouseOrderTemplateItem.warehouseItemId], references: [warehouseItem.id] })
+}));
+
+// Batches
+export const warehouseBatch = pgTable('warehouse_batch', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	createdById: text('created_by_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	templateId: text('template_id').notNull().references(() => warehouseOrderTemplate.id, { onDelete: 'restrict' }),
+	title: text('title'),
+	status: warehouseBatchStatusEnum('status').notNull().default('AWAITING_MAPPING'),
+	csvData: text('csv_data').notNull(),
+	fieldMapping: text('field_mapping'),
+	addressCount: integer('address_count').notNull().default(0),
+	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
+});
+
+export const warehouseBatchTag = pgTable('warehouse_batch_tag', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	batchId: text('batch_id').notNull().references(() => warehouseBatch.id, { onDelete: 'cascade' }),
+	tag: text('tag').notNull()
+}, (table) => [
+	uniqueIndex('warehouse_batch_tag_unique_idx').on(table.batchId, table.tag)
+]);
+
+export const warehouseBatchRelations = relations(warehouseBatch, ({ one, many }) => ({
+	createdBy: one(user, { fields: [warehouseBatch.createdById], references: [user.id] }),
+	template: one(warehouseOrderTemplate, { fields: [warehouseBatch.templateId], references: [warehouseOrderTemplate.id] }),
+	tags: many(warehouseBatchTag)
+}));
+
+export const warehouseBatchTagRelations = relations(warehouseBatchTag, ({ one }) => ({
+	batch: one(warehouseBatch, { fields: [warehouseBatchTag.batchId], references: [warehouseBatch.id] })
 }));

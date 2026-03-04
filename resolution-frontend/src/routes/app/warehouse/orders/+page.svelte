@@ -5,6 +5,7 @@
 
 	let expandedOrder = $state<string | null>(null);
 	let activeTagFilter = $state<string | null>(null);
+	let activeTab = $state<'unbatched' | 'batched'>('unbatched');
 
 	function formatCost(cents: number) {
 		return `$${(cents / 100).toFixed(2)}`;
@@ -37,15 +38,40 @@
 		return name || creator.email;
 	}
 
+	const unbatchedOrders = $derived(
+		data.orders.filter((o: any) => !o.batchId)
+	);
+
+	const batchedOrders = $derived(
+		data.orders.filter((o: any) => !!o.batchId)
+	);
+
+	const currentOrders = $derived(
+		activeTab === 'unbatched' ? unbatchedOrders : batchedOrders
+	);
+
 	const filteredOrders = $derived(
 		activeTagFilter
-			? data.orders.filter((o: any) => o.tags.some((t: any) => t.tag === activeTagFilter))
-			: data.orders
+			? currentOrders.filter((o: any) => o.tags.some((t: any) => t.tag === activeTagFilter))
+			: currentOrders
 	);
 </script>
 
 <div class="page-actions">
 	<a href="/app/warehouse/orders/new" class="new-order-btn">+ New Order</a>
+</div>
+
+<div class="sub-tabs">
+	<button
+		class="sub-tab"
+		class:active={activeTab === 'unbatched'}
+		onclick={() => { activeTab = 'unbatched'; activeTagFilter = null; }}
+	>Unbatched Orders ({unbatchedOrders.length})</button>
+	<button
+		class="sub-tab"
+		class:active={activeTab === 'batched'}
+		onclick={() => { activeTab = 'batched'; activeTagFilter = null; }}
+	>Batched Orders ({batchedOrders.length})</button>
 </div>
 
 {#if data.allTags.length > 0}
@@ -359,6 +385,41 @@
 		color: #6c5ce7;
 		border-radius: 4px;
 		font-size: 0.7rem;
+	}
+
+	.sub-tabs {
+		display: flex;
+		gap: 0;
+		margin-bottom: 1rem;
+		border: 1px solid #e0e0e0;
+		border-radius: 8px;
+		overflow: hidden;
+		width: fit-content;
+	}
+
+	.sub-tab {
+		padding: 0.5rem 1rem;
+		font-size: 0.85rem;
+		font-family: inherit;
+		border: none;
+		background: white;
+		color: #8492a6;
+		cursor: pointer;
+		border-right: 1px solid #e0e0e0;
+	}
+
+	.sub-tab:last-child {
+		border-right: none;
+	}
+
+	.sub-tab:hover {
+		color: #1a1a2e;
+	}
+
+	.sub-tab.active {
+		background: #338eda;
+		color: white;
+		font-weight: 600;
 	}
 
 	.page-actions {
