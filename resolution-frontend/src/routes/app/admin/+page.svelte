@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
 	import { enhance } from '$app/forms';
 
 	let { data }: { data: PageData } = $props();
@@ -36,8 +35,7 @@
 	<title>Admin - Resolution</title>
 </svelte:head>
 
-<PlatformBackground>
-	<div class="admin-container">
+<div class="admin-container">
 		<header>
 			<div>
 				<h1>Admin Dashboard</h1>
@@ -177,13 +175,17 @@
 			</div>
 		</div>
 	{/if}
-</PlatformBackground>
+</div>
 
 <style>
 	.admin-container {
 		min-height: 100vh;
 		padding: 2rem;
-		color: #1a1a2e;
+		color: #1f2d3d;
+		max-width: 1000px;
+		margin: 0 auto;
+		font-family: 'Phantom Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		background: #fff;
 	}
 
 	header {

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
 
@@ -64,8 +63,7 @@
 	<title>Referral Links - Resolution</title>
 </svelte:head>
 
-<PlatformBackground>
-	<div class="referrals-container">
+<div class="referrals-container">
 		<a href="/app/ambassador" class="back-link">
 			<img
 				src="https://icons.hackclub.com/api/icons/8492a6/back"
@@ -285,13 +283,14 @@
 			{/each}
 		{/if}
 	</div>
-</PlatformBackground>
 
 <style>
 	.referrals-container {
 		min-height: 100vh;
 		padding: 2rem;
-		color: #1a1a2e;
+		color: #1f2d3d;
+		font-family: 'Phantom Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		background: #fff;
 		max-width: 1000px;
 		margin: 0 auto;
 	}

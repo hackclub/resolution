@@ -1,5 +1,4 @@
 <script lang="ts">
-	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
 	import type { Snippet } from 'svelte';
 
 	let { children }: { children: Snippet } = $props();
@@ -9,29 +8,29 @@
 	<title>Warehouse Backend - Resolution</title>
 </svelte:head>
 
-<PlatformBackground>
-	<div class="warehouse-container">
-		<a href="/app" class="back-link">
-			<img src="https://icons.hackclub.com/api/icons/8492a6/back" alt="Back" width="20" height="20" />
-			Back to Dashboard
-		</a>
+<div class="warehouse-container">
+	<a href="/app" class="back-link">
+		<img src="https://icons.hackclub.com/api/icons/8492a6/back" alt="Back" width="20" height="20" />
+		Back to Dashboard
+	</a>
 
-		<header>
-			<h1>Warehouse Backend</h1>
-			<p class="subtitle">Admin inventory management</p>
-		</header>
+	<header>
+		<h1>Warehouse Backend</h1>
+		<p class="subtitle">Admin inventory management</p>
+	</header>
 
-		{@render children()}
-	</div>
-</PlatformBackground>
+	{@render children()}
+</div>
 
 <style>
 	.warehouse-container {
 		min-height: 100vh;
 		padding: 2rem;
-		color: #1a1a2e;
+		color: #1f2d3d;
 		max-width: 1000px;
 		margin: 0 auto;
+		font-family: 'Phantom Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		background: #fff;
 	}
 
 	.back-link {

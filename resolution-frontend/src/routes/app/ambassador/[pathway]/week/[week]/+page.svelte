@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
 	import { enhance } from '$app/forms';
 	import { onMount } from 'svelte';
 	import { marked } from 'marked';
@@ -69,8 +68,7 @@
 	<title>Edit Week {data.weekNumber} - {pathway.label} - Resolution</title>
 </svelte:head>
 
-<PlatformBackground>
-	<div class="editor-container">
+<div class="editor-container">
 		<header>
 			<a href="/app/ambassador" class="back-link">
 				<img src="https://icons.hackclub.com/api/icons/8492a6/back" alt="Back" width="20" height="20" />
@@ -135,13 +133,14 @@
 			</div>
 		</form>
 	</div>
-</PlatformBackground>
 
 <style>
 	.editor-container {
 		min-height: 100vh;
 		padding: 1.5rem;
-		color: #1a1a2e;
+		color: #1f2d3d;
+		font-family: 'Phantom Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		background: #fff;
 		display: flex;
 		flex-direction: column;
 	}
