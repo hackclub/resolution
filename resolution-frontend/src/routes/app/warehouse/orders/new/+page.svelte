@@ -19,6 +19,73 @@
 	let notes = $state('');
 	let tags = $state('');
 
+	const countries = [
+		{ code: 'US', name: 'United States' },
+		{ code: 'CA', name: 'Canada' },
+		{ code: 'GB', name: 'United Kingdom' },
+		{ code: 'AU', name: 'Australia' },
+		{ code: 'DE', name: 'Germany' },
+		{ code: 'FR', name: 'France' },
+		{ code: 'IN', name: 'India' },
+		{ code: 'JP', name: 'Japan' },
+		{ code: 'BR', name: 'Brazil' },
+		{ code: 'MX', name: 'Mexico' },
+		{ code: 'NL', name: 'Netherlands' },
+		{ code: 'IT', name: 'Italy' },
+		{ code: 'ES', name: 'Spain' },
+		{ code: 'SE', name: 'Sweden' },
+		{ code: 'NO', name: 'Norway' },
+		{ code: 'DK', name: 'Denmark' },
+		{ code: 'FI', name: 'Finland' },
+		{ code: 'IE', name: 'Ireland' },
+		{ code: 'NZ', name: 'New Zealand' },
+		{ code: 'SG', name: 'Singapore' },
+		{ code: 'KR', name: 'South Korea' },
+		{ code: 'PH', name: 'Philippines' },
+		{ code: 'MY', name: 'Malaysia' },
+		{ code: 'TH', name: 'Thailand' },
+		{ code: 'ID', name: 'Indonesia' },
+		{ code: 'PL', name: 'Poland' },
+		{ code: 'CZ', name: 'Czech Republic' },
+		{ code: 'AT', name: 'Austria' },
+		{ code: 'CH', name: 'Switzerland' },
+		{ code: 'BE', name: 'Belgium' },
+		{ code: 'PT', name: 'Portugal' },
+		{ code: 'RO', name: 'Romania' },
+		{ code: 'HU', name: 'Hungary' },
+		{ code: 'GR', name: 'Greece' },
+		{ code: 'IL', name: 'Israel' },
+		{ code: 'AE', name: 'United Arab Emirates' },
+		{ code: 'ZA', name: 'South Africa' },
+		{ code: 'AR', name: 'Argentina' },
+		{ code: 'CL', name: 'Chile' },
+		{ code: 'CO', name: 'Colombia' },
+		{ code: 'PK', name: 'Pakistan' },
+		{ code: 'BD', name: 'Bangladesh' },
+		{ code: 'NG', name: 'Nigeria' },
+		{ code: 'KE', name: 'Kenya' },
+		{ code: 'GH', name: 'Ghana' },
+		{ code: 'TW', name: 'Taiwan' },
+		{ code: 'HK', name: 'Hong Kong' },
+		{ code: 'TR', name: 'Turkey' },
+		{ code: 'EG', name: 'Egypt' },
+		{ code: 'SA', name: 'Saudi Arabia' },
+		{ code: 'PE', name: 'Peru' },
+		{ code: 'UA', name: 'Ukraine' },
+		{ code: 'HR', name: 'Croatia' },
+		{ code: 'BG', name: 'Bulgaria' },
+		{ code: 'RS', name: 'Serbia' },
+		{ code: 'SK', name: 'Slovakia' },
+		{ code: 'LT', name: 'Lithuania' },
+		{ code: 'LV', name: 'Latvia' },
+		{ code: 'EE', name: 'Estonia' },
+		{ code: 'SI', name: 'Slovenia' },
+		{ code: 'IS', name: 'Iceland' },
+		{ code: 'LK', name: 'Sri Lanka' },
+		{ code: 'VN', name: 'Vietnam' },
+		{ code: 'CN', name: 'China' }
+	];
+
 	let itemQuantities = $state<Record<string, number>>({});
 	let itemSizing = $state<Record<string, string>>({});
 	let searchQuery = $state('');
@@ -199,7 +266,11 @@
 			</label>
 			<label class="field">
 				<span class="label">Country</span>
-				<input type="text" name="country" bind:value={country} required />
+				<select name="country" bind:value={country} required>
+					{#each countries as c}
+						<option value={c.code}>{c.name}</option>
+					{/each}
+				</select>
 			</label>
 		</div>
 	</section>
