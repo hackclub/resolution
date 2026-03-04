@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, warehouse-dev]
   pull_request:
 
 defaults:
