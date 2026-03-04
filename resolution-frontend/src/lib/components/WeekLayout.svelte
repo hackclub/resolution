@@ -9,9 +9,10 @@
 		title: string;
 		content: string;
 		renderers?: Record<string, any>;
+		footer?: Snippet;
 	}
 
-	let { pathwayId, weekNumber, title, content, renderers = {} }: Props = $props();
+	let { pathwayId, weekNumber, title, content, renderers = {}, footer }: Props = $props();
 
 	const pathwayInfo: Record<string, { label: string; icon: string; color: string }> = {
 		PYTHON: { label: 'Python', icon: 'terminal', color: 'ec3750' },
@@ -47,7 +48,11 @@
 			<div class="prose">
 				<SvelteMarkdown source={content} {renderers} />
 			</div>
-		</article>
+
+			{#if footer}
+				{@render footer()}
+			{/if}
+			</article>
 	</div>
 </PlatformBackground>
 

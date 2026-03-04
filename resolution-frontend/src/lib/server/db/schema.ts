@@ -148,7 +148,8 @@ export const userRelations = relations(user, ({ many }) => ({
   completions: many(workshopCompletion),
   weeklyShips: many(weeklyShip),
   payouts: many(ambassadorPayout),
-  referralLinks: many(referralLink)
+  referralLinks: many(referralLink),
+  reviewerAssignments: many(reviewerPathway)
   }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -219,6 +220,17 @@ export const ambassadorPathway = pgTable('ambassador_pathway', {
 	uniqueIndex('ambassador_pathway_unique_idx').on(table.userId, table.pathway)
 ]);
 
+// Reviewer pathway assignments - which pathways a reviewer can review
+export const reviewerPathway = pgTable('reviewer_pathway', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	pathway: pathwayEnum('pathway').notNull(),
+	assignedAt: timestamp('assigned_at', { mode: 'date' }).notNull().defaultNow(),
+	assignedBy: text('assigned_by').notNull().references(() => user.id)
+}, (table) => [
+	uniqueIndex('reviewer_pathway_unique_idx').on(table.userId, table.pathway)
+]);
+
 // Pathway week content - stores markdown content for each week
 export const pathwayWeekContent = pgTable('pathway_week_content', {
 	id: text('id').primaryKey().$defaultFn(() => createId()),
@@ -256,6 +268,11 @@ export const referralSignup = pgTable('referral_signup', {
 export const ambassadorPathwayRelations = relations(ambassadorPathway, ({ one }) => ({
 	user: one(user, { fields: [ambassadorPathway.userId], references: [user.id] }),
 	assignedByUser: one(user, { fields: [ambassadorPathway.assignedBy], references: [user.id] })
+}));
+
+export const reviewerPathwayRelations = relations(reviewerPathway, ({ one }) => ({
+	user: one(user, { fields: [reviewerPathway.userId], references: [user.id] }),
+	assignedByUser: one(user, { fields: [reviewerPathway.assignedBy], references: [user.id] })
 }));
 
 export const pathwayWeekContentRelations = relations(pathwayWeekContent, ({ one }) => ({

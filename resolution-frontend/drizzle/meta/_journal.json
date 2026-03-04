@@ -15,6 +15,13 @@
       "when": 1771512581182,
       "tag": "0001_burly_caretaker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772636037511,
+      "tag": "0002_luxuriant_maria_hill",
+      "breakpoints": true
     }
   ]
 }

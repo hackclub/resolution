@@ -52,6 +52,9 @@
 		<header>
 			<h1>Welcome, {data.user.firstName || data.user.email}!</h1>
 			<div class="header-actions">
+				{#if data.isReviewer || data.user.isAdmin}
+					<a href="/app/reviewer" class="reviewer-btn">Reviewer</a>
+				{/if}
 				{#if data.isAmbassador}
 					<a href="/app/ambassador" class="ambassador-btn">Ambassador</a>
 				{/if}
@@ -195,7 +198,8 @@
 	}
 
 	.admin-btn,
-	.ambassador-btn {
+	.ambassador-btn,
+	.reviewer-btn {
 		padding: 0.5rem 1rem;
 		background: rgba(255, 255, 255, 0.8);
 		border-radius: 20px;
@@ -213,8 +217,14 @@
 		color: #a633d6;
 	}
 
+	.reviewer-btn {
+		border: 1px solid #ff8c37;
+		color: #ff8c37;
+	}
+
 	.admin-btn:hover,
-	.ambassador-btn:hover {
+	.ambassador-btn:hover,
+	.reviewer-btn:hover {
 		background: rgba(255, 255, 255, 1);
 	}
 
