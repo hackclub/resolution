@@ -570,7 +570,7 @@
 				Next →
 			</button>
 		{:else}
-			<button type="submit" class="nav-btn nav-submit">Place Order</button>
+			<button type="submit" class="nav-btn nav-submit">Send to Warehouse</button>
 		{/if}
 	</div>
 </form>
