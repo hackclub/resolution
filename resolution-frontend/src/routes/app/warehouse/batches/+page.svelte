@@ -17,8 +17,7 @@
 	let fieldMapping = $state<Record<string, string>>({});
 
 	const requiredFields = ['firstName', 'lastName', 'email', 'addressLine1', 'city', 'stateProvince', 'postalCode', 'country'] as const;
-	const optionalFields = ['phone', 'addressLine2'] as const;
-	const allFields = [...requiredFields, ...optionalFields] as const;
+	const allFields = ['firstName', 'lastName', 'email', 'phone', 'addressLine1', 'addressLine2', 'city', 'stateProvince', 'postalCode', 'country'] as const;
 
 	const fieldLabels: Record<string, string> = {
 		firstName: 'First Name',
