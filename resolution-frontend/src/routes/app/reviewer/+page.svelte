@@ -258,7 +258,7 @@
 				<form onsubmit={(e) => { e.preventDefault(); handleApprove(); }}>
 					<div class="form-group">
 						<label for="approve-hours">Hours</label>
-						<input type="number" id="approve-hours" bind:value={approveHours} min="0" step="0.5" required />
+						<input type="number" id="approve-hours" bind:value={approveHours} min="0" step="0.1" required />
 						<p class="field-hint">Pre-filled with the hours the participant reported. You can deflate this if the project doesn't justify the claimed time.</p>
 					</div>
 
