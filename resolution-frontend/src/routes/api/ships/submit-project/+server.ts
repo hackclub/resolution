@@ -94,7 +94,7 @@ export const POST: RequestHandler = async (event) => {
 			'ZIP / Postal Code': parsed.zipPostalCode,
 			'Birthday': parsed.birthday,
 			'Hackatime Project': parsed.hackatimeProject,
-			'Hours Spent': parsed.hoursSpent,
+			'Optional - Override Hours Spent': parsed.hoursSpent,
 			'Pathway': parsed.pathway,
 			'Week': parsed.week
 		};
