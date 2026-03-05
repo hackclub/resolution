@@ -39,7 +39,7 @@
 
 	let approveModal = $state<Submission | null>(null);
 	let rejectModal = $state<Submission | null>(null);
-	let approveHours = $state(0);
+	let approveHours = $state(0.5);
 	let approveJustification = $state('');
 	let rejectReason = $state('');
 	let isActionLoading = $state(false);
@@ -69,7 +69,7 @@
 
 	function openApprove(submission: Submission) {
 		approveModal = submission;
-		approveHours = 0;
+		approveHours = 0.5;
 		approveJustification = '';
 	}
 
