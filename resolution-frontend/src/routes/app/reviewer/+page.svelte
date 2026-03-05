@@ -19,6 +19,7 @@
 		screenshotUrl: string | null;
 		hackatimeProject: string;
 		githubUsername: string;
+		hoursSpent: number | null;
 		submittedAt: string;
 	}
 
@@ -64,7 +65,7 @@
 
 	function openApprove(submission: Submission) {
 		approveModal = submission;
-		approveHours = 0.5;
+		approveHours = submission.hoursSpent ?? 0.5;
 		approveJustification = '';
 	}
 
@@ -199,6 +200,12 @@
 								<img src="https://icons.hackclub.com/api/icons/8492a6/clock" alt="Date" width="16" height="16" />
 								{new Date(submission.submittedAt).toLocaleDateString()}
 							</span>
+							{#if submission.hoursSpent != null}
+								<span class="hours-label">
+									<img src="https://icons.hackclub.com/api/icons/8492a6/clock" alt="Hours" width="16" height="16" />
+									{submission.hoursSpent}h reported
+								</span>
+							{/if}
 						</div>
 
 						<p class="description">{truncate(submission.description, 150)}</p>
@@ -252,6 +259,7 @@
 					<div class="form-group">
 						<label for="approve-hours">Hours</label>
 						<input type="number" id="approve-hours" bind:value={approveHours} min="0" step="0.5" required />
+						<p class="field-hint">Pre-filled with the hours the participant reported. You can deflate this if the project doesn't justify the claimed time.</p>
 					</div>
 
 					<div class="form-group">
@@ -581,6 +589,12 @@
 		font-weight: 600;
 		color: #1a1a2e;
 		margin-bottom: 0.375rem;
+	}
+
+	.field-hint {
+		margin: 0.375rem 0 0 0;
+		font-size: 0.75rem;
+		color: #8492a6;
 	}
 
 	.form-group input[type='number'],

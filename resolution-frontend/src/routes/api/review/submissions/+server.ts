@@ -65,7 +65,8 @@ export const GET: RequestHandler = async (event) => {
 					'Hackatime Project',
 					'Pathway',
 					'Week',
-					'Screenshot'
+					'Screenshot',
+					'Optional - Override Hours Spent'
 				]
 			})
 			.all();
@@ -83,6 +84,7 @@ export const GET: RequestHandler = async (event) => {
 			pathway: record.get('Pathway') as string,
 			week: record.get('Week') as number,
 			screenshotUrl: (record.get('Screenshot') as Array<{ url: string }> | undefined)?.[0]?.url ?? null,
+			hoursSpent: (record.get('Optional - Override Hours Spent') as number | undefined) ?? null,
 			submittedAt: record._rawJson.createdTime as string
 		}));
 
