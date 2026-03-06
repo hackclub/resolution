@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { enhance, deserialize } from '$app/forms';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -184,9 +184,61 @@
 		}, 0);
 	}
 
+	interface BatchCalculation {
+		orderCount: number;
+		totalItemsCostUsd: number;
+		totalShippingUsd: number;
+		grandTotalUsd: number;
+		shippingFailures: number;
+		inventoryIssues: Array<{ itemName: string; sku: string; available: number; needed: number }>;
+		orders: Array<{
+			recipient: string;
+			country: string;
+			itemsCostUsd: number;
+			shippingCostUsd: number | null;
+			shippingMethod: string | null;
+			totalUsd: number | null;
+		}>;
+	}
+
+	let calculation = $state<BatchCalculation | null>(null);
+	let calcLoading = $state(false);
+	let calcError = $state('');
+
+	async function calculateBatch(batchId: string) {
+		calcLoading = true;
+		calcError = '';
+		calculation = null;
+
+		const formData = new FormData();
+		formData.set('batchId', batchId);
+
+		try {
+			const res = await fetch('?/calculateBatch', {
+				method: 'POST',
+				body: formData
+			});
+			const result = deserialize(await res.text());
+			if (result.type === 'success' && result.data?.calculation) {
+				calculation = result.data.calculation as BatchCalculation;
+			} else if (result.type === 'failure') {
+				calcError = (result.data?.error as string) || 'Calculation failed';
+			} else {
+				calcError = 'Unexpected response';
+			}
+		} catch {
+			calcError = 'Failed to calculate batch costs.';
+		} finally {
+			calcLoading = false;
+		}
+	}
+
 	function openProcess(batchId: string) {
 		activeBatchId = batchId;
+		calculation = null;
+		calcError = '';
 		mode = 'process';
+		calculateBatch(batchId);
 	}
 
 	function backToIndex() {
@@ -417,6 +469,86 @@
 			</div>
 		{/if}
 
+		{#if calcLoading}
+			<div class="summary-section">
+				<p class="hint">Calculating costs…</p>
+			</div>
+		{:else if calcError}
+			<div class="summary-section">
+				<div class="alert alert-error">{calcError}</div>
+				<button type="button" class="action-btn" onclick={() => calculateBatch(activeBatch!.id)} style="margin-top: 0.5rem;">Retry</button>
+			</div>
+		{:else if calculation}
+			{#if calculation.inventoryIssues.length > 0}
+				<div class="summary-section">
+					<h4 class="summary-label">⚠️ Inventory Issues</h4>
+					{#each calculation.inventoryIssues as issue}
+						<div class="alert alert-warning">
+							<strong>{issue.itemName}</strong> ({issue.sku}): need {issue.needed}, only {issue.available} in stock
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			<div class="summary-section">
+				<h4 class="summary-label">Cost Summary</h4>
+				<div class="cost-grid">
+					<div class="cost-row">
+						<span>Orders</span>
+						<span>{calculation.orderCount}</span>
+					</div>
+					<div class="cost-row">
+						<span>Items Cost</span>
+						<span>${calculation.totalItemsCostUsd.toFixed(2)}</span>
+					</div>
+					<div class="cost-row">
+						<span>Shipping Cost</span>
+						<span>${calculation.totalShippingUsd.toFixed(2)}</span>
+					</div>
+					{#if calculation.shippingFailures > 0}
+						<div class="cost-row cost-warning">
+							<span>Shipping estimate failed</span>
+							<span>{calculation.shippingFailures} order{calculation.shippingFailures !== 1 ? 's' : ''}</span>
+						</div>
+					{/if}
+					<div class="cost-row cost-total">
+						<span>Total</span>
+						<span>${calculation.grandTotalUsd.toFixed(2)}</span>
+					</div>
+				</div>
+			</div>
+
+			<details class="summary-section">
+				<summary class="summary-label" style="cursor: pointer;">Per-Order Breakdown ({calculation.orders.length})</summary>
+				<div class="items-table-wrapper" style="margin-top: 0.75rem;">
+					<table class="items-table">
+						<thead>
+							<tr>
+								<th>Recipient</th>
+								<th>Country</th>
+								<th>Items</th>
+								<th>Shipping</th>
+								<th>Method</th>
+								<th>Total</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each calculation.orders as order}
+								<tr>
+									<td>{order.recipient}</td>
+									<td>{order.country}</td>
+									<td>${order.itemsCostUsd.toFixed(2)}</td>
+									<td>{order.shippingCostUsd != null ? `$${order.shippingCostUsd.toFixed(2)}` : '—'}</td>
+									<td class="hint">{order.shippingMethod || '—'}</td>
+									<td>{order.totalUsd != null ? `$${order.totalUsd.toFixed(2)}` : '—'}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			</details>
+		{/if}
+
 		<form method="POST" action="?/processBatch" use:enhance={() => {
 			return async ({ update }) => {
 				await update();
@@ -425,7 +557,7 @@
 		}}>
 			<input type="hidden" name="batchId" value={activeBatch.id} />
 			<div class="form-actions">
-				<button type="submit" class="submit-btn submit-process">Process Batch</button>
+				<button type="submit" class="submit-btn submit-process" disabled={calcLoading || !!calcError}>Process Batch</button>
 			</div>
 		</form>
 	</section>
@@ -802,6 +934,52 @@
 	.summary-section p {
 		margin: 0.125rem 0;
 		font-size: 0.875rem;
+	}
+
+	/* Alerts */
+	.alert {
+		padding: 0.625rem 0.875rem;
+		border-radius: 8px;
+		font-size: 0.85rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.alert-warning {
+		background: #fff8e1;
+		border: 1px solid #f5a623;
+		color: #8a6d3b;
+	}
+
+	.alert-error {
+		background: #fdecea;
+		border: 1px solid #ec3750;
+		color: #a94442;
+	}
+
+	/* Cost grid */
+	.cost-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+	}
+
+	.cost-row {
+		display: flex;
+		justify-content: space-between;
+		font-size: 0.875rem;
+		padding: 0.25rem 0;
+	}
+
+	.cost-row.cost-total {
+		border-top: 1px solid #e0e0e0;
+		padding-top: 0.5rem;
+		margin-top: 0.25rem;
+		font-weight: 600;
+		font-size: 1rem;
+	}
+
+	.cost-row.cost-warning {
+		color: #f5a623;
 	}
 
 	@media (max-width: 768px) {
