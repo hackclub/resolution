@@ -1,7 +1,7 @@
 import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
 import { warehouseItem, warehouseCategory, warehouseOrder, warehouseOrderItem, warehouseOrderTag, ambassadorPathway } from '$lib/server/db/schema';
-import { eq, asc, desc } from 'drizzle-orm';
+import { eq, asc, desc, sql } from 'drizzle-orm';
 import { error, fail, redirect } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ parent }) => {
@@ -89,6 +89,14 @@ export const actions: Actions = {
 					quantity: item.quantity,
 					sizingChoice: item.sizingChoice || null
 				})
+			)
+		);
+
+		await Promise.all(
+			items.map((item) =>
+				db.update(warehouseItem)
+					.set({ quantity: sql`${warehouseItem.quantity} - ${item.quantity}` })
+					.where(eq(warehouseItem.id, item.warehouseItemId))
 			)
 		);
 
