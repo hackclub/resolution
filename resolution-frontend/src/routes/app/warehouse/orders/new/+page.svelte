@@ -449,6 +449,7 @@
 	{#if step === 3}
 		<section class="card">
 			<h3 class="section-heading">Choose Shipping</h3>
+			<p class="hint" style="margin-bottom: 0.75rem;">⚠️ Shipping costs are estimates and may be adjusted. Final costs will be determined at time of shipment.</p>
 			{#if estimateLoading}
 				<p class="hint">Estimating shipping costs...</p>
 			{:else if estimateError}

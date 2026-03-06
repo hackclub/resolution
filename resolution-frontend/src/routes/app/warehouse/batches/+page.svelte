@@ -492,6 +492,7 @@
 
 			<div class="summary-section">
 				<h4 class="summary-label">Cost Summary</h4>
+				<p class="hint" style="margin-bottom: 0.75rem;">⚠️ Shipping costs are estimates and may be adjusted. Final costs will be determined at time of shipment.</p>
 				<div class="cost-grid">
 					<div class="cost-row">
 						<span>Orders</span>
