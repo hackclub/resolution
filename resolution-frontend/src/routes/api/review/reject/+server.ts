@@ -50,9 +50,12 @@ export const POST: RequestHandler = async (event) => {
 			}
 		}
 
+		const reviewerName = user.firstName || 'Unknown';
+		const reasonWithAttribution = `${reason.trim()} | Reviewed by ${reviewerName} - for any concerns please email jenin@hackclub.com`;
+
 		await base(env.AIRTABLE_YSWS_TABLE_ID).update(recordId, {
 			'Rejected': true,
-			'Reject Reason': reason.trim()
+			'Reject Reason': reasonWithAttribution
 		});
 
 		if (submitterEmail && weekNumber) {

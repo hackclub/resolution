@@ -55,9 +55,12 @@ export const POST: RequestHandler = async (event) => {
 			}
 		}
 
+		const reviewerName = user.firstName || 'Unknown';
+		const justificationWithAttribution = `${justification.trim()} | Reviewed by ${reviewerName} - for any concerns please email jenin@hackclub.com`;
+
 		await base(env.AIRTABLE_YSWS_TABLE_ID).update(recordId, {
 			'Optional - Override Hours Spent': hours,
-			'Optional - Override Hours Spent Justification': justification.trim(),
+			'Optional - Override Hours Spent Justification': justificationWithAttribution,
 			'Automation - Submit to Unified YSWS': true
 		});
 
