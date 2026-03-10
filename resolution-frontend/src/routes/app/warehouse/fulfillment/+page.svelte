@@ -1,0 +1,392 @@
+<script lang="ts">
+	import type { PageData } from './$types';
+
+	let { data }: { data: PageData } = $props();
+
+	let expandedOrder = $state<string | null>(null);
+	let activeTagFilter = $state<string | null>(null);
+	let statusFilter = $state<string | null>(null);
+
+	function formatCost(cents: number) {
+		return `$${(cents / 100).toFixed(2)}`;
+	}
+
+	function statusLabel(status: string) {
+		const map: Record<string, string> = {
+			DRAFT: 'Draft',
+			ESTIMATED: 'Estimated',
+			APPROVED: 'Approved',
+			SHIPPED: 'Shipped',
+			CANCELED: 'Canceled'
+		};
+		return map[status] || status;
+	}
+
+	function statusClass(status: string) {
+		const map: Record<string, string> = {
+			DRAFT: 'status-draft',
+			ESTIMATED: 'status-estimated',
+			APPROVED: 'status-approved',
+			SHIPPED: 'status-shipped',
+			CANCELED: 'status-canceled'
+		};
+		return map[status] || '';
+	}
+
+	function formatCreatorName(creator: { firstName: string | null; lastName: string | null; email: string }): string {
+		const name = [creator.firstName, creator.lastName].filter(Boolean).join(' ');
+		return name || creator.email;
+	}
+
+	const statuses = ['ESTIMATED', 'APPROVED', 'SHIPPED', 'CANCELED'];
+
+	const filteredOrders = $derived(() => {
+		let orders = data.orders;
+		if (statusFilter) {
+			orders = orders.filter((o: any) => o.status === statusFilter);
+		}
+		if (activeTagFilter) {
+			orders = orders.filter((o: any) => o.tags.some((t: any) => t.tag === activeTagFilter));
+		}
+		return orders;
+	});
+</script>
+
+<div class="filter-bar">
+	<div class="status-filters">
+		<span class="filter-label">Status:</span>
+		<button class="filter-btn" class:active={!statusFilter} onclick={() => statusFilter = null}>All ({data.orders.length})</button>
+		{#each statuses as s}
+			{@const count = data.orders.filter((o: any) => o.status === s).length}
+			{#if count > 0}
+				<button class="filter-btn" class:active={statusFilter === s} onclick={() => statusFilter = statusFilter === s ? null : s}>
+					{statusLabel(s)} ({count})
+				</button>
+			{/if}
+		{/each}
+	</div>
+
+	{#if data.allTags.length > 0}
+		<div class="tag-filters">
+			<span class="filter-label">Tag:</span>
+			<button class="filter-btn" class:active={!activeTagFilter} onclick={() => activeTagFilter = null}>All</button>
+			{#each data.allTags as tag}
+				<button
+					class="filter-btn"
+					class:active={activeTagFilter === tag}
+					onclick={() => activeTagFilter = activeTagFilter === tag ? null : tag}
+				>{tag}</button>
+			{/each}
+		</div>
+	{/if}
+</div>
+
+{#if filteredOrders().length === 0}
+	<div class="empty-state">
+		<p>No orders to fulfill.</p>
+		<p class="hint">Placed orders will appear here.</p>
+	</div>
+{:else}
+	<section class="orders-section">
+		<div class="items-table-wrapper">
+			<table class="items-table">
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Recipient</th>
+						<th>Ordered By</th>
+						<th>Destination</th>
+						<th>Items</th>
+						<th>Est. Shipping</th>
+						<th>Status</th>
+						<th>Tags</th>
+						<th>Created</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#each filteredOrders() as order (order.id)}
+						<tr>
+							<td><code class="fulfillment-id">#{order.fulfillmentId}</code></td>
+							<td>
+								<span class="item-name">{order.firstName} {order.lastName}</span>
+								<br /><span class="hint">{order.email}</span>
+							</td>
+							<td>
+								<span class="item-name">{formatCreatorName(order.createdBy)}</span>
+								<br /><span class="hint">{order.createdBy.email}</span>
+							</td>
+							<td>
+								{order.city}, {order.stateProvince}
+								<br /><span class="hint">{order.country}{order.postalCode ? ` ${order.postalCode}` : ''}</span>
+							</td>
+							<td>
+								{order.items.length} item{order.items.length !== 1 ? 's' : ''}
+								<br /><span class="hint">{order.items.reduce((sum: number, oi: any) => sum + oi.quantity, 0)} total qty</span>
+							</td>
+							<td>
+								{#if order.estimatedShippingCents}
+									{formatCost(order.estimatedShippingCents)}
+									<br /><span class="hint">{order.estimatedServiceName || '—'}</span>
+								{:else}
+									<span class="hint">Not estimated</span>
+								{/if}
+							</td>
+							<td><span class="status-badge {statusClass(order.status)}">{statusLabel(order.status)}</span></td>
+							<td>
+								<div class="tags-cell">
+									{#each order.tags as tagObj}
+										<span class="tag">{tagObj.tag}</span>
+									{/each}
+								</div>
+							</td>
+							<td class="hint">{new Date(order.createdAt).toLocaleDateString()}</td>
+							<td class="actions">
+								<button type="button" class="action-btn" onclick={() => expandedOrder = expandedOrder === order.id ? null : order.id}>
+									{expandedOrder === order.id ? 'Hide' : 'Details'}
+								</button>
+							</td>
+						</tr>
+						{#if expandedOrder === order.id}
+							<tr class="detail-row">
+								<td colspan="10">
+									<div class="detail-grid">
+										<div class="detail-section">
+											<h4>Recipient</h4>
+											<p>{order.firstName} {order.lastName}</p>
+											<p>{order.email}{order.phone ? ` · ${order.phone}` : ''}</p>
+										</div>
+										<div class="detail-section">
+											<h4>Address</h4>
+											<p>{order.addressLine1}</p>
+											{#if order.addressLine2}<p>{order.addressLine2}</p>{/if}
+											<p>{order.city}, {order.stateProvince} {order.postalCode || ''}</p>
+											<p>{order.country}</p>
+										</div>
+										<div class="detail-section">
+											<h4>Items</h4>
+											{#each order.items as oi}
+												<p>
+													{oi.warehouseItem.name}
+													{#if oi.sizingChoice}({oi.sizingChoice}){/if}
+													× {oi.quantity}
+												</p>
+											{/each}
+										</div>
+										<div class="detail-section">
+											<h4>Estimated Package</h4>
+											{#if order.estimatedTotalLengthIn}
+												<p>Dimensions: {order.estimatedTotalLengthIn}×{order.estimatedTotalWidthIn}{order.estimatedPackageType !== 'flat' ? `×${order.estimatedTotalHeightIn}` : ''} in ({order.estimatedPackageType})</p>
+												<p>Weight: {order.estimatedTotalWeightGrams}g</p>
+											{/if}
+											{#if order.estimatedShippingCents}
+												<p>Shipping: {formatCost(order.estimatedShippingCents)} ({order.estimatedServiceName})</p>
+											{:else}
+												<p>Shipping: Not estimated</p>
+											{/if}
+										</div>
+										{#if order.notes}
+											<div class="detail-section">
+												<h4>Notes</h4>
+												<p>{order.notes}</p>
+											</div>
+										{/if}
+									</div>
+								</td>
+							</tr>
+						{/if}
+					{/each}
+				</tbody>
+			</table>
+		</div>
+	</section>
+{/if}
+
+<style>
+	.filter-bar {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		margin-bottom: 1rem;
+	}
+
+	.status-filters,
+	.tag-filters {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		flex-wrap: wrap;
+	}
+
+	.filter-label {
+		font-weight: 600;
+		font-size: 0.8rem;
+		color: #8492a6;
+		white-space: nowrap;
+		margin-right: 0.25rem;
+	}
+
+	.filter-btn {
+		padding: 0.3rem 0.625rem;
+		font-size: 0.75rem;
+		background: rgba(255, 255, 255, 0.8);
+		border: 1px solid #af98ff;
+		color: #af98ff;
+		border-radius: 20px;
+		cursor: pointer;
+		font-family: inherit;
+	}
+
+	.filter-btn:hover {
+		background: rgba(255, 255, 255, 1);
+	}
+
+	.filter-btn.active {
+		background: #af98ff;
+		color: white;
+	}
+
+	.empty-state {
+		text-align: center;
+		padding: 3rem;
+		background: rgba(255, 255, 255, 0.85);
+		border: 1px solid #af98ff;
+		border-radius: 16px;
+	}
+
+	.empty-state p {
+		margin: 0 0 0.5rem 0;
+	}
+
+	.hint {
+		color: #8492a6;
+		font-size: 0.8rem;
+	}
+
+	.orders-section {
+		background: rgba(255, 255, 255, 0.85);
+		border: 1px solid #af98ff;
+		border-radius: 16px;
+		padding: 1.5rem;
+	}
+
+	.items-table-wrapper {
+		overflow-x: auto;
+	}
+
+	.items-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.875rem;
+	}
+
+	.items-table th,
+	.items-table td {
+		text-align: left;
+		padding: 0.75rem;
+		border-bottom: 1px solid #e0e0e0;
+	}
+
+	.items-table th {
+		font-weight: 600;
+		color: #8492a6;
+		white-space: nowrap;
+	}
+
+	.item-name {
+		font-weight: 500;
+	}
+
+	.fulfillment-id {
+		background: #f0edff;
+		padding: 0.125rem 0.375rem;
+		border-radius: 4px;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: #6c5ce7;
+		white-space: nowrap;
+	}
+
+	.status-badge {
+		display: inline-block;
+		padding: 0.2rem 0.5rem;
+		border-radius: 12px;
+		font-size: 0.75rem;
+		font-weight: 600;
+	}
+
+	.status-draft { background: #f0f0f0; color: #8492a6; }
+	.status-estimated { background: #e8f4ff; color: #338eda; }
+	.status-approved { background: #e8fff0; color: #33d6a6; }
+	.status-shipped { background: #f0e8ff; color: #af98ff; }
+	.status-canceled { background: #ffe8ea; color: #ec3750; }
+
+	.actions {
+		white-space: nowrap;
+	}
+
+	.action-btn {
+		margin-right: 0.375rem;
+		padding: 0.375rem 0.75rem;
+		font-size: 0.75rem;
+		background: rgba(255, 255, 255, 0.8);
+		border: 1px solid #af98ff;
+		color: #af98ff;
+		cursor: pointer;
+		border-radius: 6px;
+		font-family: inherit;
+		white-space: nowrap;
+	}
+
+	.action-btn:hover {
+		background: rgba(255, 255, 255, 1);
+	}
+
+	.detail-row td {
+		padding: 1rem;
+		background: rgba(175, 152, 255, 0.05);
+	}
+
+	.detail-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+
+	.detail-section h4 {
+		margin: 0 0 0.375rem 0;
+		font-size: 0.8rem;
+		color: #8492a6;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.detail-section p {
+		margin: 0 0 0.25rem 0;
+		font-size: 0.875rem;
+	}
+
+	.tags-cell {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem;
+		align-items: center;
+	}
+
+	.tag {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.2rem;
+		padding: 0.2rem 0.45rem;
+		background: #f0edff;
+		color: #6c5ce7;
+		border-radius: 4px;
+		font-size: 0.7rem;
+	}
+
+	@media (max-width: 768px) {
+		.detail-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

@@ -7,6 +7,7 @@
 	const tabs = [
 		{ label: 'Items', href: '/app/warehouse/items' },
 		{ label: 'Orders', href: '/app/warehouse/orders' },
+		{ label: 'Fulfillment', href: '/app/warehouse/fulfillment' },
 		{ label: 'Batches', href: '/app/warehouse/batches' },
 		{ label: 'Order Templates', href: '/app/warehouse/order-templates' }
 	];

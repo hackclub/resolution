@@ -305,6 +305,7 @@ export const warehouseItem = pgTable('warehouse_item', {
 // Warehouse orders
 export const warehouseOrder = pgTable('warehouse_order', {
 	id: text('id').primaryKey().$defaultFn(() => createId()),
+	fulfillmentId: integer('fulfillment_id').generatedAlwaysAsIdentity().unique(),
 	createdById: text('created_by_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
 	batchId: text('batch_id'),
 	status: warehouseOrderStatusEnum('status').notNull().default('DRAFT'),
