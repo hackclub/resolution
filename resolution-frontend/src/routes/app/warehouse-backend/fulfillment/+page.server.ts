@@ -3,7 +3,8 @@ import { db } from '$lib/server/db';
 import { warehouseOrder, warehouseOrderTag } from '$lib/server/db/schema';
 import { ne, desc } from 'drizzle-orm';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ parent }) => {
+	await parent();
 	const orders = await db.query.warehouseOrder.findMany({
 		where: ne(warehouseOrder.status, 'DRAFT'),
 		with: {
