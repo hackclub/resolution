@@ -36,7 +36,7 @@ COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder /app/src/lib/server/db/schema.ts ./src/lib/server/db/schema.ts
 
 # Install drizzle-kit for runtime schema push (pruned as devDependency)
-RUN npm install drizzle-kit
+RUN npm install drizzle-kit@0.31.8
 
 # Copy entrypoint script
 COPY entrypoint.sh ./entrypoint.sh
