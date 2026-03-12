@@ -1,7 +1,13 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { page } from '$app/stores';
 
 	let { children }: { children: Snippet } = $props();
+
+	const tabs = [
+		{ href: '/app/warehouse-backend', label: 'Inventory' },
+		{ href: '/app/warehouse-backend/fulfillment', label: 'Fulfillment' }
+	];
 </script>
 
 <svelte:head>
@@ -18,6 +24,16 @@
 		<h1>Warehouse Backend</h1>
 		<p class="subtitle">Admin inventory management</p>
 	</header>
+
+	<nav class="tabs">
+		{#each tabs as tab}
+			<a
+				href={tab.href}
+				class="tab"
+				class:active={$page.url.pathname === tab.href}
+			>{tab.label}</a>
+		{/each}
+	</nav>
 
 	{@render children()}
 </div>
@@ -59,5 +75,32 @@
 	.subtitle {
 		color: #8492a6;
 		margin: 0;
+	}
+
+	.tabs {
+		display: flex;
+		gap: 0.5rem;
+		margin-bottom: 1.5rem;
+		border-bottom: 1px solid #e0e0e0;
+	}
+
+	.tab {
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #8492a6;
+		text-decoration: none;
+		border-bottom: 2px solid transparent;
+		margin-bottom: -1px;
+		font-family: inherit;
+	}
+
+	.tab:hover {
+		color: #338eda;
+	}
+
+	.tab.active {
+		color: #338eda;
+		border-bottom-color: #338eda;
 	}
 </style>
