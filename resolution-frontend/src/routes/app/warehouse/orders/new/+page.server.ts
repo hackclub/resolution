@@ -78,7 +78,8 @@ export const actions: Actions = {
 			stateProvince,
 			postalCode: postalCode || null,
 			country,
-			notes: notes || null
+			notes: notes || null,
+			status: 'APPROVED'
 		}).returning({ id: warehouseOrder.id });
 
 		await Promise.all(
