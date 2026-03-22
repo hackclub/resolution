@@ -114,6 +114,11 @@ function buildCreateShipmentXML(order: any, weightKg: number, lengthCm: number, 
 		<preferences>
 			<show-packing-instructions>false</show-packing-instructions>
 		</preferences>
+		<settlement-info>
+			<paid-by-customer>${customerNumber}</paid-by-customer>
+			${contractId ? `<contract-id>${contractId}</contract-id>` : ''}
+			<method-of-payment>${contractId ? 'Account' : 'CreditCard'}</method-of-payment>
+		</settlement-info>
 	</delivery-spec>
 </shipment>`;
 }
