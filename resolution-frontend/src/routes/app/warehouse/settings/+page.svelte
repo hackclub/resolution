@@ -38,22 +38,22 @@
 			return;
 		}
 
-		qz.security.setCertificatePromise(function(resolve: any, reject: any) {
-			fetch('/api/qz/cert', { cache: 'no-store' })
-				.then((r: Response) => r.ok ? resolve(r.text()) : reject(r.text()));
-		});
-
-		qz.security.setSignatureAlgorithm('SHA512');
-		qz.security.setSignaturePromise(function(toSign: string) {
-			return function(resolve: any, reject: any) {
-				fetch('/api/qz/sign', {
-					method: 'POST',
-					cache: 'no-store',
-					body: toSign,
-					headers: { 'Content-Type': 'text/plain' }
-				}).then((r: Response) => r.ok ? resolve(r.text()) : reject(r.text()));
-			};
-		});
+		try {
+			const certRes = await fetch('/api/qz/cert', { cache: 'no-store' });
+			if (certRes.ok) {
+				const certText = await certRes.text();
+				if (certText && !certText.includes('not configured')) {
+					qz.security.setCertificatePromise(function(resolve: any) { resolve(certText); });
+					qz.security.setSignatureAlgorithm('SHA512');
+					qz.security.setSignaturePromise(function(toSign: string) {
+						return function(resolve: any, reject: any) {
+							fetch('/api/qz/sign', { method: 'POST', cache: 'no-store', body: toSign, headers: { 'Content-Type': 'text/plain' } })
+								.then((r: Response) => r.ok ? resolve(r.text()) : reject(r.text()));
+						};
+					});
+				}
+			}
+		} catch {}
 
 		try {
 			if (!qz.websocket.isActive()) {
