@@ -9,7 +9,8 @@
 		{ label: 'Orders', href: '/app/warehouse/orders' },
 		{ label: 'Fulfillment', href: '/app/warehouse/fulfillment' },
 		{ label: 'Batches', href: '/app/warehouse/batches' },
-		{ label: 'Order Templates', href: '/app/warehouse/order-templates' }
+		{ label: 'Order Templates', href: '/app/warehouse/order-templates' },
+		{ label: 'Settings', href: '/app/warehouse/settings' }
 	];
 </script>
 

@@ -50,7 +50,120 @@
 		}
 		return orders;
 	});
+
+	// ── QZ Tray + Label state ──
+	let qz: any = null;
+	let qzStatus = $state<'connecting' | 'connected' | 'error'>('connecting');
+	let labelLoading = $state<Record<string, boolean>>({});
+	let labelErrors = $state<Record<string, string>>({});
+	let labelResults = $state<Record<string, { trackingNumber: string | null; labelUrl: string | null; packingSlipBase64: string; shippingMethod: string }>>({});
+
+	function getQZSettings(): { printer: string; dpi: number } {
+		try {
+			const saved = localStorage.getItem('warehouse-qz-settings');
+			if (saved) return JSON.parse(saved);
+		} catch {}
+		return { printer: '', dpi: 203 };
+	}
+
+	async function initQZ() {
+		const maxWait = 5000;
+		const start = Date.now();
+		while (!(window as any).qz && Date.now() - start < maxWait) {
+			await new Promise(r => setTimeout(r, 100));
+		}
+		qz = (window as any).qz;
+		if (!qz) { qzStatus = 'error'; return; }
+
+		qz.security.setCertificatePromise(function(resolve: any, reject: any) {
+			fetch('/api/qz/cert', { cache: 'no-store' })
+				.then((r: Response) => r.ok ? resolve(r.text()) : reject(r.text()));
+		});
+		qz.security.setSignatureAlgorithm('SHA512');
+		qz.security.setSignaturePromise(function(toSign: string) {
+			return function(resolve: any, reject: any) {
+				fetch('/api/qz/sign', { method: 'POST', cache: 'no-store', body: toSign, headers: { 'Content-Type': 'text/plain' } })
+					.then((r: Response) => r.ok ? resolve(r.text()) : reject(r.text()));
+			};
+		});
+
+		try {
+			if (!qz.websocket.isActive()) await qz.websocket.connect();
+			qzStatus = 'connected';
+		} catch { qzStatus = 'error'; }
+	}
+
+	async function printPdf(pdfDataUrl: string) {
+		if (!qz || qzStatus !== 'connected') return;
+		const settings = getQZSettings();
+		if (!settings.printer) { alert('No printer selected. Go to Settings to configure.'); return; }
+		const config = qz.configs.create(settings.printer, {
+			colorType: 'blackwhite', density: settings.dpi, units: 'in',
+			rasterize: true, interpolation: 'nearest-neighbor', size: { width: 4, height: 6 }
+		});
+		await qz.print(config, [{ type: 'pixel', format: 'pdf', flavor: 'base64', data: pdfDataUrl.replace(/^data:application\/pdf;base64,/, '') }]);
+	}
+
+	async function printPackingSlip(base64Text: string) {
+		if (!qz || qzStatus !== 'connected') return;
+		const settings = getQZSettings();
+		if (!settings.printer) { alert('No printer selected. Go to Settings to configure.'); return; }
+		const text = decodeURIComponent(escape(atob(base64Text)));
+		const html = `<pre style="font-family:monospace;font-size:11px;padding:10px;white-space:pre-wrap;">${text}</pre>`;
+		const config = qz.configs.create(settings.printer, {
+			colorType: 'blackwhite', density: settings.dpi, units: 'in',
+			rasterize: true, interpolation: 'nearest-neighbor', size: { width: 4, height: 6 }
+		});
+		await qz.print(config, [{ type: 'html', format: 'plain', data: html }]);
+	}
+
+	async function getLabel(orderId: string) {
+		labelLoading[orderId] = true;
+		labelErrors[orderId] = '';
+		try {
+			const res = await fetch('/api/fulfillment/get-label', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ orderId })
+			});
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({ message: 'Failed' }));
+				labelErrors[orderId] = err.message || `Error ${res.status}`;
+				return;
+			}
+			const result = await res.json();
+			labelResults[orderId] = result;
+
+			// Update the order status in the local data
+			const order = data.orders.find((o: any) => o.id === orderId);
+			if (order) {
+				(order as any).status = 'SHIPPED';
+				(order as any).trackingNumber = result.trackingNumber;
+				(order as any).labelUrl = result.labelUrl;
+			}
+		} catch (e: any) {
+			labelErrors[orderId] = e?.message || 'Network error';
+		} finally {
+			labelLoading[orderId] = false;
+		}
+	}
+
+	$effect(() => { initQZ(); });
 </script>
+
+<svelte:head>
+	<script src="https://unpkg.com/qz-tray@2.2.4/qz-tray.js"></script>
+</svelte:head>
+
+<div class="qz-status-bar">
+	{#if qzStatus === 'connecting'}
+		<span class="qz-indicator qz-connecting">⏳ QZ Tray connecting...</span>
+	{:else if qzStatus === 'connected'}
+		<span class="qz-indicator qz-connected">🖨️ Printer ready</span>
+	{:else}
+		<span class="qz-indicator qz-error">✗ QZ Tray not connected — <a href="/app/warehouse/settings">Settings</a></span>
+	{/if}
+</div>
 
 <div class="filter-bar">
 	<div class="status-filters">
@@ -145,8 +258,49 @@
 								<button type="button" class="action-btn" onclick={() => expandedOrder = expandedOrder === order.id ? null : order.id}>
 									{expandedOrder === order.id ? 'Hide' : 'Details'}
 								</button>
+								{#if order.status === 'APPROVED' && !order.labelUrl && !labelResults[order.id]}
+									<button
+										type="button"
+										class="action-btn label-btn"
+										onclick={() => getLabel(order.id)}
+										disabled={labelLoading[order.id]}
+									>
+										{labelLoading[order.id] ? '⏳...' : '📦 Get Label'}
+									</button>
+								{/if}
 							</td>
 						</tr>
+						{#if labelErrors[order.id]}
+							<tr class="detail-row">
+								<td colspan="10">
+									<p class="label-error">✗ {labelErrors[order.id]}</p>
+								</td>
+							</tr>
+						{/if}
+						{#if labelResults[order.id]}
+							<tr class="detail-row">
+								<td colspan="10">
+									<div class="label-result">
+										<div class="label-result-info">
+											<span class="label-method">{labelResults[order.id].shippingMethod === 'lettermail' ? '✉️ Lettermail' : '📦 Canada Post'}</span>
+											{#if labelResults[order.id].trackingNumber}
+												<span class="label-tracking">Tracking: <code>{labelResults[order.id].trackingNumber}</code></span>
+											{/if}
+										</div>
+										<div class="label-actions">
+											{#if labelResults[order.id].labelUrl}
+												<button type="button" class="action-btn print-btn" onclick={() => printPdf(labelResults[order.id].labelUrl!)}>
+													🖨️ Print Label
+												</button>
+											{/if}
+											<button type="button" class="action-btn print-btn" onclick={() => printPackingSlip(labelResults[order.id].packingSlipBase64)}>
+												🖨️ Print Packing Slip
+											</button>
+										</div>
+									</div>
+								</td>
+							</tr>
+						{/if}
 						{#if expandedOrder === order.id}
 							<tr class="detail-row">
 								<td colspan="10">
@@ -174,15 +328,18 @@
 											{/each}
 										</div>
 										<div class="detail-section">
-											<h4>Estimated Package</h4>
+											<h4>Shipping</h4>
+											{#if order.trackingNumber}
+												<p>Tracking: <code>{order.trackingNumber}</code></p>
+											{/if}
+											{#if order.estimatedShippingCents}
+												<p>Cost: {formatCost(order.estimatedShippingCents)} ({order.estimatedServiceName})</p>
+											{:else}
+												<p>Shipping: Not estimated</p>
+											{/if}
 											{#if order.estimatedTotalLengthIn}
 												<p>Dimensions: {order.estimatedTotalLengthIn}×{order.estimatedTotalWidthIn}{order.estimatedPackageType !== 'flat' ? `×${order.estimatedTotalHeightIn}` : ''} in ({order.estimatedPackageType})</p>
 												<p>Weight: {order.estimatedTotalWeightGrams}g</p>
-											{/if}
-											{#if order.estimatedShippingCents}
-												<p>Shipping: {formatCost(order.estimatedShippingCents)} ({order.estimatedServiceName})</p>
-											{:else}
-												<p>Shipping: Not estimated</p>
 											{/if}
 										</div>
 										{#if order.notes}
@@ -382,6 +539,91 @@
 		color: #6c5ce7;
 		border-radius: 4px;
 		font-size: 0.7rem;
+	}
+
+	.qz-status-bar {
+		margin-bottom: 0.75rem;
+	}
+
+	.qz-indicator {
+		display: inline-block;
+		padding: 0.375rem 0.75rem;
+		border-radius: 20px;
+		font-size: 0.8rem;
+		font-weight: 500;
+	}
+
+	.qz-connecting { background: #fff8e1; color: #f59e0b; }
+	.qz-connected { background: #e8fff0; color: #27ae60; }
+	.qz-error { background: #ffe8ea; color: #ec3750; }
+	.qz-error a { color: #ec3750; font-weight: 600; }
+
+	.label-btn {
+		background: #e8fff0 !important;
+		border-color: #33d6a6 !important;
+		color: #27ae60 !important;
+	}
+
+	.label-btn:hover:not(:disabled) {
+		background: #d0ffe0 !important;
+	}
+
+	.label-btn:disabled {
+		opacity: 0.6;
+		cursor: wait;
+	}
+
+	.label-error {
+		color: #ec3750;
+		font-size: 0.85rem;
+		margin: 0;
+	}
+
+	.label-result {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+	}
+
+	.label-result-info {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.label-method {
+		font-weight: 600;
+		font-size: 0.9rem;
+	}
+
+	.label-tracking {
+		font-size: 0.85rem;
+		color: #8492a6;
+	}
+
+	.label-tracking code {
+		background: #f0edff;
+		padding: 0.125rem 0.375rem;
+		border-radius: 4px;
+		color: #6c5ce7;
+		font-weight: 600;
+	}
+
+	.label-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.print-btn {
+		background: #f0f7ff !important;
+		border-color: #338eda !important;
+		color: #338eda !important;
+	}
+
+	.print-btn:hover {
+		background: #ddeeff !important;
 	}
 
 	@media (max-width: 768px) {

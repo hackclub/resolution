@@ -326,6 +326,9 @@ export const warehouseOrder = pgTable('warehouse_order', {
 	estimatedTotalWidthIn: real('estimated_total_width_in'),
 	estimatedTotalHeightIn: real('estimated_total_height_in'),
 	estimatedTotalWeightGrams: real('estimated_total_weight_grams'),
+	trackingNumber: text('tracking_number'),
+	labelUrl: text('label_url'),
+	shippingMethod: text('shipping_method'), // 'canada_post' or 'lettermail'
 	notes: text('notes'),
 	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
