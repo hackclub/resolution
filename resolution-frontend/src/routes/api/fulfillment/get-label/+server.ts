@@ -18,6 +18,39 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 	return btoa(binary);
 }
 
+function buildPackingSlipBase64(order: any): string {
+	const lines: string[] = [
+		`PACKING SLIP`,
+		`Order #${order.fulfillmentId}`,
+		`Date: ${new Date().toLocaleDateString('en-US')}`,
+		``,
+		`SHIP TO:`,
+		`${order.firstName} ${order.lastName}`,
+		`${order.addressLine1}`,
+		order.addressLine2 || '',
+		`${order.city}, ${order.stateProvince} ${order.postalCode || ''}`,
+		`${order.country}`,
+		``,
+		`CONTENTS:`,
+		`${'Item'.padEnd(35)} ${'Size'.padEnd(10)} ${'Qty'.padEnd(5)}`,
+		`${'─'.repeat(50)}`,
+	];
+	for (const oi of order.items) {
+		const name = oi.warehouseItem.name.substring(0, 35).padEnd(35);
+		const size = (oi.sizingChoice || '—').padEnd(10);
+		const qty = String(oi.quantity).padEnd(5);
+		lines.push(`${name} ${size} ${qty}`);
+	}
+	lines.push(`${'─'.repeat(50)}`);
+	lines.push(`Total items: ${order.items.reduce((s: number, oi: any) => s + oi.quantity, 0)}`);
+	if (order.notes) {
+		lines.push(``);
+		lines.push(`NOTES: ${order.notes}`);
+	}
+	const text = lines.filter(l => l !== undefined).join('\n');
+	return btoa(unescape(encodeURIComponent(text)));
+}
+
 function inchesToCm(inches: number): number {
 	return Math.round(inches * INCHES_TO_CM * 10) / 10;
 }
@@ -193,7 +226,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({
 			trackingNumber: order.trackingNumber,
 			labelUrl,
-			packingSlipBase64: '',
+			packingSlipBase64: buildPackingSlipBase64(order),
 			shippingMethod: order.shippingMethod || ''
 		});
 	}
@@ -212,40 +245,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		totalHeight += item.heightIn * oi.quantity;
 	}
 
-	// Build packing slip as a simple text-based content (to be rendered as PDF by the client or as an HTML page)
-	const packingSlipLines: string[] = [
-		`PACKING SLIP`,
-		`Order #${order.fulfillmentId}`,
-		`Date: ${new Date().toLocaleDateString('en-US')}`,
-		``,
-		`SHIP TO:`,
-		`${order.firstName} ${order.lastName}`,
-		`${order.addressLine1}`,
-		order.addressLine2 || '',
-		`${order.city}, ${order.stateProvince} ${order.postalCode || ''}`,
-		`${order.country}`,
-		``,
-		`CONTENTS:`,
-		`${'Item'.padEnd(35)} ${'Size'.padEnd(10)} ${'Qty'.padEnd(5)}`,
-		`${'─'.repeat(50)}`,
-	];
-
-	for (const oi of order.items) {
-		const name = oi.warehouseItem.name.substring(0, 35).padEnd(35);
-		const size = (oi.sizingChoice || '—').padEnd(10);
-		const qty = String(oi.quantity).padEnd(5);
-		packingSlipLines.push(`${name} ${size} ${qty}`);
-	}
-
-	packingSlipLines.push(`${'─'.repeat(50)}`);
-	packingSlipLines.push(`Total items: ${order.items.reduce((s, oi) => s + oi.quantity, 0)}`);
-	if (order.notes) {
-		packingSlipLines.push(``);
-		packingSlipLines.push(`NOTES: ${order.notes}`);
-	}
-
-	const packingSlipText = packingSlipLines.filter(l => l !== undefined).join('\n');
-	const packingSlipBase64 = btoa(unescape(encodeURIComponent(packingSlipText)));
+	const packingSlipBase64 = buildPackingSlipBase64(order);
 
 	let trackingNumber: string | null = null;
 	let labelUrl: string | null = null;
