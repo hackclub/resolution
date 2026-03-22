@@ -99,28 +99,24 @@
 		} catch { qzStatus = 'error'; }
 	}
 
-	async function printPdf(pdfDataUrl: string) {
+	async function printAll(result: { labelUrl: string | null; packingSlipBase64: string }) {
 		if (!qz || qzStatus !== 'connected') return;
 		const settings = getQZSettings();
 		if (!settings.printer) { alert('No printer selected. Go to Settings to configure.'); return; }
-		const config = qz.configs.create(settings.printer, {
+		const config = () => qz.configs.create(settings.printer, {
 			colorType: 'blackwhite', density: settings.dpi, units: 'in',
 			rasterize: true, interpolation: 'nearest-neighbor', size: { width: 4, height: 6 }
 		});
-		await qz.print(config, [{ type: 'pixel', format: 'pdf', flavor: 'base64', data: pdfDataUrl.replace(/^data:application\/pdf;base64,/, '') }]);
-	}
 
-	async function printPackingSlip(base64Text: string) {
-		if (!qz || qzStatus !== 'connected') return;
-		const settings = getQZSettings();
-		if (!settings.printer) { alert('No printer selected. Go to Settings to configure.'); return; }
-		const text = decodeURIComponent(escape(atob(base64Text)));
+		// Print label
+		if (result.labelUrl) {
+			await qz.print(config(), [{ type: 'pixel', format: 'pdf', flavor: 'base64', data: result.labelUrl.replace(/^data:application\/pdf;base64,/, '') }]);
+		}
+
+		// Print packing slip
+		const text = decodeURIComponent(escape(atob(result.packingSlipBase64)));
 		const html = `<pre style="font-family:monospace;font-size:11px;padding:10px;white-space:pre-wrap;">${text}</pre>`;
-		const config = qz.configs.create(settings.printer, {
-			colorType: 'blackwhite', density: settings.dpi, units: 'in',
-			rasterize: true, interpolation: 'nearest-neighbor', size: { width: 4, height: 6 }
-		});
-		await qz.print(config, [{ type: 'html', format: 'plain', data: html }]);
+		await qz.print(config(), [{ type: 'html', format: 'plain', data: html }]);
 	}
 
 	async function getLabel(orderId: string) {
@@ -294,13 +290,8 @@
 											{/if}
 										</div>
 										<div class="label-actions">
-											{#if labelResults[order.id].labelUrl}
-												<button type="button" class="action-btn print-btn" onclick={() => printPdf(labelResults[order.id].labelUrl!)}>
-													🖨️ Print Label
-												</button>
-											{/if}
-											<button type="button" class="action-btn print-btn" onclick={() => printPackingSlip(labelResults[order.id].packingSlipBase64)}>
-												🖨️ Print Packing Slip
+											<button type="button" class="action-btn print-btn" onclick={() => printAll(labelResults[order.id])}>
+												🖨️ Print
 											</button>
 										</div>
 									</div>
