@@ -110,18 +110,7 @@
 
 		// Print label
 		if (result.labelUrl) {
-			let base64Data: string;
-			if (result.labelUrl.startsWith('data:')) {
-				base64Data = result.labelUrl.replace(/^data:application\/pdf;base64,/, '');
-			} else {
-				// Fetch remote PDF and convert to base64
-				const res = await fetch(result.labelUrl);
-				const buf = await res.arrayBuffer();
-				const bytes = new Uint8Array(buf);
-				let binary = '';
-				for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-				base64Data = btoa(binary);
-			}
+			const base64Data = result.labelUrl.replace(/^data:application\/pdf;base64,/, '');
 			await qz.print(config(), [{ type: 'pixel', format: 'pdf', flavor: 'base64', data: base64Data }]);
 		}
 
@@ -284,13 +273,14 @@
 										{labelLoading[order.id] ? '⏳...' : order.labelUrl ? '🔄 Reprint' : '📦 Get Label'}
 									</button>
 								{/if}
-								{#if order.status === 'SHIPPED' && order.labelUrl && !labelResults[order.id]}
+								{#if order.status === 'SHIPPED' && !labelResults[order.id]}
 									<button
 										type="button"
 										class="action-btn label-btn"
-										onclick={() => { labelResults[order.id] = { labelUrl: order.labelUrl, packingSlipBase64: '', shippingMethod: order.shippingMethod || '' }; }}
+										onclick={() => getLabel(order.id)}
+										disabled={labelLoading[order.id]}
 									>
-										🖨️ Reprint
+										{labelLoading[order.id] ? '⏳...' : '🖨️ Reprint'}
 									</button>
 								{/if}
 							</td>
