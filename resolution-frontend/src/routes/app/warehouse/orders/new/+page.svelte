@@ -313,8 +313,8 @@
 				<input type="email" bind:value={email} required />
 			</label>
 			<label class="field">
-				<span class="label">Phone</span>
-				<input type="tel" bind:value={phone} />
+				<span class="label">Phone <span class="required">*</span></span>
+				<input type="tel" bind:value={phone} required />
 			</label>
 		</section>
 

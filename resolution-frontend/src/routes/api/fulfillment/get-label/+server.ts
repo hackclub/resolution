@@ -100,11 +100,17 @@ function buildCreateShipmentXML(order: any, weightKg: number, lengthCm: number, 
 			</item>`;
 		}).join('\n');
 
-		customsXml = `<customs>
+		customsXml = `<options>
+			<option>
+				<option-code>RASE</option-code>
+			</option>
+		</options>
+		<customs>
 			<currency>USD</currency>
 			<conversion-from-cad>0.730</conversion-from-cad>
 			<reason-for-export>SOG</reason-for-export>
 			<other-reason>Merchandise</other-reason>
+			<non-delivery>RASE</non-delivery>
 			<sku-list>${skuLines}</sku-list>
 		</customs>`;
 	}
@@ -131,6 +137,7 @@ function buildCreateShipmentXML(order: any, weightKg: number, lengthCm: number, 
 		</sender>
 		<destination>
 			<name>${order.firstName} ${order.lastName}</name>
+			${order.phone ? `<client-voice-number>${order.phone}</client-voice-number>` : ''}
 			<address-details>
 				<address-line-1>${order.addressLine1}</address-line-1>
 				${order.addressLine2 ? `<address-line-2>${order.addressLine2}</address-line-2>` : ''}

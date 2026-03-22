@@ -60,7 +60,7 @@ export const actions: Actions = {
 			return fail(400, { error: 'Invalid items data' });
 		}
 
-		if (!firstName || !lastName || !email || !addressLine1 || !city || !stateProvince || !country) {
+		if (!firstName || !lastName || !email || !phone || !addressLine1 || !city || !stateProvince || !country) {
 			return fail(400, { error: 'Missing required fields' });
 		}
 
