@@ -266,7 +266,23 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 		const theseusData = await theseusRes.json();
 		trackingNumber = theseusData.id || null;
-		labelUrl = theseusData.label_url || null;
+		const rawLabelUrl = theseusData.label_url || null;
+
+		// Fetch the label PDF and convert to base64 data URL so the frontend can print it via qz-tray
+		if (rawLabelUrl) {
+			try {
+				const labelRes = await fetch(rawLabelUrl);
+				if (labelRes.ok) {
+					const labelBuffer = await labelRes.arrayBuffer();
+					const labelBase64 = btoa(String.fromCharCode(...new Uint8Array(labelBuffer)));
+					labelUrl = `data:application/pdf;base64,${labelBase64}`;
+				} else {
+					labelUrl = rawLabelUrl;
+				}
+			} catch {
+				labelUrl = rawLabelUrl;
+			}
+		}
 
 		// Mark the letter as printed in Theseus
 		if (trackingNumber) {
