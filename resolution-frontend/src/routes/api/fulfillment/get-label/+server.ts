@@ -9,6 +9,15 @@ import type { RequestHandler } from './$types';
 const INCHES_TO_CM = 2.54;
 const GRAMS_TO_KG = 0.001;
 
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+	const bytes = new Uint8Array(buffer);
+	let binary = '';
+	for (let i = 0; i < bytes.length; i++) {
+		binary += String.fromCharCode(bytes[i]);
+	}
+	return btoa(binary);
+}
+
 function inchesToCm(inches: number): number {
 	return Math.round(inches * INCHES_TO_CM * 10) / 10;
 }
@@ -174,8 +183,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			if (labelRes.ok) {
 				const labelBuffer = await labelRes.arrayBuffer();
 				console.log('Label PDF size:', labelBuffer.byteLength, 'bytes');
-				const labelBase64 = btoa(String.fromCharCode(...new Uint8Array(labelBuffer)));
-				labelUrl = `data:application/pdf;base64,${labelBase64}`;
+				labelUrl = `data:application/pdf;base64,${arrayBufferToBase64(labelBuffer)}`;
 			} else {
 				const errBody = await labelRes.text();
 				console.error('Label fetch failed:', errBody);
@@ -299,7 +307,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				const labelRes = await fetch(rawLabelUrl);
 				if (labelRes.ok) {
 					const labelBuffer = await labelRes.arrayBuffer();
-					const labelBase64 = btoa(String.fromCharCode(...new Uint8Array(labelBuffer)));
+					const labelBase64 = arrayBufferToBase64(labelBuffer);
 					labelUrl = `data:application/pdf;base64,${labelBase64}`;
 				} else {
 					labelUrl = rawLabelUrl;
@@ -385,7 +393,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				});
 				if (labelRes.ok) {
 					const labelBuffer = await labelRes.arrayBuffer();
-					const labelBase64 = btoa(String.fromCharCode(...new Uint8Array(labelBuffer)));
+					const labelBase64 = arrayBufferToBase64(labelBuffer);
 					// Store as data URL for direct use
 					labelUrl = `data:application/pdf;base64,${labelBase64}`;
 				}
