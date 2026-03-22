@@ -100,17 +100,11 @@ function buildCreateShipmentXML(order: any, weightKg: number, lengthCm: number, 
 			</item>`;
 		}).join('\n');
 
-		customsXml = `<options>
-			<option>
-				<option-code>RASE</option-code>
-			</option>
-		</options>
-		<customs>
+		customsXml = `<customs>
 			<currency>USD</currency>
 			<conversion-from-cad>0.730</conversion-from-cad>
 			<reason-for-export>SOG</reason-for-export>
 			<other-reason>Merchandise</other-reason>
-			<non-delivery>RASE</non-delivery>
 			<sku-list>${skuLines}</sku-list>
 		</customs>`;
 	}
