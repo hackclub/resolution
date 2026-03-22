@@ -5,7 +5,7 @@ import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ request }) => {
 	const toSign = await request.text();
 
-	const privateKey = env.QZ_PRIVATE_KEY;
+	const privateKey = env.QZ_PRIVATE_KEY?.replace(/\\n/g, '\n');
 	const password = env.QZ_PK_PASSWORD;
 
 	if (!privateKey) {
