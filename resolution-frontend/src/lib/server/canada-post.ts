@@ -102,12 +102,13 @@ export function buildCreateShipmentXml(params: {
 
 	let customsXml = '';
 	if (order.country !== 'CA') {
-		const items = order.items || [];
-		const skuLines = items.map((oi: any) => {
-			const item = oi.warehouseItem;
-			const unitWeightKg = Math.round(item.weightGrams * GRAMS_TO_KG * 1000) / 1000;
-			const valuePerUnit = Math.round(item.costCents) / 100;
-			return `<item>
+		const items = (order.items || []).filter((oi: any) => oi.warehouseItem);
+		if (items.length > 0) {
+			const skuLines = items.map((oi: any) => {
+				const item = oi.warehouseItem;
+				const unitWeightKg = Math.round(item.weightGrams * GRAMS_TO_KG * 1000) / 1000;
+				const valuePerUnit = Math.round(item.costCents) / 100;
+				return `<item>
 				<customs-number-of-units>${oi.quantity}</customs-number-of-units>
 				<customs-description>${escapeXml(item.name.substring(0, 44))}</customs-description>
 				<sku>${escapeXml(item.sku || '')}</sku>
@@ -116,14 +117,15 @@ export function buildCreateShipmentXml(params: {
 				<customs-value-per-unit>${valuePerUnit.toFixed(2)}</customs-value-per-unit>
 				<country-of-origin>CA</country-of-origin>
 			</item>`;
-		}).join('\n');
+			}).join('\n');
 
-		customsXml = `<customs>
+			customsXml = `<customs>
 			<currency>CAD</currency>
 			<reason-for-export>SOG</reason-for-export>
 			<other-reason>Merchandise</other-reason>
 			<sku-list>${skuLines}</sku-list>
 		</customs>`;
+		}
 	}
 
 	return `<?xml version="1.0" encoding="UTF-8"?>

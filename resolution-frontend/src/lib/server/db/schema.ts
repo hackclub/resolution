@@ -296,7 +296,7 @@ export const warehouseItem = pgTable('warehouse_item', {
 	heightIn: real('height_in').notNull(),
 	weightGrams: real('weight_grams').notNull(),
 	costCents: integer('cost_cents').notNull(),
-	hsCode: text('hs_code').notNull(),
+	hsCode: text('hs_code').notNull().default(''),
 	quantity: integer('quantity').notNull().default(0),
 	imageUrl: text('image_url'),
 	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
