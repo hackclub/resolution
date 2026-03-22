@@ -621,6 +621,10 @@
 		<input type="hidden" name="notes" value={notes} />
 		<input type="hidden" name="tags" value={tagsArray.join(',')} />
 		<input type="hidden" name="items" value={JSON.stringify(selectedItems())} />
+		{#if selectedRate}
+			<input type="hidden" name="estimatedShippingCents" value={Math.round(selectedRate.priceDetails.total * 100)} />
+			<input type="hidden" name="estimatedServiceName" value={selectedRate.serviceName} />
+		{/if}
 	{/if}
 
 	<!-- Navigation -->
