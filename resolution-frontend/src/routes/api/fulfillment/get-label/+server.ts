@@ -76,9 +76,11 @@ function buildCreateShipmentXML(order: any, weightKg: number, lengthCm: number, 
 		<service-code>${serviceCode}</service-code>
 		<sender>
 			<name>${env.CP_SENDER_NAME || 'Hack Club'}</name>
+			<company>${env.CP_SENDER_NAME || 'Hack Club'}</company>
 			<contact-phone>${env.CP_SENDER_PHONE || '000-000-0000'}</contact-phone>
 			<address-details>
 				<address-line-1>${env.CP_SENDER_ADDRESS || ''}</address-line-1>
+				${env.CP_SENDER_ADDRESS_2 ? `<address-line-2>${env.CP_SENDER_ADDRESS_2}</address-line-2>` : ''}
 				<city>${env.CP_SENDER_CITY || ''}</city>
 				<prov-state>${env.CP_SENDER_PROVINCE || ''}</prov-state>
 				<country-code>CA</country-code>
