@@ -164,6 +164,27 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	if (!order) throw error(404, 'Order not found');
 
+	// If the order already has a label, re-fetch and return it as base64
+	if (order.labelUrl) {
+		let labelUrl = order.labelUrl;
+		if (!labelUrl.startsWith('data:')) {
+			try {
+				const labelRes = await fetch(labelUrl);
+				if (labelRes.ok) {
+					const labelBuffer = await labelRes.arrayBuffer();
+					const labelBase64 = btoa(String.fromCharCode(...new Uint8Array(labelBuffer)));
+					labelUrl = `data:application/pdf;base64,${labelBase64}`;
+				}
+			} catch {}
+		}
+		return json({
+			trackingNumber: order.trackingNumber,
+			labelUrl,
+			packingSlipBase64: '',
+			shippingMethod: order.shippingMethod || ''
+		});
+	}
+
 	// Calculate package totals from items
 	let totalWeight = 0;
 	let maxLength = 0;
