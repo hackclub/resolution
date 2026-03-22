@@ -22,6 +22,7 @@
 		heightIn: 0,
 		weightGrams: 0,
 		costDollars: '',
+		hsCode: '',
 		quantity: 0,
 		imageUrl: ''
 	});
@@ -55,6 +56,7 @@
 			heightIn: item.heightIn,
 			weightGrams: item.weightGrams,
 			costDollars: (item.costCents / 100).toFixed(2),
+			hsCode: item.hsCode || '',
 			quantity: item.quantity,
 			imageUrl: item.imageUrl || ''
 		};
@@ -284,6 +286,10 @@
 						<input type="number" name="costDollars" step="0.01" bind:value={editItem.costDollars} class="input" />
 					</label>
 					<label>
+						<span class="label-text">HS Code</span>
+						<input type="text" name="hsCode" bind:value={editItem.hsCode} required class="input" placeholder="e.g. 6109.10" />
+					</label>
+					<label>
 						<span class="label-text">Quantity</span>
 						<input type="number" name="quantity" bind:value={editItem.quantity} class="input" />
 					</label>
@@ -353,6 +359,10 @@
 			<label>
 				<span class="label-text">Cost ($)</span>
 				<input type="number" name="costDollars" step="0.01" value="0.00" class="input" />
+			</label>
+			<label>
+				<span class="label-text">HS Code</span>
+				<input type="text" name="hsCode" required class="input" placeholder="e.g. 6109.10" />
 			</label>
 			<label>
 				<span class="label-text">Quantity</span>

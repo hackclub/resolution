@@ -80,6 +80,7 @@ export const actions: Actions = {
 		const heightIn = parseFloat(formData.get('heightIn') as string);
 		const weightGrams = parseFloat(formData.get('weightGrams') as string);
 		const costDollars = parseFloat(formData.get('costDollars') as string);
+		const hsCode = formData.get('hsCode') as string;
 		const quantity = parseInt(formData.get('quantity') as string);
 		const imageUrl = formData.get('imageUrl') as string | null;
 
@@ -98,6 +99,9 @@ export const actions: Actions = {
 		if (isNaN(costDollars)) {
 			return fail(400, { error: 'Valid cost is required' });
 		}
+		if (!hsCode) {
+			return fail(400, { error: 'HS Code is required' });
+		}
 
 		await db.insert(warehouseItem).values({
 			name,
@@ -110,6 +114,7 @@ export const actions: Actions = {
 			heightIn,
 			weightGrams,
 			costCents: Math.round(costDollars * 100),
+			hsCode,
 			quantity: isNaN(quantity) ? 0 : quantity,
 			imageUrl: imageUrl || null
 		});
@@ -130,6 +135,7 @@ export const actions: Actions = {
 		const heightIn = parseFloat(formData.get('heightIn') as string);
 		const weightGrams = parseFloat(formData.get('weightGrams') as string);
 		const costDollars = parseFloat(formData.get('costDollars') as string);
+		const hsCode = formData.get('hsCode') as string;
 		const quantity = parseInt(formData.get('quantity') as string);
 		const imageUrl = formData.get('imageUrl') as string | null;
 
@@ -151,6 +157,9 @@ export const actions: Actions = {
 		if (isNaN(costDollars)) {
 			return fail(400, { error: 'Valid cost is required' });
 		}
+		if (!hsCode) {
+			return fail(400, { error: 'HS Code is required' });
+		}
 
 		await db
 			.update(warehouseItem)
@@ -165,6 +174,7 @@ export const actions: Actions = {
 				heightIn,
 				weightGrams,
 				costCents: Math.round(costDollars * 100),
+				hsCode,
 				quantity: isNaN(quantity) ? 0 : quantity,
 				imageUrl: imageUrl || null,
 				updatedAt: new Date()
