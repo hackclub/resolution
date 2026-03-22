@@ -76,7 +76,6 @@ function buildCreateShipmentXML(order: any, weightKg: number, lengthCm: number, 
 		<service-code>${serviceCode}</service-code>
 		<sender>
 			<name>${env.CP_SENDER_NAME || 'Hack Club'}</name>
-			<company>${env.CP_SENDER_COMPANY || 'Hack Club'}</company>
 			<contact-phone>${env.CP_SENDER_PHONE || '000-000-0000'}</contact-phone>
 			<address-details>
 				<address-line-1>${env.CP_SENDER_ADDRESS || ''}</address-line-1>
@@ -261,6 +260,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const theseusData = await theseusRes.json();
 		trackingNumber = theseusData.id || null;
 		labelUrl = theseusData.label_url || null;
+
+		// Mark the letter as printed in Theseus
+		if (trackingNumber) {
+			const theseusBaseUrl = env.THESEUS_BASE_URL || 'https://mail.hackclub.com';
+			await fetch(`${theseusBaseUrl}/api/v1/letters/${trackingNumber}/mark_printed`, {
+				method: 'POST',
+				headers: { Authorization: `Bearer ${theseusApiKey}` }
+			}).catch((e) => console.error('Failed to mark Theseus letter as printed:', e));
+		}
 
 	} else {
 		// ── CANADA POST PARCEL PATH ──
