@@ -103,8 +103,9 @@ export function buildCreateShipmentXml(params: {
 	let customsXml = '';
 	if (order.country !== 'CA') {
 		const items = (order.items || []).filter((oi: any) => oi.warehouseItem);
+		let skuLines: string;
 		if (items.length > 0) {
-			const skuLines = items.map((oi: any) => {
+			skuLines = items.map((oi: any) => {
 				const item = oi.warehouseItem;
 				const unitWeightKg = Math.round(item.weightGrams * GRAMS_TO_KG * 1000) / 1000;
 				const valuePerUnit = Math.round(item.costCents) / 100;
@@ -118,14 +119,23 @@ export function buildCreateShipmentXml(params: {
 				<country-of-origin>CA</country-of-origin>
 			</item>`;
 			}).join('\n');
+		} else {
+			skuLines = `<item>
+				<customs-number-of-units>1</customs-number-of-units>
+				<customs-description>Merchandise</customs-description>
+				<unit-weight>${Math.max(0.01, Math.round(weightKg * 1000) / 1000)}</unit-weight>
+				<customs-value-per-unit>1.00</customs-value-per-unit>
+				<country-of-origin>CA</country-of-origin>
+			</item>`;
+		}
 
-			customsXml = `<customs>
+		customsXml = `<customs>
 			<currency>CAD</currency>
 			<reason-for-export>SOG</reason-for-export>
 			<other-reason>Merchandise</other-reason>
 			<sku-list>${skuLines}</sku-list>
+			<non-delivery>RASE</non-delivery>
 		</customs>`;
-		}
 	}
 
 	return `<?xml version="1.0" encoding="UTF-8"?>
@@ -150,7 +160,7 @@ export function buildCreateShipmentXml(params: {
 		</sender>
 		<destination>
 			<name>${escapeXml(order.firstName)} ${escapeXml(order.lastName)}</name>
-			${order.phone ? `<client-voice-number>${escapeXml(order.phone)}</client-voice-number>` : ''}
+			<client-voice-number>${escapeXml(order.phone || env.CP_SENDER_PHONE || '000-000-0000')}</client-voice-number>
 			<address-details>
 				<address-line-1>${escapeXml(order.addressLine1)}</address-line-1>
 				${order.addressLine2 ? `<address-line-2>${escapeXml(order.addressLine2)}</address-line-2>` : ''}
