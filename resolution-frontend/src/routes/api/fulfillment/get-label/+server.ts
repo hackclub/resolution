@@ -163,7 +163,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	});
 
 	if (!order) throw error(404, 'Order not found');
-	if (order.labelUrl) throw error(400, 'Label already generated for this order');
 
 	// Calculate package totals from items
 	let totalWeight = 0;

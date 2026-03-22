@@ -260,14 +260,23 @@
 								<button type="button" class="action-btn" onclick={() => expandedOrder = expandedOrder === order.id ? null : order.id}>
 									{expandedOrder === order.id ? 'Hide' : 'Details'}
 								</button>
-								{#if order.status === 'APPROVED' && !order.labelUrl && !labelResults[order.id]}
+								{#if order.status === 'APPROVED' && !labelResults[order.id]}
 									<button
 										type="button"
 										class="action-btn label-btn"
 										onclick={() => getLabel(order.id)}
 										disabled={labelLoading[order.id]}
 									>
-										{labelLoading[order.id] ? '⏳...' : '📦 Get Label'}
+										{labelLoading[order.id] ? '⏳...' : order.labelUrl ? '🔄 Reprint' : '📦 Get Label'}
+									</button>
+								{/if}
+								{#if order.status === 'SHIPPED' && order.labelUrl && !labelResults[order.id]}
+									<button
+										type="button"
+										class="action-btn label-btn"
+										onclick={() => { labelResults[order.id] = { labelUrl: order.labelUrl, packingSlipBase64: '', shippingMethod: order.shippingMethod || '' }; }}
+									>
+										🖨️ Reprint
 									</button>
 								{/if}
 							</td>
