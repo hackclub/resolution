@@ -110,13 +110,27 @@
 
 		// Print label
 		if (result.labelUrl) {
-			await qz.print(config(), [{ type: 'pixel', format: 'pdf', flavor: 'base64', data: result.labelUrl.replace(/^data:application\/pdf;base64,/, '') }]);
+			let base64Data: string;
+			if (result.labelUrl.startsWith('data:')) {
+				base64Data = result.labelUrl.replace(/^data:application\/pdf;base64,/, '');
+			} else {
+				// Fetch remote PDF and convert to base64
+				const res = await fetch(result.labelUrl);
+				const buf = await res.arrayBuffer();
+				const bytes = new Uint8Array(buf);
+				let binary = '';
+				for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+				base64Data = btoa(binary);
+			}
+			await qz.print(config(), [{ type: 'pixel', format: 'pdf', flavor: 'base64', data: base64Data }]);
 		}
 
 		// Print packing slip
-		const text = decodeURIComponent(escape(atob(result.packingSlipBase64)));
-		const html = `<pre style="font-family:monospace;font-size:11px;padding:10px;white-space:pre-wrap;">${text}</pre>`;
-		await qz.print(config(), [{ type: 'html', format: 'plain', data: html }]);
+		if (result.packingSlipBase64) {
+			const text = decodeURIComponent(escape(atob(result.packingSlipBase64)));
+			const html = `<pre style="font-family:monospace;font-size:11px;padding:10px;white-space:pre-wrap;">${text}</pre>`;
+			await qz.print(config(), [{ type: 'html', format: 'plain', data: html }]);
+		}
 	}
 
 	async function getLabel(orderId: string) {
