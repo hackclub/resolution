@@ -168,14 +168,19 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (order.labelUrl) {
 		let labelUrl = order.labelUrl;
 		if (!labelUrl.startsWith('data:')) {
-			try {
-				const labelRes = await fetch(labelUrl);
-				if (labelRes.ok) {
-					const labelBuffer = await labelRes.arrayBuffer();
-					const labelBase64 = btoa(String.fromCharCode(...new Uint8Array(labelBuffer)));
-					labelUrl = `data:application/pdf;base64,${labelBase64}`;
-				}
-			} catch {}
+			console.log('Fetching label from:', labelUrl);
+			const labelRes = await fetch(labelUrl);
+			console.log('Label fetch status:', labelRes.status, labelRes.statusText);
+			if (labelRes.ok) {
+				const labelBuffer = await labelRes.arrayBuffer();
+				console.log('Label PDF size:', labelBuffer.byteLength, 'bytes');
+				const labelBase64 = btoa(String.fromCharCode(...new Uint8Array(labelBuffer)));
+				labelUrl = `data:application/pdf;base64,${labelBase64}`;
+			} else {
+				const errBody = await labelRes.text();
+				console.error('Label fetch failed:', errBody);
+				throw error(502, `Failed to fetch label PDF: ${labelRes.status}`);
+			}
 		}
 		return json({
 			trackingNumber: order.trackingNumber,
