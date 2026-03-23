@@ -134,7 +134,6 @@ export function buildCreateShipmentXml(params: {
 			<reason-for-export>SOG</reason-for-export>
 			<other-reason>Merchandise</other-reason>
 			<sku-list>${skuLines}</sku-list>
-			<non-delivery>RASE</non-delivery>
 		</customs>`;
 	}
 
