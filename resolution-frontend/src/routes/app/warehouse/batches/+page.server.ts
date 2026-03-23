@@ -219,6 +219,7 @@ export const actions: Actions = {
 			const [order] = await db.insert(warehouseOrder).values({
 				createdById: user.id,
 				batchId,
+				status: 'APPROVED',
 				firstName,
 				lastName,
 				email,
