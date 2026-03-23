@@ -166,7 +166,7 @@ export function buildCreateShipmentXml(params: {
 		</destination>
 		${order.country !== 'CA' ? `<options>
 			<option>
-				<option-code>RTS</option-code>
+				<option-code>${contractId ? 'RTS' : 'RASE'}</option-code>
 			</option>
 		</options>` : ''}
 		<parcel-characteristics>
