@@ -444,24 +444,36 @@ export async function createShipment(params: {
 
 	const cpEndpoint = `${baseUrl}/rs/${customerNumber}/${customerNumber}/shipment`;
 
-	const cpRes = await fetch(cpEndpoint, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/vnd.cpc.shipment-v8+xml',
-			Accept: 'application/vnd.cpc.shipment-v8+xml',
-			Authorization: authHeader,
-			'Accept-language': 'en-CA'
-		},
-		body: shipmentXml
-	});
+	const maxRetries = 3;
+	let cpRes: Response | null = null;
+	for (let attempt = 0; attempt < maxRetries; attempt++) {
+		cpRes = await fetch(cpEndpoint, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/vnd.cpc.shipment-v8+xml',
+				Accept: 'application/vnd.cpc.shipment-v8+xml',
+				Authorization: authHeader,
+				'Accept-language': 'en-CA'
+			},
+			body: shipmentXml
+		});
 
-	if (!cpRes.ok) {
+		if (cpRes.ok || cpRes.status < 500) break;
+
 		const errText = await cpRes.text();
-		console.error('Canada Post Create Shipment error:', errText);
-		throw new Error(`Canada Post shipment creation failed: ${cpRes.status}`);
+		console.error(`Canada Post Create Shipment error (attempt ${attempt + 1}/${maxRetries}):`, errText);
+		if (attempt < maxRetries - 1) {
+			await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+		}
 	}
 
-	const cpXml = await cpRes.text();
+	if (!cpRes!.ok) {
+		const errText = await cpRes!.text();
+		console.error('Canada Post Create Shipment error:', errText);
+		throw new Error(`Canada Post shipment creation failed: ${cpRes!.status}`);
+	}
+
+	const cpXml = await cpRes!.text();
 	const parser = new xml2js.Parser({ explicitArray: false });
 	const cpResult = await parser.parseStringPromise(cpXml);
 	const shipmentInfo = cpResult['shipment-info'];
