@@ -177,10 +177,10 @@ export function buildCreateShipmentXml(params: {
 				<height>${Math.max(1, heightCm)}</height>
 			</dimensions>
 		</parcel-characteristics>
-		<print-preferences>
+		${contractId ? `<print-preferences>
 			<output-format>4x6</output-format>
 			<encoding>PDF</encoding>
-		</print-preferences>
+		</print-preferences>` : ''}
 		<preferences>
 			<show-packing-instructions>false</show-packing-instructions>
 		</preferences>
