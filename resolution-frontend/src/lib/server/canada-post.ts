@@ -148,7 +148,7 @@ export function buildCreateShipmentXml(params: {
 				${env.CP_SENDER_ADDRESS_2 ? `<address-line-2>${escapeXml(env.CP_SENDER_ADDRESS_2)}</address-line-2>` : ''}
 				<city>${escapeXml(env.CP_SENDER_CITY || '')}</city>
 				<prov-state>${escapeXml(env.CP_SENDER_PROVINCE || '')}</prov-state>
-				<country-code>CA</country-code>
+				${contractId ? '<country-code>CA</country-code>' : ''}
 				<postal-zip-code>${originPostal}</postal-zip-code>
 			</address-details>
 		</sender>
