@@ -457,7 +457,8 @@ export async function createShipment(params: {
 				'Content-Type': 'application/vnd.cpc.shipment-v8+xml',
 				Accept: 'application/vnd.cpc.shipment-v8+xml',
 				Authorization: authHeader,
-				'Accept-language': 'en-CA'
+				'Accept-language': 'en-CA',
+				...(params.order.country === 'US' && env.ZONOS_ACCOUNT_KEY ? { 'X-CPC-Zonos-Key': env.ZONOS_ACCOUNT_KEY } : {})
 			},
 			body: shipmentXml
 		});

@@ -301,6 +301,9 @@
 											{#if labelResults[order.id].trackingNumber}
 												<span class="label-tracking">Tracking: <code>{labelResults[order.id].trackingNumber}</code></span>
 											{/if}
+											{#if order.country === 'US'}
+												<span class="label-zonos">🇺🇸 Zonos DDP (duties billed separately)</span>
+											{/if}
 										</div>
 										<div class="label-actions">
 											<button type="button" class="action-btn print-btn" onclick={() => printAll(labelResults[order.id])}>
@@ -659,6 +662,16 @@
 
 	.download-btn:hover {
 		background: #ddf5dd !important;
+	}
+
+	.label-zonos {
+		font-size: 0.8rem;
+		color: #e17055;
+		font-weight: 500;
+		background: #fff5f0;
+		padding: 0.125rem 0.5rem;
+		border-radius: 4px;
+		border: 1px solid #fab1a0;
 	}
 
 	@media (max-width: 768px) {
