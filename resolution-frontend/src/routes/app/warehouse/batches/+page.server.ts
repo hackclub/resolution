@@ -5,6 +5,7 @@ import { eq, desc, asc, sql, inArray } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { fetchCheapestRate } from '$lib/server/canada-post';
+import { resolveCountryCode } from '$lib/server/countries';
 
 function parseCsv(raw: string): string[][] {
 	const rows: string[][] = [];
@@ -207,11 +208,13 @@ export const actions: Actions = {
 			const addressLine1 = getValue('addressLine1');
 			const city = getValue('city');
 			const stateProvince = getValue('stateProvince');
-			const country = getValue('country');
+			const rawCountry = getValue('country');
 
-			if (!firstName || !lastName || !email || !addressLine1 || !city || !stateProvince || !country) {
+			if (!firstName || !lastName || !email || !addressLine1 || !city || !stateProvince || !rawCountry) {
 				continue;
 			}
+
+			const country = resolveCountryCode(rawCountry);
 
 			const [order] = await db.insert(warehouseOrder).values({
 				createdById: user.id,
@@ -377,18 +380,19 @@ export const actions: Actions = {
 			const addressLine1 = getValue('addressLine1');
 			const city = getValue('city');
 			const stateProvince = getValue('stateProvince');
-			const country = getValue('country');
+			const rawCountry = getValue('country');
 
-			if (!firstName || !lastName || !email || !addressLine1 || !city || !stateProvince || !country) {
+			if (!firstName || !lastName || !email || !addressLine1 || !city || !stateProvince || !rawCountry) {
 				continue;
 			}
 
+			const country = resolveCountryCode(rawCountry);
 			const postalCode = getValue('postalCode') || undefined;
 			const itemsCostUsd = itemsCostCentsPerOrder / 100;
 			totalItemsCostCents += itemsCostCentsPerOrder;
 
 			const rate = await fetchCheapestRate({
-				country: country.toUpperCase(),
+				country,
 				postalCode,
 				weightGrams: totalWeight,
 				lengthIn: maxLength,
@@ -401,7 +405,7 @@ export const actions: Actions = {
 				totalShippingUsd += rate.shippingCostUsd;
 				orderCosts.push({
 					recipient: `${firstName} ${lastName}`,
-					country: country.toUpperCase(),
+					country,
 					itemsCostUsd,
 					shippingCostUsd: rate.shippingCostUsd,
 					shippingMethod: rate.serviceName,
@@ -411,7 +415,7 @@ export const actions: Actions = {
 				shippingFailures++;
 				orderCosts.push({
 					recipient: `${firstName} ${lastName}`,
-					country: country.toUpperCase(),
+					country,
 					itemsCostUsd,
 					shippingCostUsd: null,
 					shippingMethod: null,
