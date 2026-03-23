@@ -137,12 +137,7 @@ export function buildCreateShipmentXml(params: {
 		</customs>`;
 	}
 
-	return `<?xml version="1.0" encoding="UTF-8"?>
-<shipment xmlns="http://www.canadapost.ca/ws/shipment-v8">
-	<transmit-shipment/>
-	<requested-shipping-point>${originPostal}</requested-shipping-point>
-	<provide-pricing-info>true</provide-pricing-info>
-	<delivery-spec>
+	const deliverySpecXml = `<delivery-spec>
 		<service-code>${escapeXml(serviceCode)}</service-code>
 		<sender>
 			<name>${escapeXml(env.CP_SENDER_NAME || 'Hack Club')}</name>
@@ -190,13 +185,28 @@ export function buildCreateShipmentXml(params: {
 			<show-packing-instructions>false</show-packing-instructions>
 		</preferences>
 		${customsXml}
-		<settlement-info>
+		${contractId ? `<settlement-info>
 			<paid-by-customer>${customerNumber}</paid-by-customer>
-			${contractId ? `<contract-id>${contractId}</contract-id>` : ''}
-			<intended-method-of-payment>${contractId ? 'Account' : 'CreditCard'}</intended-method-of-payment>
-		</settlement-info>
-	</delivery-spec>
+			<contract-id>${contractId}</contract-id>
+			<intended-method-of-payment>Account</intended-method-of-payment>
+		</settlement-info>` : ''}
+	</delivery-spec>`;
+
+	if (contractId) {
+		return `<?xml version="1.0" encoding="UTF-8"?>
+<shipment xmlns="http://www.canadapost.ca/ws/shipment-v8">
+	<transmit-shipment/>
+	<requested-shipping-point>${originPostal}</requested-shipping-point>
+	<provide-pricing-info>true</provide-pricing-info>
+	${deliverySpecXml}
 </shipment>`;
+	}
+
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<non-contract-shipment xmlns="http://www.canadapost.ca/ws/ncshipment-v4">
+	<requested-shipping-point>${originPostal}</requested-shipping-point>
+	${deliverySpecXml}
+</non-contract-shipment>`;
 }
 
 export function getServiceCode(serviceName: string): string {
@@ -484,7 +494,7 @@ export async function createShipment(params: {
 	const cpXml = await cpRes!.text();
 	const parser = new xml2js.Parser({ explicitArray: false });
 	const cpResult = await parser.parseStringPromise(cpXml);
-	const shipmentInfo = cpResult['shipment-info'];
+	const shipmentInfo = cpResult['shipment-info'] || cpResult['non-contract-shipment-info'];
 
 	const trackingPin: string | null = shipmentInfo?.['tracking-pin'] || null;
 	let labelBase64: string | null = null;
