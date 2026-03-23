@@ -196,7 +196,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const lengthCm = inchesToCm(maxLength);
 		const widthCm = inchesToCm(maxWidth);
 		const heightCm = inchesToCm(totalHeight);
-		const serviceCode = getServiceCode(order.estimatedServiceName || '');
+		const serviceCode = order.estimatedServiceName
+			? getServiceCode(order.estimatedServiceName)
+			: order.country === 'CA' ? 'DOM.RP'
+			: order.country === 'US' ? 'USA.EP'
+			: 'INT.SP.AIR';
 		console.log(`Creating shipment: country=${order.country}, estimatedService=${order.estimatedServiceName}, serviceCode=${serviceCode}`);
 
 		try {
