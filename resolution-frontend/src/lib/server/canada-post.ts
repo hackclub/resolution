@@ -166,7 +166,7 @@ export function buildCreateShipmentXml(params: {
 		</destination>
 		${order.country !== 'CA' ? `<options>
 			<option>
-				<option-code>${contractId ? 'RTS' : 'ABAN'}</option-code>
+				<option-code>${contractId ? 'RTS' : 'RASE'}</option-code>
 			</option>
 		</options>` : ''}
 		<parcel-characteristics>
@@ -455,6 +455,7 @@ export async function createShipment(params: {
 	const { baseUrl, authHeader, customerNumber } = getCanadaPostConfig();
 
 	const shipmentXml = buildCreateShipmentXml(params);
+	console.log('Shipment XML:', shipmentXml);
 
 	const contractId = env.CP_CONTRACT_ID;
 	const cpEndpoint = contractId
