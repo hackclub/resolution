@@ -169,6 +169,11 @@ export function buildCreateShipmentXml(params: {
 				<postal-zip-code>${(order.postalCode ?? '').replace(/\s/g, '').toUpperCase()}</postal-zip-code>
 			</address-details>
 		</destination>
+		${order.country !== 'CA' ? `<options>
+			<option>
+				<option-code>RASE</option-code>
+			</option>
+		</options>` : ''}
 		<parcel-characteristics>
 			<weight>${Math.max(0.01, Math.round(weightKg * 1000) / 1000)}</weight>
 			<dimensions>
