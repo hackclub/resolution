@@ -171,7 +171,7 @@ export function buildCreateShipmentXml(params: {
 		</destination>
 		${order.country !== 'CA' ? `<options>
 			<option>
-				<option-code>RASE</option-code>
+				<option-code>${serviceCode.includes('SP') ? 'ABAN' : 'RASE'}</option-code>
 			</option>
 		</options>` : ''}
 		<parcel-characteristics>
