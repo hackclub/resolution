@@ -446,7 +446,10 @@ export async function createShipment(params: {
 
 	const shipmentXml = buildCreateShipmentXml(params);
 
-	const cpEndpoint = `${baseUrl}/rs/${customerNumber}/${customerNumber}/shipment`;
+	const contractId = env.CP_CONTRACT_ID;
+	const cpEndpoint = contractId
+		? `${baseUrl}/rs/${customerNumber}/${customerNumber}/shipment`
+		: `${baseUrl}/rs/${customerNumber}/ncshipment`;
 
 	const maxRetries = 3;
 	let cpRes: Response | null = null;
@@ -454,8 +457,8 @@ export async function createShipment(params: {
 		cpRes = await fetch(cpEndpoint, {
 			method: 'POST',
 			headers: {
-				'Content-Type': 'application/vnd.cpc.shipment-v8+xml',
-				Accept: 'application/vnd.cpc.shipment-v8+xml',
+				'Content-Type': contractId ? 'application/vnd.cpc.shipment-v8+xml' : 'application/vnd.cpc.ncshipment-v4+xml',
+				Accept: contractId ? 'application/vnd.cpc.shipment-v8+xml' : 'application/vnd.cpc.ncshipment-v4+xml',
 				Authorization: authHeader,
 				'Accept-language': 'en-CA',
 				...(params.order.country === 'US' && env.ZONOS_ACCOUNT_KEY ? { 'X-CPC-Zonos-Key': env.ZONOS_ACCOUNT_KEY } : {})
@@ -505,6 +508,124 @@ export async function createShipment(params: {
 	}
 
 	return { trackingPin, labelBase64 };
+}
+
+export interface ZonosDutyResult {
+	duties: number;
+	taxes: number;
+	fees: number;
+	total: number;
+	currency: string;
+}
+
+export async function calculateZonosDuties(params: {
+	items: Array<{ hsCode: string; valueCadCents: number; quantity: number; sku: string; description: string }>;
+	shippingCostCad: number;
+	destinationAddress: { city: string; state: string; postalCode: string; country: string };
+	serviceLevelCode?: string;
+}): Promise<ZonosDutyResult | null> {
+	const credentialToken = env.ZONOS_CREDENTIAL_TOKEN;
+	if (!credentialToken) return null;
+
+	const originPostal = (env.CP_ORIGIN_POSTAL_CODE || '').replace(/\s/g, '').toUpperCase();
+
+	const parties = [
+		{
+			type: 'ORIGIN',
+			location: {
+				countryCode: 'CA',
+				postalCode: originPostal
+			}
+		},
+		{
+			type: 'DESTINATION',
+			location: {
+				countryCode: params.destinationAddress.country,
+				administrativeArea: params.destinationAddress.state,
+				city: params.destinationAddress.city,
+				postalCode: params.destinationAddress.postalCode
+			}
+		}
+	];
+
+	const items = params.items.map((item) => ({
+		amount: item.valueCadCents / 100,
+		currencyCode: 'CAD',
+		quantity: item.quantity,
+		hsCode: item.hsCode || undefined,
+		sku: item.sku || undefined,
+		description: item.description,
+		countryOfOrigin: 'CA',
+		productId: item.sku || undefined
+	}));
+
+	const shipmentRating = [
+		{
+			amount: params.shippingCostCad,
+			currencyCode: 'CAD',
+			serviceLevelCode: params.serviceLevelCode || 'standard'
+		}
+	];
+
+	const landedCostConfig = {
+		calculationMethod: 'DDP_PREFERRED',
+		endUse: 'NOT_FOR_RESALE',
+		tariffRate: 'ZONOS_PREFERRED'
+	};
+
+	const query = `mutation CalculateLandedCost($parties: [PartyCreateWorkflowInput!]!, $items: [ItemCreateWorkflowInput!]!, $shipmentRating: [ShipmentRatingCreateWorkflowInput!]!, $landedCostConfig: LandedCostWorkFlowInput!) {
+  partyCreateWorkflow(input: $parties) { id type }
+  itemCreateWorkflow(input: $items) { id amount }
+  shipmentRatingCreateWorkflow(input: $shipmentRating) { id amount }
+  landedCostCalculateWorkflow(input: $landedCostConfig) { id duties { amount currency } taxes { amount currency } fees { amount currency } }
+}`;
+
+	try {
+		const res = await fetch('https://api.zonos.com/graphql', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				credentialToken
+			},
+			body: JSON.stringify({
+				query,
+				variables: { parties, items, shipmentRating, landedCostConfig }
+			})
+		});
+
+		if (!res.ok) {
+			console.error('Zonos API error:', res.status, await res.text());
+			return null;
+		}
+
+		const result = await res.json();
+
+		if (result.errors) {
+			console.error('Zonos GraphQL errors:', result.errors);
+			return null;
+		}
+
+		const landedCost = result.data?.landedCostCalculateWorkflow;
+		if (!landedCost) return null;
+
+		const sumAmounts = (arr: Array<{ amount: number }> | undefined) =>
+			(arr || []).reduce((sum, entry) => sum + (entry.amount || 0), 0);
+
+		const duties = sumAmounts(landedCost.duties);
+		const taxes = sumAmounts(landedCost.taxes);
+		const fees = sumAmounts(landedCost.fees);
+
+		return {
+			duties: Math.round(duties * 100) / 100,
+			taxes: Math.round(taxes * 100) / 100,
+			fees: Math.round(fees * 100) / 100,
+			total: Math.round((duties + taxes + fees) * 100) / 100,
+			currency: 'USD'
+		};
+	} catch (err) {
+		console.error('Zonos API request failed:', err);
+		return null;
+	}
 }
 
 export async function fetchCheapestRate(params: {
