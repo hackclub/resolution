@@ -164,9 +164,9 @@ export function buildCreateShipmentXml(params: {
 				<postal-zip-code>${(order.postalCode ?? '').replace(/\s/g, '').toUpperCase()}</postal-zip-code>
 			</address-details>
 		</destination>
-		${order.country !== 'CA' ? `<options>
+		${order.country !== 'CA' && contractId ? `<options>
 			<option>
-				<option-code>${contractId ? 'RTS' : 'ABAN'}</option-code>
+				<option-code>RTS</option-code>
 			</option>
 		</options>` : ''}
 		<parcel-characteristics>
