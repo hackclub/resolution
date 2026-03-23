@@ -306,6 +306,20 @@
 											<button type="button" class="action-btn print-btn" onclick={() => printAll(labelResults[order.id])}>
 												🖨️ Print
 											</button>
+											{#if labelResults[order.id].labelUrl}
+												<a
+													class="action-btn download-btn"
+													href={labelResults[order.id].labelUrl}
+													download={`label-${order.fulfillmentId}.pdf`}
+												>📥 Label</a>
+											{/if}
+											{#if labelResults[order.id].packingSlipBase64}
+												<a
+													class="action-btn download-btn"
+													href={`data:text/plain;base64,${labelResults[order.id].packingSlipBase64}`}
+													download={`packing-slip-${order.fulfillmentId}.txt`}
+												>📥 Slip</a>
+											{/if}
 										</div>
 									</div>
 								</td>
@@ -634,6 +648,17 @@
 
 	.print-btn:hover {
 		background: #ddeeff !important;
+	}
+
+	.download-btn {
+		background: #f0fff0 !important;
+		border-color: #27ae60 !important;
+		color: #27ae60 !important;
+		text-decoration: none;
+	}
+
+	.download-btn:hover {
+		background: #ddf5dd !important;
 	}
 
 	@media (max-width: 768px) {

@@ -445,7 +445,6 @@ export async function createShipment(params: {
 	const { baseUrl, authHeader, customerNumber } = getCanadaPostConfig();
 
 	const shipmentXml = buildCreateShipmentXml(params);
-	console.log('Canada Post Shipment XML:', shipmentXml);
 
 	const cpEndpoint = `${baseUrl}/rs/${customerNumber}/${customerNumber}/shipment`;
 
