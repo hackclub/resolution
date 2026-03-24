@@ -15,6 +15,20 @@ export function escapeXml(str: string): string {
 		.replace(/'/g, '&apos;');
 }
 
+/** Format HS code to Canada Post format ####.##.##.## (6, 8 or 10 digits with dots) */
+function formatHsTariffCode(code: string | null | undefined): string {
+	if (!code) return '';
+	const digits = code.replace(/[^0-9]/g, '');
+	if (digits.length < 6) return '';
+	// ####.## (6 digits)
+	let formatted = digits.substring(0, 4) + '.' + digits.substring(4, 6);
+	// ####.##.## (8 digits)
+	if (digits.length >= 8) formatted += '.' + digits.substring(6, 8);
+	// ####.##.##.## (10 digits)
+	if (digits.length >= 10) formatted += '.' + digits.substring(8, 10);
+	return formatted;
+}
+
 async function cropLabelTo4x6(pdfBuffer: ArrayBuffer): Promise<Uint8Array> {
 	const srcDoc = await PDFDocument.load(pdfBuffer);
 	const page = srcDoc.getPage(0);
@@ -134,7 +148,7 @@ export function buildCreateShipmentXml(params: {
 				<customs-number-of-units>${oi.quantity}</customs-number-of-units>
 				<customs-description>${escapeXml(item.name.substring(0, 44))}</customs-description>
 				<sku>${escapeXml(item.sku || '')}</sku>
-				<hs-tariff-code>${escapeXml((item.hsCode || '').replace(/[^0-9]/g, ''))}</hs-tariff-code>
+				<hs-tariff-code>${escapeXml(formatHsTariffCode(item.hsCode))}</hs-tariff-code>
 				<unit-weight>${unitWeightKg}</unit-weight>
 				<customs-value-per-unit>${valuePerUnit.toFixed(2)}</customs-value-per-unit>
 				<country-of-origin>CA</country-of-origin>
