@@ -204,7 +204,15 @@ export async function fetchChitChatsRates(params: {
 		size_y: params.widthIn,
 		size_z: params.heightIn,
 		postage_type: 'unknown',
-		ship_date: 'today'
+		ship_date: 'today',
+		description: 'Merchandise',
+		line_items: [{
+			quantity: 1,
+			description: 'Merchandise',
+			value_amount: params.valueCad.toFixed(2),
+			currency_code: 'cad',
+			origin_country: 'CA'
+		}]
 	};
 
 	const createRes = await fetch(`${baseUrl}/shipments`, {
