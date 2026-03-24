@@ -5,6 +5,7 @@ import { warehouseOrder } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 import { GRAMS_TO_KG, inchesToCm, isLettermail, getServiceCode, createShipment } from '$lib/server/canada-post';
+import { createChitChatsShipment } from '$lib/server/chit-chats';
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
 	const bytes = new Uint8Array(buffer);
@@ -52,7 +53,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = locals.user;
 	if (!user) throw error(401, 'Not logged in');
 
-	const { orderId } = await request.json();
+	const { orderId, carrier } = await request.json();
 	if (!orderId) throw error(400, 'Order ID required');
 
 	const order = await db.query.warehouseOrder.findFirst({
@@ -113,7 +114,25 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	let labelUrl: string | null = null;
 	let shippingMethod: string;
 
-	if (isLettermail(order.estimatedServiceName)) {
+	if (carrier === 'chitchats') {
+		// ── CHIT CHATS PATH ──
+		shippingMethod = 'chitchats';
+
+		try {
+			const result = await createChitChatsShipment({
+				order,
+				weightGrams: totalWeight,
+				lengthIn: maxLength,
+				widthIn: maxWidth,
+				heightIn: totalHeight
+			});
+			trackingNumber = result.trackingNumber;
+			labelUrl = result.labelBase64;
+		} catch (e: any) {
+			console.error('Chit Chats Create Shipment error:', e.message);
+			throw error(502, 'Chit Chats shipment creation failed');
+		}
+	} else if (carrier === 'lettermail' || ((!carrier || carrier === 'auto') && isLettermail(order.estimatedServiceName))) {
 		// ── LETTERMAIL PATH: Use Theseus/mail.hackclub.com ──
 		shippingMethod = 'lettermail';
 

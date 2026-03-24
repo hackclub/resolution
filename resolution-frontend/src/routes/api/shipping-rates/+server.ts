@@ -6,7 +6,8 @@ import { validateJson, shippingRateSchema } from '$lib/server/validation';
 import { db } from '$lib/server/db';
 import { ambassadorPathway } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
-import { GRAMS_TO_KG, inchesToCm, fetchRates, getLetterMailOptions } from '$lib/server/canada-post';
+import { GRAMS_TO_KG, inchesToCm, fetchRates, getLetterMailOptions, calculateZonosDuties } from '$lib/server/canada-post';
+import { fetchChitChatsRates } from '$lib/server/chit-chats';
 
 export const POST: RequestHandler = async (event) => {
 	const { user } = requireAuth(event);
@@ -76,7 +77,58 @@ export const POST: RequestHandler = async (event) => {
 		console.error('Parcel rate lookup failed:', err);
 	}
 
-	const allRates = [...lettermailOptions, ...parcelRates];
+	let chitChatsRates: Array<{
+		serviceName: string;
+		serviceCode: string;
+		priceDetails: { base: number; gst: number; pst: number; hst: number; total: number };
+		deliveryDate: string;
+		transitDays: string;
+		currency: string;
+	}> = [];
+	try {
+		if (env.CHITCHATS_ACCESS_TOKEN && env.CHITCHATS_CLIENT_ID) {
+			chitChatsRates = await fetchChitChatsRates({
+				country: data.country,
+				postalCode: data.postalCode,
+				province: data.province,
+				name: 'Rate Quote',
+				address1: '123 Main St',
+				city: data.city || 'Unknown',
+				weightGrams: data.weight,
+				lengthIn: effectiveLength,
+				widthIn: effectiveWidth,
+				heightIn: data.packageType === 'box' ? data.height : 0.5,
+				valueCad: 1.00
+			});
+		}
+	} catch (err) {
+		console.error('Chit Chats rate lookup failed:', err);
+	}
+
+	const allRates = [...lettermailOptions, ...parcelRates, ...chitChatsRates];
+
+	let zonosDuties = null;
+	if (data.country === 'US' && data.items && data.items.length > 0) {
+		const cheapestRate = allRates.reduce((min, r) => r.priceDetails.total < min ? r.priceDetails.total : min, Infinity);
+		const shippingCostCad = cheapestRate !== Infinity ? cheapestRate / 0.73 : 0;
+
+		zonosDuties = await calculateZonosDuties({
+			items: data.items.map((item: any) => ({
+				hsCode: item.hsCode || '',
+				valueCadCents: item.costCents || 0,
+				quantity: item.quantity || 1,
+				sku: item.sku || '',
+				description: item.name || 'Merchandise'
+			})),
+			shippingCostCad,
+			destinationAddress: {
+				city: data.city || '',
+				state: data.province || '',
+				postalCode: data.postalCode || '',
+				country: data.country
+			}
+		});
+	}
 
 	return json({
 		rates: allRates,
@@ -86,6 +138,7 @@ export const POST: RequestHandler = async (event) => {
 			city: data.city,
 			province: data.province,
 			postalCode: data.postalCode
-		}
+		},
+		...(zonosDuties ? { zonosDuties } : {})
 	});
 };

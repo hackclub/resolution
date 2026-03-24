@@ -57,6 +57,7 @@
 	let labelLoading = $state<Record<string, boolean>>({});
 	let labelErrors = $state<Record<string, string>>({});
 	let labelResults = $state<Record<string, { trackingNumber: string | null; labelUrl: string | null; packingSlipBase64: string; shippingMethod: string }>>({});
+	let selectedCarrier = $state<Record<string, string>>({});
 
 	function getQZSettings(): { printer: string; dpi: number } {
 		try {
@@ -126,10 +127,11 @@
 		labelLoading[orderId] = true;
 		labelErrors[orderId] = '';
 		try {
+			const carrier = selectedCarrier[orderId] || undefined;
 			const res = await fetch('/api/fulfillment/get-label', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ orderId })
+				body: JSON.stringify({ orderId, carrier })
 			});
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({ message: 'Failed' }));
@@ -245,6 +247,9 @@
 							<td>
 								{#if order.estimatedShippingCents}
 									{formatCost(order.estimatedShippingCents)}
+									{#if order.country === 'US' && order.estimatedDutiesCents}
+										<span class="duties-badge">+ {formatCost(order.estimatedDutiesCents)} duties</span>
+									{/if}
 									<br /><span class="hint">{order.estimatedServiceName || '—'}</span>
 								{:else}
 									<span class="hint">Not estimated</span>
@@ -264,6 +269,16 @@
 									{expandedOrder === order.id ? 'Hide' : 'Details'}
 								</button>
 								{#if order.status === 'APPROVED' && !labelResults[order.id]}
+									<select
+										class="carrier-select"
+										value={selectedCarrier[order.id] || 'auto'}
+										onchange={(e) => selectedCarrier[order.id] = (e.target as HTMLSelectElement).value}
+									>
+										<option value="auto">Auto</option>
+										<option value="chitchats">Chit Chats</option>
+										<option value="canada_post">Canada Post</option>
+										<option value="lettermail">Lettermail</option>
+									</select>
 									<button
 										type="button"
 										class="action-btn label-btn"
@@ -297,7 +312,7 @@
 								<td colspan="10">
 									<div class="label-result">
 										<div class="label-result-info">
-											<span class="label-method">{labelResults[order.id].shippingMethod === 'lettermail' ? '✉️ Lettermail' : '📦 Canada Post'}</span>
+											<span class="label-method">{labelResults[order.id].shippingMethod === 'lettermail' ? '✉️ Lettermail' : labelResults[order.id].shippingMethod === 'chitchats' ? '🚀 Chit Chats' : '📦 Canada Post'}</span>
 											{#if labelResults[order.id].trackingNumber}
 												<span class="label-tracking">Tracking: <code>{labelResults[order.id].trackingNumber}</code></span>
 											{/if}
@@ -526,6 +541,18 @@
 		background: rgba(255, 255, 255, 1);
 	}
 
+	.carrier-select {
+		padding: 0.375rem 0.5rem;
+		font-size: 0.75rem;
+		border: 1px solid #af98ff;
+		border-radius: 6px;
+		background: rgba(255, 255, 255, 0.8);
+		color: #333;
+		font-family: inherit;
+		margin-right: 0.375rem;
+		cursor: pointer;
+	}
+
 	.detail-row td {
 		padding: 1rem;
 		background: rgba(175, 152, 255, 0.05);
@@ -662,6 +689,12 @@
 
 	.download-btn:hover {
 		background: #ddf5dd !important;
+	}
+
+	.duties-badge {
+		font-size: 0.75rem;
+		color: #e17055;
+		font-weight: 500;
 	}
 
 	.label-zonos {

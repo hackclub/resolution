@@ -321,6 +321,7 @@ export const warehouseOrder = pgTable('warehouse_order', {
 	postalCode: text('postal_code'),
 	country: text('country').notNull(),
 	estimatedShippingCents: integer('estimated_shipping_cents'),
+	estimatedDutiesCents: integer('estimated_duties_cents'),
 	estimatedServiceName: text('estimated_service_name'),
 	estimatedPackageType: text('estimated_package_type'),
 	estimatedTotalLengthIn: real('estimated_total_length_in'),
@@ -329,7 +330,7 @@ export const warehouseOrder = pgTable('warehouse_order', {
 	estimatedTotalWeightGrams: real('estimated_total_weight_grams'),
 	trackingNumber: text('tracking_number'),
 	labelUrl: text('label_url'),
-	shippingMethod: text('shipping_method'), // 'canada_post' or 'lettermail'
+	shippingMethod: text('shipping_method'), // 'canada_post', 'lettermail', or 'chitchats'
 	notes: text('notes'),
 	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
