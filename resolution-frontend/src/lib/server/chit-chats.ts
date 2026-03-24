@@ -211,7 +211,8 @@ export async function fetchChitChatsRates(params: {
 			description: 'Merchandise',
 			value_amount: params.valueCad.toFixed(2),
 			currency_code: 'cad',
-			origin_country: 'CA'
+			origin_country: 'CA',
+			hs_tariff_code: '4911999090'
 		}]
 	};
 
