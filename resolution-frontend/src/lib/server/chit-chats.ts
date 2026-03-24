@@ -2,9 +2,9 @@ import { env } from '$env/dynamic/private';
 import type { RateOption } from './canada-post';
 
 function formatHsCode(code: string | null | undefined): string {
-	if (!code) return '4911990000';
+	if (!code) return '9505100000';
 	const digits = code.replace(/[^0-9]/g, '');
-	if (digits.length === 0) return '4911990000';
+	if (digits.length === 0) return '9505100000';
 	return digits.padEnd(10, '0').substring(0, 10);
 }
 
@@ -228,7 +228,7 @@ export async function fetchChitChatsRates(params: {
 			value_amount: params.valueCad.toFixed(2),
 			currency_code: 'cad',
 			origin_country: 'CA',
-			hs_tariff_code: '4911990000',
+			hs_tariff_code: '9505100000',
 			weight: params.weightGrams,
 			weight_unit: 'g',
 			manufacturer_id: 'HACKCLUB',
