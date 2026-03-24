@@ -16,24 +16,19 @@ export function escapeXml(str: string): string {
 
 async function cropLabelTo4x6(pdfBuffer: ArrayBuffer): Promise<ArrayBuffer> {
 	const srcDoc = await PDFDocument.load(pdfBuffer);
-	const srcPage = srcDoc.getPage(0);
-	const { width: pageWidth, height: pageHeight } = srcPage.getSize();
+	const page = srcDoc.getPage(0);
+	const { width: pageWidth, height: pageHeight } = page.getSize();
 
-	// Label is in the right half of the page
-	// Crop: right half, trim top 0.9" and bottom whitespace
-	const cropX = pageWidth / 2;
-	const cropWidth = pageWidth / 2;
-	const topTrim = 0.9 * 72;
-	const bottomTrim = 2.9 * 72;
-	const cropY = bottomTrim;
-	const cropHeight = pageHeight - topTrim - bottomTrim;
+	// Page is landscape 792x612 (11x8.5in)
+	// Label content is in the right portion: x ~452 to ~790
+	const cropX = pageWidth * 0.57;
+	const cropWidth = pageWidth - cropX - 2;
+	const cropY = pageHeight * 0.163;
+	const cropHeight = pageHeight * 0.735;
 
-	// Set all boxes to crop area
-	srcPage.setMediaBox(cropX, cropY, cropWidth, cropHeight);
-	srcPage.setCropBox(cropX, cropY, cropWidth, cropHeight);
-	srcPage.setTrimBox(cropX, cropY, cropWidth, cropHeight);
-	srcPage.setBleedBox(cropX, cropY, cropWidth, cropHeight);
-	srcPage.setArtBox(cropX, cropY, cropWidth, cropHeight);
+	page.setMediaBox(cropX, cropY, cropWidth, cropHeight);
+	page.setCropBox(cropX, cropY, cropWidth, cropHeight);
+	page.setSize(288, 432);
 
 	return await srcDoc.save();
 }
