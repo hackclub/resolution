@@ -22,11 +22,13 @@ async function cropLabelTo4x6(pdfBuffer: ArrayBuffer): Promise<ArrayBuffer> {
 	const { width: pageWidth, height: pageHeight } = srcPage.getSize();
 
 	// Label is in the right half of the page
-	// Crop from the center line to the right edge, full height
+	// Content starts ~0.5" from top and ends ~3" from bottom
 	const cropX = pageWidth / 2;
 	const cropWidth = pageWidth / 2;
-	const cropY = 0;
-	const cropHeight = pageHeight;
+	const topMargin = 0.5 * 72;  // 0.5" from top
+	const bottomMargin = 2.5 * 72; // 2.5" from bottom
+	const cropY = bottomMargin;
+	const cropHeight = pageHeight - topMargin - bottomMargin;
 
 	srcPage.setCropBox(cropX, cropY, cropWidth, cropHeight);
 	srcPage.setMediaBox(cropX, cropY, cropWidth, cropHeight);
