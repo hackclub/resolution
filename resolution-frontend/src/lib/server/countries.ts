@@ -61,3 +61,38 @@ export function resolveCountryCode(country: string): string {
 	if (upper.length === 2) return upper;
 	return COUNTRY_NAME_TO_CODE[upper] ?? upper;
 }
+
+const US_STATE_TO_CODE: Record<string, string> = {
+	'ALABAMA': 'AL', 'ALASKA': 'AK', 'ARIZONA': 'AZ', 'ARKANSAS': 'AR', 'CALIFORNIA': 'CA',
+	'COLORADO': 'CO', 'CONNECTICUT': 'CT', 'DELAWARE': 'DE', 'FLORIDA': 'FL', 'GEORGIA': 'GA',
+	'HAWAII': 'HI', 'IDAHO': 'ID', 'ILLINOIS': 'IL', 'INDIANA': 'IN', 'IOWA': 'IA',
+	'KANSAS': 'KS', 'KENTUCKY': 'KY', 'LOUISIANA': 'LA', 'MAINE': 'ME', 'MARYLAND': 'MD',
+	'MASSACHUSETTS': 'MA', 'MICHIGAN': 'MI', 'MINNESOTA': 'MN', 'MISSISSIPPI': 'MS',
+	'MISSOURI': 'MO', 'MONTANA': 'MT', 'NEBRASKA': 'NE', 'NEVADA': 'NV', 'NEW HAMPSHIRE': 'NH',
+	'NEW JERSEY': 'NJ', 'NEW MEXICO': 'NM', 'NEW YORK': 'NY', 'NORTH CAROLINA': 'NC',
+	'NORTH DAKOTA': 'ND', 'OHIO': 'OH', 'OKLAHOMA': 'OK', 'OREGON': 'OR', 'PENNSYLVANIA': 'PA',
+	'RHODE ISLAND': 'RI', 'SOUTH CAROLINA': 'SC', 'SOUTH DAKOTA': 'SD', 'TENNESSEE': 'TN',
+	'TEXAS': 'TX', 'UTAH': 'UT', 'VERMONT': 'VT', 'VIRGINIA': 'VA', 'WASHINGTON': 'WA',
+	'WEST VIRGINIA': 'WV', 'WISCONSIN': 'WI', 'WYOMING': 'WY',
+	'DISTRICT OF COLUMBIA': 'DC', 'PUERTO RICO': 'PR', 'GUAM': 'GU',
+	'AMERICAN SAMOA': 'AS', 'US VIRGIN ISLANDS': 'VI',
+};
+
+const CA_PROVINCE_TO_CODE: Record<string, string> = {
+	'ALBERTA': 'AB', 'BRITISH COLUMBIA': 'BC', 'MANITOBA': 'MB', 'NEW BRUNSWICK': 'NB',
+	'NEWFOUNDLAND AND LABRADOR': 'NL', 'NEWFOUNDLAND': 'NL', 'NOVA SCOTIA': 'NS',
+	'NORTHWEST TERRITORIES': 'NT', 'NUNAVUT': 'NU', 'ONTARIO': 'ON',
+	'PRINCE EDWARD ISLAND': 'PE', 'QUEBEC': 'QC', 'QUÉBEC': 'QC',
+	'SASKATCHEWAN': 'SK', 'YUKON': 'YT',
+};
+
+/**
+ * Resolves a state/province value to a short code.
+ * Accepts a 2-letter code (passed through) or full name for US states / CA provinces.
+ */
+export function resolveStateCode(state: string, country?: string): string {
+	const trimmed = state.trim();
+	if (trimmed.length <= 2) return trimmed.toUpperCase();
+	const upper = trimmed.toUpperCase();
+	return US_STATE_TO_CODE[upper] ?? CA_PROVINCE_TO_CODE[upper] ?? trimmed;
+}

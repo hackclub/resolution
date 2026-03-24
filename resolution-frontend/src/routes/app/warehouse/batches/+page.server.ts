@@ -5,7 +5,7 @@ import { eq, desc, asc, sql, inArray } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { fetchCheapestRate } from '$lib/server/canada-post';
-import { resolveCountryCode } from '$lib/server/countries';
+import { resolveCountryCode, resolveStateCode } from '$lib/server/countries';
 
 function parseCsv(raw: string): string[][] {
 	const rows: string[][] = [];
@@ -247,6 +247,7 @@ export const actions: Actions = {
 			}
 
 			const country = resolveCountryCode(rawCountry);
+			const resolvedState = resolveStateCode(stateProvince, country);
 
 			const [order] = await db.insert(warehouseOrder).values({
 				createdById: user.id,
@@ -259,7 +260,7 @@ export const actions: Actions = {
 				addressLine1,
 				addressLine2: getValue('addressLine2') || null,
 				city,
-				stateProvince,
+				stateProvince: resolvedState,
 				postalCode: getValue('postalCode') || null,
 				country
 			}).returning({ id: warehouseOrder.id });
@@ -420,6 +421,7 @@ export const actions: Actions = {
 			}
 
 			const country = resolveCountryCode(rawCountry);
+			const resolvedState = resolveStateCode(stateProvince, country);
 			const postalCode = getValue('postalCode') || undefined;
 			const itemsCostUsd = itemsCostCentsPerOrder / 100;
 			totalItemsCostCents += itemsCostCentsPerOrder;
@@ -427,7 +429,7 @@ export const actions: Actions = {
 			const rate = await fetchCheapestRate({
 				country,
 				postalCode,
-				province: stateProvince,
+				province: resolvedState,
 				weightGrams: totalWeight,
 				lengthIn: maxLength,
 				widthIn: maxWidth,
