@@ -3,6 +3,7 @@ import { db } from '$lib/server/db';
 import { warehouseItem, warehouseCategory, warehouseOrder, warehouseOrderItem, warehouseOrderTag, ambassadorPathway } from '$lib/server/db/schema';
 import { eq, asc, desc, sql, inArray } from 'drizzle-orm';
 import { error, fail, redirect } from '@sveltejs/kit';
+import { createHcbTransfer, getOrgIdForPathway } from '$lib/server/hcb';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { user } = await parent();
@@ -72,7 +73,7 @@ export const actions: Actions = {
 		// Check inventory before creating order
 		const itemIds = items.map((i) => i.warehouseItemId);
 		const currentStock = await db
-			.select({ id: warehouseItem.id, name: warehouseItem.name, quantity: warehouseItem.quantity })
+			.select({ id: warehouseItem.id, name: warehouseItem.name, quantity: warehouseItem.quantity, costCents: warehouseItem.costCents })
 			.from(warehouseItem)
 			.where(inArray(warehouseItem.id, itemIds));
 
@@ -133,6 +134,38 @@ export const actions: Actions = {
 						tag
 					}))
 				);
+			}
+		}
+
+		// HCB billing: charge the ambassador's pathway org
+		if (!user.isAdmin) {
+			const ambassadorPathways = await db
+				.select({ pathway: ambassadorPathway.pathway })
+				.from(ambassadorPathway)
+				.where(eq(ambassadorPathway.userId, user.id))
+				.limit(1);
+
+			if (ambassadorPathways.length > 0) {
+				const orgId = getOrgIdForPathway(ambassadorPathways[0].pathway);
+				if (orgId) {
+					let itemsTotalCents = 0;
+					for (const item of items) {
+						const stock = stockMap.get(item.warehouseItemId);
+						if (stock) {
+							itemsTotalCents += stock.costCents * item.quantity;
+						}
+					}
+					const shippingCents = estimatedShippingCents ? parseInt(estimatedShippingCents) : 0;
+					const totalCents = itemsTotalCents + shippingCents;
+
+					if (totalCents > 0) {
+						await createHcbTransfer(
+							orgId,
+							totalCents,
+							`Warehouse order #${order.id} by ${firstName} ${lastName}`
+						);
+					}
+				}
 			}
 		}
 
