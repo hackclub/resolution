@@ -20,12 +20,12 @@ async function cropLabelTo4x6(pdfBuffer: ArrayBuffer): Promise<ArrayBuffer> {
 	const [srcPage] = await newDoc.copyPages(srcDoc, [0]);
 
 	// 8.5x11 page in points: 612 x 792
-	// Label is in top-right quadrant: right half (x 306-612), top ~6.5" (y 324-792)
-	// Crop to 4x6 = 288x432 points
+	// Label is the entire right half of the page (full height)
+	// Right half starts at 4.25" = 306pt, full width to 612pt
 	const cropX = 306;  // 4.25 inches from left
+	const cropY = 0;    // bottom of page
 	const cropWidth = 306; // 4.25 inches wide (right half)
-	const cropHeight = 468; // 6.5 inches from top
-	const cropY = 792 - cropHeight; // PDF y is bottom-up
+	const cropHeight = 792; // full 11 inches tall
 
 	srcPage.setCropBox(cropX, cropY, cropWidth, cropHeight);
 	srcPage.setMediaBox(cropX, cropY, cropWidth, cropHeight);
