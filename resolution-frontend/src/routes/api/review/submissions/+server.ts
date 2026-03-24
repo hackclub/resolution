@@ -66,8 +66,7 @@ export const GET: RequestHandler = async (event) => {
 					'Pathway',
 					'Week',
 					'Screenshot',
-					'Optional - Override Hours Spent',
-				'Slack ID'
+					'Optional - Override Hours Spent'
 				]
 			})
 			.all();
@@ -86,7 +85,6 @@ export const GET: RequestHandler = async (event) => {
 			week: record.get('Week') as number,
 			screenshotUrl: (record.get('Screenshot') as Array<{ url: string }> | undefined)?.[0]?.url ?? null,
 			hoursSpent: (record.get('Optional - Override Hours Spent') as number | undefined) ?? null,
-			slackId: (record.get('Slack ID') as string | undefined) ?? null,
 			submittedAt: record._rawJson.createdTime as string
 		}));
 

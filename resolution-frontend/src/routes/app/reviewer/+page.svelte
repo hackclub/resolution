@@ -20,7 +20,6 @@
 		hackatimeProject: string;
 		githubUsername: string;
 		hoursSpent: number | null;
-		slackId: string | null;
 		submittedAt: string;
 	}
 
@@ -207,13 +206,7 @@
 									{submission.hoursSpent}h reported
 								</span>
 							{/if}
-							{#if submission.slackId}
-								<span class="slack-label">
-									<img src="https://icons.hackclub.com/api/icons/8492a6/slack" alt="Slack" width="16" height="16" />
-									{submission.slackId}
-								</span>
-							{/if}
-						</div>
+							</div>
 
 						<p class="description">{truncate(submission.description, 150)}</p>
 
