@@ -624,6 +624,7 @@
 		{#if selectedRate}
 			<input type="hidden" name="estimatedShippingCents" value={Math.round(selectedRate.priceDetails.total * 100)} />
 			<input type="hidden" name="estimatedServiceName" value={selectedRate.serviceName} />
+			<input type="hidden" name="estimatedServiceCode" value={selectedRate.serviceCode} />
 		{/if}
 	{/if}
 

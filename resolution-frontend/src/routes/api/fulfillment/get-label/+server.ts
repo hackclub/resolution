@@ -114,7 +114,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	let labelUrl: string | null = null;
 	let shippingMethod: string;
 
-	if (carrier === 'chitchats') {
+	const isChitChatsOrder = !carrier || carrier === 'auto'
+		? order.estimatedServiceCode?.startsWith('CHITCHATS.')
+		: carrier === 'chitchats';
+
+	if (isChitChatsOrder) {
 		// ── CHIT CHATS PATH ──
 		shippingMethod = 'chitchats';
 

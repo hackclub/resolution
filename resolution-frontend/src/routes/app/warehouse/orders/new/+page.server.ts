@@ -51,6 +51,7 @@ export const actions: Actions = {
 		const tagsString = formData.get('tags') as string;
 		const estimatedShippingCents = formData.get('estimatedShippingCents') as string;
 		const estimatedServiceName = formData.get('estimatedServiceName') as string;
+		const estimatedServiceCode = formData.get('estimatedServiceCode') as string;
 
 		const itemsJson = formData.get('items') as string;
 		let items: { warehouseItemId: string; quantity: number; sizingChoice?: string }[] = [];
@@ -83,7 +84,8 @@ export const actions: Actions = {
 			notes: notes || null,
 			status: 'APPROVED',
 			estimatedShippingCents: estimatedShippingCents ? parseInt(estimatedShippingCents) : null,
-			estimatedServiceName: estimatedServiceName || null
+			estimatedServiceName: estimatedServiceName || null,
+			estimatedServiceCode: estimatedServiceCode || null
 		}).returning({ id: warehouseOrder.id });
 
 		await Promise.all(

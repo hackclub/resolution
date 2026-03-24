@@ -323,6 +323,7 @@ export const warehouseOrder = pgTable('warehouse_order', {
 	estimatedShippingCents: integer('estimated_shipping_cents'),
 	estimatedDutiesCents: integer('estimated_duties_cents'),
 	estimatedServiceName: text('estimated_service_name'),
+	estimatedServiceCode: text('estimated_service_code'),
 	estimatedPackageType: text('estimated_package_type'),
 	estimatedTotalLengthIn: real('estimated_total_length_in'),
 	estimatedTotalWidthIn: real('estimated_total_width_in'),
