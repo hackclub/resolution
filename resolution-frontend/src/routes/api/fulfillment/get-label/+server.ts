@@ -231,7 +231,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		console.log(`Creating shipment: country=${order.country}, estimatedService=${order.estimatedServiceName}, serviceCode=${serviceCode}`);
 
 		// Try creating shipment, fall back to alternate international services if unavailable
-		const fallbackCodes = serviceCode === 'INT.TP' ? ['INT.XP'] : serviceCode === 'INT.XP' ? ['INT.TP'] : [];
+		// INT.XP requires a contract, so only use it as fallback when contract is available
+		const fallbackCodes: string[] = [];
+		if (serviceCode === 'INT.TP' && env.CP_CONTRACT_ID) fallbackCodes.push('INT.XP');
+		if (serviceCode === 'INT.XP') fallbackCodes.push('INT.TP');
 		let lastError: any;
 		for (const code of [serviceCode, ...fallbackCodes]) {
 			try {
@@ -247,7 +250,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			}
 		}
 		if (lastError) {
-			throw error(502, `Canada Post shipment creation failed`);
+			throw error(502, `Canada Post shipment creation failed: ${lastError.message}`);
 		}
 	}
 

@@ -2,6 +2,7 @@ import { env } from '$env/dynamic/private';
 import xml2js from 'xml2js';
 import { PDFDocument } from 'pdf-lib';
 import { fetchChitChatsRates } from './chit-chats';
+import { resolveStateCode } from './countries';
 
 export const INCHES_TO_CM = 2.54;
 export const GRAMS_TO_KG = 0.001;
@@ -194,7 +195,7 @@ export function buildCreateShipmentXml(params: {
 				<address-line-1>${escapeXml((order.addressLine1 || '').substring(0, 44))}</address-line-1>
 				${(order.addressLine2 || order.addressLine1?.length > 44) ? `<address-line-2>${escapeXml((order.addressLine2 || order.addressLine1?.substring(44) || '').substring(0, 44))}</address-line-2>` : ''}
 				<city>${escapeXml((order.city || '').substring(0, 40))}</city>
-				<prov-state>${escapeXml((order.stateProvince || '').substring(0, 20))}</prov-state>
+				<prov-state>${escapeXml(resolveStateCode(order.stateProvince || '').substring(0, 20))}</prov-state>
 				<country-code>${escapeXml(order.country)}</country-code>
 				<postal-zip-code>${(order.postalCode ?? '').replace(/\s/g, '').toUpperCase()}</postal-zip-code>
 			</address-details>
