@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import xml2js from 'xml2js';
 import { PDFDocument } from 'pdf-lib';
+import { fetchChitChatsRates } from './chit-chats';
 
 export const INCHES_TO_CM = 2.54;
 export const GRAMS_TO_KG = 0.001;
@@ -715,6 +716,28 @@ export async function fetchCheapestRate(params: {
 		}
 	} catch (err) {
 		console.error('Parcel rate lookup failed:', err);
+	}
+
+	try {
+		if (env.CHITCHATS_ACCESS_TOKEN && env.CHITCHATS_CLIENT_ID) {
+			const chitChatsRates = await fetchChitChatsRates({
+				country: params.country,
+				postalCode: params.postalCode,
+				name: 'Rate Quote',
+				address1: '123 Main St',
+				city: 'Unknown',
+				weightGrams: params.weightGrams,
+				lengthIn: effectiveLength,
+				widthIn: effectiveWidth,
+				heightIn: params.packageType === 'box' ? params.heightIn : 0.5,
+				valueCad: 1.00
+			});
+			for (const rate of chitChatsRates) {
+				allOptions.push({ serviceName: rate.serviceName, total: rate.priceDetails.total });
+			}
+		}
+	} catch (err) {
+		console.error('Chit Chats rate lookup failed:', err);
 	}
 
 	if (allOptions.length === 0) return null;
