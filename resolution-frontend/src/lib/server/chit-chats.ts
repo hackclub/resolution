@@ -69,7 +69,16 @@ export async function createChitChatsShipment(params: {
 			value_amount: (oi.warehouseItem.costCents / 100).toFixed(2),
 			currency_code: 'cad',
 			origin_country: 'CA',
-			hs_tariff_code: oi.warehouseItem.hsCode || ''
+			hs_tariff_code: oi.warehouseItem.hsCode || '4911999090',
+			weight: oi.warehouseItem.weightGrams * oi.quantity,
+			weight_unit: 'g',
+			manufacturer_id: 'HACKCLUB',
+			manufacturer_contact: env.CP_SENDER_NAME || 'Hack Club',
+			manufacturer_street: env.CP_SENDER_ADDRESS || '',
+			manufacturer_city: env.CP_SENDER_CITY || '',
+			manufacturer_postal_code: (env.CP_ORIGIN_POSTAL_CODE || '').replace(/\s/g, ''),
+			manufacturer_province_code: env.CP_SENDER_PROVINCE || '',
+			manufacturer_country_code: 'CA'
 		}))
 	};
 
@@ -212,7 +221,16 @@ export async function fetchChitChatsRates(params: {
 			value_amount: params.valueCad.toFixed(2),
 			currency_code: 'cad',
 			origin_country: 'CA',
-			hs_tariff_code: '4911999090'
+			hs_tariff_code: '4911999090',
+			weight: params.weightGrams,
+			weight_unit: 'g',
+			manufacturer_id: 'HACKCLUB',
+			manufacturer_contact: env.CP_SENDER_NAME || 'Hack Club',
+			manufacturer_street: env.CP_SENDER_ADDRESS || '',
+			manufacturer_city: env.CP_SENDER_CITY || '',
+			manufacturer_postal_code: (env.CP_ORIGIN_POSTAL_CODE || '').replace(/\s/g, ''),
+			manufacturer_province_code: env.CP_SENDER_PROVINCE || '',
+			manufacturer_country_code: 'CA'
 		}]
 	};
 
