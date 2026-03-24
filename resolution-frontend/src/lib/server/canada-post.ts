@@ -146,8 +146,8 @@ export function buildCreateShipmentXml(params: {
 				const valuePerUnit = Math.round(item.costCents) / 100;
 				return `<item>
 				<customs-number-of-units>${oi.quantity}</customs-number-of-units>
-				<customs-description>${escapeXml(item.name.substring(0, 44))}</customs-description>
-				<sku>${escapeXml(item.sku || '')}</sku>
+				<customs-description>${escapeXml(item.name.substring(0, 45))}</customs-description>
+				<sku>${escapeXml((item.sku || '').substring(0, 15))}</sku>
 				<hs-tariff-code>${escapeXml(formatHsTariffCode(item.hsCode))}</hs-tariff-code>
 				<unit-weight>${unitWeightKg}</unit-weight>
 				<customs-value-per-unit>${valuePerUnit.toFixed(2)}</customs-value-per-unit>
@@ -188,13 +188,13 @@ export function buildCreateShipmentXml(params: {
 			</address-details>
 		</sender>
 		<destination>
-			<name>${escapeXml(order.firstName)} ${escapeXml(order.lastName)}</name>
-			<client-voice-number>${escapeXml(order.phone || env.CP_SENDER_PHONE || '000-000-0000')}</client-voice-number>
+			<name>${escapeXml(`${order.firstName} ${order.lastName}`.substring(0, 44))}</name>
+			<client-voice-number>${escapeXml((order.phone || env.CP_SENDER_PHONE || '000-000-0000').substring(0, 25))}</client-voice-number>
 			<address-details>
-				<address-line-1>${escapeXml(order.addressLine1)}</address-line-1>
-				${order.addressLine2 ? `<address-line-2>${escapeXml(order.addressLine2)}</address-line-2>` : ''}
-				<city>${escapeXml(order.city)}</city>
-				<prov-state>${escapeXml(order.stateProvince)}</prov-state>
+				<address-line-1>${escapeXml((order.addressLine1 || '').substring(0, 44))}</address-line-1>
+				${(order.addressLine2 || order.addressLine1?.length > 44) ? `<address-line-2>${escapeXml((order.addressLine2 || order.addressLine1?.substring(44) || '').substring(0, 44))}</address-line-2>` : ''}
+				<city>${escapeXml((order.city || '').substring(0, 40))}</city>
+				<prov-state>${escapeXml((order.stateProvince || '').substring(0, 20))}</prov-state>
 				<country-code>${escapeXml(order.country)}</country-code>
 				<postal-zip-code>${(order.postalCode ?? '').replace(/\s/g, '').toUpperCase()}</postal-zip-code>
 			</address-details>
