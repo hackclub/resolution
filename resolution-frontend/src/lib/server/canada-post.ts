@@ -16,26 +16,26 @@ export function escapeXml(str: string): string {
 
 async function cropLabelTo4x6(pdfBuffer: ArrayBuffer): Promise<ArrayBuffer> {
 	const srcDoc = await PDFDocument.load(pdfBuffer);
-	const newDoc = await PDFDocument.create();
-	const [srcPage] = await newDoc.copyPages(srcDoc, [0]);
-
+	const srcPage = srcDoc.getPage(0);
 	const { width: pageWidth, height: pageHeight } = srcPage.getSize();
 
 	// Label is in the right half of the page
-	// Content: CP logo starts ~1" from top, customs ends ~8" from top
+	// Crop: right half, trim top 0.9" and bottom whitespace
 	const cropX = pageWidth / 2;
 	const cropWidth = pageWidth / 2;
-	const topOffset = 0.9 * 72;   // start 0.9" from top (just above CP logo)
-	const contentHeight = 7.1 * 72; // ~7.1" of content
-	const cropY = pageHeight - topOffset - contentHeight;
-	const cropHeight = contentHeight;
+	const topTrim = 0.9 * 72;
+	const bottomTrim = 2.9 * 72;
+	const cropY = bottomTrim;
+	const cropHeight = pageHeight - topTrim - bottomTrim;
 
-	srcPage.setCropBox(cropX, cropY, cropWidth, cropHeight);
+	// Set all boxes to crop area
 	srcPage.setMediaBox(cropX, cropY, cropWidth, cropHeight);
-	srcPage.setSize(cropWidth, cropHeight);
+	srcPage.setCropBox(cropX, cropY, cropWidth, cropHeight);
+	srcPage.setTrimBox(cropX, cropY, cropWidth, cropHeight);
+	srcPage.setBleedBox(cropX, cropY, cropWidth, cropHeight);
+	srcPage.setArtBox(cropX, cropY, cropWidth, cropHeight);
 
-	newDoc.addPage(srcPage);
-	return await newDoc.save();
+	return await srcDoc.save();
 }
 
 export function inchesToCm(inches: number): number {
