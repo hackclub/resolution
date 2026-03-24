@@ -249,8 +249,27 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				lastError = e;
 			}
 		}
+		// If Canada Post failed for international, try Chit Chats as fallback
+		if (lastError && order.country !== 'CA' && env.CHITCHATS_ACCESS_TOKEN && env.CHITCHATS_CLIENT_ID) {
+			console.log(`Canada Post unavailable for ${order.country}, trying Chit Chats fallback`);
+			try {
+				const result = await createChitChatsShipment({
+					order,
+					weightGrams: totalWeight,
+					lengthIn: maxLength,
+					widthIn: maxWidth,
+					heightIn: totalHeight
+				});
+				trackingNumber = result.trackingNumber;
+				labelUrl = result.labelBase64;
+				shippingMethod = 'chitchats';
+				lastError = null;
+			} catch (e: any) {
+				console.error('Chit Chats fallback also failed:', e.message);
+			}
+		}
 		if (lastError) {
-			throw error(502, `Canada Post shipment creation failed: ${lastError.message}`);
+			throw error(502, `Shipment creation failed: ${lastError.message}`);
 		}
 	}
 
