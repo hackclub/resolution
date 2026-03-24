@@ -14,21 +14,21 @@ export function escapeXml(str: string): string {
 		.replace(/'/g, '&apos;');
 }
 
-async function cropLabelTo4x6(pdfBuffer: ArrayBuffer): Promise<ArrayBuffer> {
+async function cropLabelTo4x6(pdfBuffer: ArrayBuffer): Promise<Uint8Array> {
 	const srcDoc = await PDFDocument.load(pdfBuffer);
 	const page = srcDoc.getPage(0);
-	const { width: pageWidth, height: pageHeight } = page.getSize();
 
-	// Page is landscape 792x612 (11x8.5in)
-	// Label content is in the right portion: x ~452 to ~790
-	const cropX = pageWidth * 0.57;
-	const cropWidth = pageWidth - cropX - 2;
-	const cropY = pageHeight * 0.163;
-	const cropHeight = pageHeight * 0.735;
+	// Canada Post non-contract labels are landscape 792x612 (11x8.5in)
+	// Label content is in the right portion of the page
+	// Crop tightly to the label borders for thermal printing
+	const cropX = 448;
+	const cropY = 100;
+	const cropWidth = 330;
+	const cropHeight = 445;
 
 	page.setMediaBox(cropX, cropY, cropWidth, cropHeight);
 	page.setCropBox(cropX, cropY, cropWidth, cropHeight);
-	page.setSize(288, 432);
+	// Do NOT call page.setSize() - it overrides MediaBox and breaks the crop
 
 	return await srcDoc.save();
 }
@@ -245,6 +245,8 @@ export function getServiceCode(serviceName: string): string {
 	if (lower.includes('tracked packet')) return 'INT.TP';
 	if (lower.includes('surface') && lower.includes('international')) return 'INT.SP.SURF';
 	if (lower.includes('air') && lower.includes('international')) return 'INT.SP.AIR';
+	if (lower.includes('u.s.') || lower.includes('usa')) return 'USA.TP';
+	if (lower.includes('international')) return 'INT.TP';
 	return 'DOM.RP';
 }
 
@@ -455,7 +457,7 @@ export async function fetchRates(params: {
 	});
 }
 
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
+function arrayBufferToBase64(buffer: ArrayBuffer | Uint8Array): string {
 	const bytes = new Uint8Array(buffer);
 	let binary = '';
 	for (let i = 0; i < bytes.length; i++) {
@@ -475,7 +477,6 @@ export async function createShipment(params: {
 	const { baseUrl, authHeader, customerNumber } = getCanadaPostConfig();
 
 	const shipmentXml = buildCreateShipmentXml(params);
-	console.log('Shipment XML:', shipmentXml);
 
 	const contractId = env.CP_CONTRACT_ID;
 	const cpEndpoint = contractId
@@ -532,7 +533,7 @@ export async function createShipment(params: {
 				}
 			});
 			if (labelRes.ok) {
-				let labelBuffer = await labelRes.arrayBuffer();
+				let labelBuffer: ArrayBuffer | Uint8Array = await labelRes.arrayBuffer();
 				if (!contractId) {
 					labelBuffer = await cropLabelTo4x6(labelBuffer);
 				}
