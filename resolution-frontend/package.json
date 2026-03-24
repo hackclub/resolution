@@ -53,6 +53,7 @@
 		"marked": "^17.0.1",
 		"monaco-editor": "^0.55.1",
 		"oslo": "^1.2.1",
+		"pdf-lib": "^1.17.1",
 		"pg": "^8.13.0",
 		"simple-oauth2": "^5.1.0",
 		"tsparticles": "^3.9.1",

@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/private';
 import xml2js from 'xml2js';
+import { PDFDocument } from 'pdf-lib';
 
 export const INCHES_TO_CM = 2.54;
 export const GRAMS_TO_KG = 0.001;
@@ -11,6 +12,27 @@ export function escapeXml(str: string): string {
 		.replace(/>/g, '&gt;')
 		.replace(/"/g, '&quot;')
 		.replace(/'/g, '&apos;');
+}
+
+async function cropLabelTo4x6(pdfBuffer: ArrayBuffer): Promise<ArrayBuffer> {
+	const srcDoc = await PDFDocument.load(pdfBuffer);
+	const newDoc = await PDFDocument.create();
+	const [srcPage] = await newDoc.copyPages(srcDoc, [0]);
+
+	// 8.5x11 page in points: 612 x 792
+	// Label is in top-right quadrant: right half (x 306-612), top ~6.5" (y 324-792)
+	// Crop to 4x6 = 288x432 points
+	const cropX = 306;  // 4.25 inches from left
+	const cropWidth = 306; // 4.25 inches wide (right half)
+	const cropHeight = 468; // 6.5 inches from top
+	const cropY = 792 - cropHeight; // PDF y is bottom-up
+
+	srcPage.setCropBox(cropX, cropY, cropWidth, cropHeight);
+	srcPage.setMediaBox(cropX, cropY, cropWidth, cropHeight);
+	srcPage.setSize(cropWidth, cropHeight);
+
+	newDoc.addPage(srcPage);
+	return await newDoc.save();
 }
 
 export function inchesToCm(inches: number): number {
@@ -512,7 +534,10 @@ export async function createShipment(params: {
 				}
 			});
 			if (labelRes.ok) {
-				const labelBuffer = await labelRes.arrayBuffer();
+				let labelBuffer = await labelRes.arrayBuffer();
+				if (!contractId) {
+					labelBuffer = await cropLabelTo4x6(labelBuffer);
+				}
 				labelBase64 = `data:application/pdf;base64,${arrayBufferToBase64(labelBuffer)}`;
 			}
 		}
