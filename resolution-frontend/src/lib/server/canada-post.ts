@@ -134,7 +134,7 @@ export function buildCreateShipmentXml(params: {
 				<customs-number-of-units>${oi.quantity}</customs-number-of-units>
 				<customs-description>${escapeXml(item.name.substring(0, 44))}</customs-description>
 				<sku>${escapeXml(item.sku || '')}</sku>
-				<hs-tariff-code>${escapeXml(item.hsCode || '')}</hs-tariff-code>
+				<hs-tariff-code>${escapeXml((item.hsCode || '').replace(/[^0-9]/g, ''))}</hs-tariff-code>
 				<unit-weight>${unitWeightKg}</unit-weight>
 				<customs-value-per-unit>${valuePerUnit.toFixed(2)}</customs-value-per-unit>
 				<country-of-origin>CA</country-of-origin>
@@ -667,6 +667,7 @@ export async function calculateZonosDuties(params: {
 export async function fetchCheapestRate(params: {
 	country: string;
 	postalCode?: string;
+	province?: string;
 	weightGrams: number;
 	lengthIn: number;
 	widthIn: number;
@@ -723,6 +724,7 @@ export async function fetchCheapestRate(params: {
 			const chitChatsRates = await fetchChitChatsRates({
 				country: params.country,
 				postalCode: params.postalCode,
+				province: params.province,
 				name: 'Rate Quote',
 				address1: '123 Main St',
 				city: 'Unknown',

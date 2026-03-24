@@ -427,6 +427,7 @@ export const actions: Actions = {
 			const rate = await fetchCheapestRate({
 				country,
 				postalCode,
+				province: stateProvince,
 				weightGrams: totalWeight,
 				lengthIn: maxLength,
 				widthIn: maxWidth,
