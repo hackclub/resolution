@@ -59,6 +59,8 @@ export async function createChitChatsShipment(params: {
 		province_code: order.stateProvince,
 		postal_code: order.postalCode || '',
 		country_code: order.country,
+		email: order.email || undefined,
+		phone: order.phone || undefined,
 		package_contents: 'merchandise',
 		value: totalValue,
 		value_currency: 'cad',
