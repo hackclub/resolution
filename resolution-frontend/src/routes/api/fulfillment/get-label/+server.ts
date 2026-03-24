@@ -230,12 +230,23 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 		console.log(`Creating shipment: country=${order.country}, estimatedService=${order.estimatedServiceName}, serviceCode=${serviceCode}`);
 
-		try {
-			const result = await createShipment({ order, weightKg, lengthCm, widthCm, heightCm, serviceCode });
-			trackingNumber = result.trackingPin;
-			labelUrl = result.labelBase64;
-		} catch (e: any) {
-			console.error('Canada Post Create Shipment error:', e.message);
+		// Try creating shipment, fall back to alternate international services if unavailable
+		const fallbackCodes = serviceCode === 'INT.TP' ? ['INT.XP'] : serviceCode === 'INT.XP' ? ['INT.TP'] : [];
+		let lastError: any;
+		for (const code of [serviceCode, ...fallbackCodes]) {
+			try {
+				const result = await createShipment({ order, weightKg, lengthCm, widthCm, heightCm, serviceCode: code });
+				trackingNumber = result.trackingPin;
+				labelUrl = result.labelBase64;
+				if (code !== serviceCode) console.log(`Used fallback service ${code} instead of ${serviceCode}`);
+				lastError = null;
+				break;
+			} catch (e: any) {
+				console.error(`Canada Post Create Shipment error (${code}):`, e.message);
+				lastError = e;
+			}
+		}
+		if (lastError) {
 			throw error(502, `Canada Post shipment creation failed`);
 		}
 	}
