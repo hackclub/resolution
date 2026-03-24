@@ -80,7 +80,7 @@ export async function createChitChatsShipment(params: {
 			'Content-Type': 'application/json',
 			Authorization: accessToken
 		},
-		body: JSON.stringify({ shipment: shipmentBody })
+		body: JSON.stringify(shipmentBody)
 	});
 
 	if (!createRes.ok) {
@@ -90,7 +90,7 @@ export async function createChitChatsShipment(params: {
 	}
 
 	const createData = await createRes.json();
-	const shipment = createData.shipment;
+	const shipment = createData.shipment || createData;
 	const shipmentId = shipment.id;
 
 	// Find cheapest rate
@@ -213,7 +213,7 @@ export async function fetchChitChatsRates(params: {
 			'Content-Type': 'application/json',
 			Authorization: accessToken
 		},
-		body: JSON.stringify({ shipment: shipmentBody })
+		body: JSON.stringify(shipmentBody)
 	});
 
 	if (!createRes.ok) {
@@ -223,7 +223,7 @@ export async function fetchChitChatsRates(params: {
 	}
 
 	const createData = await createRes.json();
-	const shipment = createData.shipment;
+	const shipment = createData.shipment || createData;
 	const shipmentId = shipment.id;
 	const rates = shipment.rates || [];
 
