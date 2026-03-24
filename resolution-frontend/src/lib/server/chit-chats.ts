@@ -5,7 +5,8 @@ function formatHsCode(code: string | null | undefined): string {
 	if (!code) return '7117199000';
 	const digits = code.replace(/[^0-9]/g, '');
 	if (digits.length === 0) return '7117199000';
-	return digits.padEnd(10, '0').substring(0, 10);
+	if (digits.length > 10) return digits.substring(0, 10);
+	return digits;
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -161,14 +162,14 @@ export async function createChitChatsShipment(params: {
 		throw new Error('Chit Chats postage purchase failed');
 	}
 
-	// Fetch label PDF
+	// Fetch label PNG (4x6 format)
 	let labelBase64: string | null = null;
-	if (finalShipment.postage_label_pdf_url) {
+	if (finalShipment.postage_label_png_url) {
 		try {
-			const labelRes = await fetch(finalShipment.postage_label_pdf_url);
+			const labelRes = await fetch(finalShipment.postage_label_png_url);
 			if (labelRes.ok) {
 				const labelBuffer = await labelRes.arrayBuffer();
-				labelBase64 = `data:application/pdf;base64,${arrayBufferToBase64(labelBuffer)}`;
+				labelBase64 = `data:image/png;base64,${arrayBufferToBase64(labelBuffer)}`;
 			} else {
 				console.error('Chit Chats label fetch failed:', labelRes.status);
 			}

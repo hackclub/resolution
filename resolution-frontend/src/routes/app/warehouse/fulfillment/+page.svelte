@@ -110,8 +110,9 @@
 
 		// Print label
 		if (result.labelUrl) {
-			const base64Data = result.labelUrl.replace(/^data:application\/pdf;base64,/, '');
-			await qz.print(config(), [{ type: 'pixel', format: 'pdf', flavor: 'base64', data: base64Data }]);
+			const base64Data = result.labelUrl.replace(/^data:(application\/pdf|image\/png);base64,/, '');
+			const format = result.labelUrl.startsWith('data:image/png') ? 'image' : 'pdf';
+			await qz.print(config(), [{ type: 'pixel', format, flavor: 'base64', data: base64Data }]);
 		}
 
 		// Print packing slip
