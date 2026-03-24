@@ -57,7 +57,6 @@
 	let labelLoading = $state<Record<string, boolean>>({});
 	let labelErrors = $state<Record<string, string>>({});
 	let labelResults = $state<Record<string, { trackingNumber: string | null; labelUrl: string | null; packingSlipBase64: string; shippingMethod: string }>>({});
-	let selectedCarrier = $state<Record<string, string>>({});
 
 	function getQZSettings(): { printer: string; dpi: number } {
 		try {
@@ -127,11 +126,10 @@
 		labelLoading[orderId] = true;
 		labelErrors[orderId] = '';
 		try {
-			const carrier = selectedCarrier[orderId] || undefined;
 			const res = await fetch('/api/fulfillment/get-label', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ orderId, carrier })
+				body: JSON.stringify({ orderId })
 			});
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({ message: 'Failed' }));
@@ -269,16 +267,6 @@
 									{expandedOrder === order.id ? 'Hide' : 'Details'}
 								</button>
 								{#if order.status === 'APPROVED' && !labelResults[order.id]}
-									<select
-										class="carrier-select"
-										value={selectedCarrier[order.id] || 'auto'}
-										onchange={(e) => selectedCarrier[order.id] = (e.target as HTMLSelectElement).value}
-									>
-										<option value="auto">Auto</option>
-										<option value="chitchats">Chit Chats</option>
-										<option value="canada_post">Canada Post</option>
-										<option value="lettermail">Lettermail</option>
-									</select>
 									<button
 										type="button"
 										class="action-btn label-btn"
@@ -539,18 +527,6 @@
 
 	.action-btn:hover {
 		background: rgba(255, 255, 255, 1);
-	}
-
-	.carrier-select {
-		padding: 0.375rem 0.5rem;
-		font-size: 0.75rem;
-		border: 1px solid #af98ff;
-		border-radius: 6px;
-		background: rgba(255, 255, 255, 0.8);
-		color: #333;
-		font-family: inherit;
-		margin-right: 0.375rem;
-		cursor: pointer;
 	}
 
 	.detail-row td {
