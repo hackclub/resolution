@@ -1,7 +1,7 @@
 import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
 import { warehouseItem, warehouseCategory, warehouseOrder, warehouseOrderItem, warehouseOrderTag, ambassadorPathway } from '$lib/server/db/schema';
-import { eq, asc, desc, sql } from 'drizzle-orm';
+import { eq, asc, desc, sql, inArray } from 'drizzle-orm';
 import { error, fail, redirect } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ parent }) => {
@@ -67,6 +67,23 @@ export const actions: Actions = {
 
 		if (items.length === 0) {
 			return fail(400, { error: 'At least one item is required' });
+		}
+
+		// Check inventory before creating order
+		const itemIds = items.map((i) => i.warehouseItemId);
+		const currentStock = await db
+			.select({ id: warehouseItem.id, name: warehouseItem.name, quantity: warehouseItem.quantity })
+			.from(warehouseItem)
+			.where(inArray(warehouseItem.id, itemIds));
+
+		const stockMap = new Map(currentStock.map((s) => [s.id, s]));
+		for (const item of items) {
+			const stock = stockMap.get(item.warehouseItemId);
+			if (!stock || stock.quantity < item.quantity) {
+				const available = stock?.quantity ?? 0;
+				const name = stock?.name ?? item.warehouseItemId;
+				return fail(400, { error: `Insufficient stock for "${name}": ${available} available, ${item.quantity} requested` });
+			}
 		}
 
 		const [order] = await db.insert(warehouseOrder).values({

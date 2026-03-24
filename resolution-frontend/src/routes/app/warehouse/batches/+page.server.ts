@@ -193,6 +193,38 @@ export const actions: Actions = {
 		const headers = rows[0];
 		const dataRows = rows.slice(1);
 
+		// Count valid orders to check total inventory needed
+		const validOrderCount = dataRows.filter((row) => {
+			const getValue = (field: string): string => {
+				const colName = mapping[field];
+				if (!colName) return '';
+				const colIndex = headers.indexOf(colName);
+				if (colIndex === -1) return '';
+				return (row[colIndex] || '').trim();
+			};
+			return getValue('firstName') && getValue('lastName') && getValue('email') &&
+				getValue('addressLine1') && getValue('city') && getValue('stateProvince') && getValue('country');
+		}).length;
+
+		if (batch.template.items.length > 0) {
+			const templateItemIds = batch.template.items.map((ti) => ti.warehouseItemId);
+			const currentStock = await db
+				.select({ id: warehouseItem.id, name: warehouseItem.name, sku: warehouseItem.sku, quantity: warehouseItem.quantity })
+				.from(warehouseItem)
+				.where(inArray(warehouseItem.id, templateItemIds));
+
+			const stockMap = new Map(currentStock.map((s) => [s.id, s]));
+			for (const ti of batch.template.items) {
+				const needed = ti.quantity * validOrderCount;
+				const stock = stockMap.get(ti.warehouseItemId);
+				const available = stock?.quantity ?? 0;
+				if (needed > available) {
+					const name = stock?.name ?? ti.warehouseItemId;
+					return fail(400, { error: `Insufficient stock for "${name}": ${available} available, ${needed} needed for ${validOrderCount} orders` });
+				}
+			}
+		}
+
 		for (const row of dataRows) {
 			const getValue = (field: string): string => {
 				const colName = mapping[field];
