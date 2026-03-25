@@ -226,14 +226,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			: 'INT.TP';
 		if (!env.CP_CONTRACT_ID) {
 			if (serviceCode === 'USA.SP.AIR') serviceCode = 'USA.TP';
-			if (serviceCode === 'INT.SP.AIR' || serviceCode === 'INT.SP.SURF') serviceCode = 'INT.TP';
 		}
 		console.log(`Creating shipment: country=${order.country}, estimatedService=${order.estimatedServiceName}, serviceCode=${serviceCode}`);
 
 		// Try creating shipment, fall back to alternate international services if unavailable
-		// INT.XP requires a contract, so only use it as fallback when contract is available
 		const fallbackCodes: string[] = [];
-		if (serviceCode === 'INT.TP' && env.CP_CONTRACT_ID) fallbackCodes.push('INT.XP');
+		const intFallbacks = ['INT.TP', 'INT.SP.AIR', 'INT.IP', 'INT.IP.SURF'];
+		if (env.CP_CONTRACT_ID) intFallbacks.unshift('INT.XP');
+		if (serviceCode.startsWith('INT.')) {
+			for (const code of intFallbacks) {
+				if (code !== serviceCode) fallbackCodes.push(code);
+			}
+		}
 		if (serviceCode === 'INT.XP') fallbackCodes.push('INT.TP');
 		let lastError: any;
 		for (const code of [serviceCode, ...fallbackCodes]) {

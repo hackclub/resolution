@@ -259,6 +259,8 @@ export function getServiceCode(serviceName: string): string {
 	if (lower.includes('small packet') && lower.includes('air')) return 'INT.SP.AIR';
 	if (lower.includes('tracked packet') && lower.includes('usa')) return 'USA.TP';
 	if (lower.includes('tracked packet')) return 'INT.TP';
+	if (lower.includes('international') && lower.includes('parcel') && lower.includes('surface')) return 'INT.IP.SURF';
+	if (lower.includes('international') && lower.includes('parcel') && lower.includes('air')) return 'INT.IP';
 	if (lower.includes('surface') && lower.includes('international')) return 'INT.SP.SURF';
 	if (lower.includes('air') && lower.includes('international')) return 'INT.SP.AIR';
 	if (lower.includes('u.s.') || lower.includes('usa')) return 'USA.TP';
