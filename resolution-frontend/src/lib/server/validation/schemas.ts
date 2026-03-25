@@ -61,7 +61,14 @@ export const shippingRateSchema = z.object({
 	city: z.string().min(1, 'City is required'),
 	province: z.string().min(1, 'Province/State is required'),
 	postalCode: z.string().optional(),
-	weight: z.number().positive('Weight must be positive')
+	weight: z.number().positive('Weight must be positive'),
+	items: z.array(z.object({
+		name: z.string(),
+		sku: z.string().optional(),
+		hsCode: z.string().optional(),
+		costCents: z.number(),
+		quantity: z.number().int().positive()
+	})).optional()
 }).and(z.discriminatedUnion('packageType', [envelopeSchema, flatSchema, boxSchema]));
 
 export type ShippingRateInput = z.infer<typeof shippingRateSchema>;

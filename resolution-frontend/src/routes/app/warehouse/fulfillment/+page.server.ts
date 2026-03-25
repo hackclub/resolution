@@ -1,22 +1,14 @@
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
-import { warehouseOrder, warehouseOrderTag, ambassadorPathway } from '$lib/server/db/schema';
+import { warehouseOrder, warehouseOrderTag } from '$lib/server/db/schema';
 import { eq, ne, desc } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { user } = await parent();
 
-	const ambassadorCheck = await db
-		.select({ userId: ambassadorPathway.userId })
-		.from(ambassadorPathway)
-		.where(eq(ambassadorPathway.userId, user.id))
-		.limit(1);
-
-	const isAmbassador = ambassadorCheck.length > 0;
-
-	if (!user.isAdmin && !isAmbassador) {
-		throw error(403, 'Access denied');
+	if (!user.isAdmin) {
+		throw error(403, 'Access denied - admin only');
 	}
 
 	const orders = await db.query.warehouseOrder.findMany({

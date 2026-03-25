@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ parent }) => {
 		.orderBy(warehouseItem.name);
 
 	const orders = await db.query.warehouseOrder.findMany({
-		where: eq(warehouseOrder.createdById, user.id),
+		where: user.isAdmin ? undefined : eq(warehouseOrder.createdById, user.id),
 		with: {
 			createdBy: true,
 			items: {

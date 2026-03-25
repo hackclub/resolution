@@ -429,3 +429,4 @@ export const warehouseBatchRelations = relations(warehouseBatch, ({ one, many })
 export const warehouseBatchTagRelations = relations(warehouseBatchTag, ({ one }) => ({
 	batch: one(warehouseBatch, { fields: [warehouseBatchTag.batchId], references: [warehouseBatch.id] })
 }));
+

@@ -228,7 +228,7 @@
 			}
 
 			const result = await res.json();
-			estimatedRates = result.rates || [];
+			estimatedRates = (result.rates || []).sort((a: ShippingRate, b: ShippingRate) => a.priceDetails.total - b.priceDetails.total);
 			hasEstimated = true;
 		} catch {
 			estimateError = 'Failed to connect to shipping API.';
