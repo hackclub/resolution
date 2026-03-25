@@ -1,9 +1,10 @@
 import { env } from '$env/dynamic/private';
 import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { warehouseOrder } from '$lib/server/db/schema';
+import { warehouseOrder, ambassadorPathway } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
+import { requireAuth } from '$lib/server/auth/guard';
 import { GRAMS_TO_KG, inchesToCm, isLettermail, getServiceCode, createShipment } from '$lib/server/canada-post';
 import { createChitChatsShipment } from '$lib/server/chit-chats';
 
@@ -49,11 +50,20 @@ function buildPackingSlipBase64(order: any): string {
 	return btoa(unescape(encodeURIComponent(text)));
 }
 
-export const POST: RequestHandler = async ({ request, locals }) => {
-	const user = locals.user;
-	if (!user) throw error(401, 'Not logged in');
+export const POST: RequestHandler = async (event) => {
+	const { user } = requireAuth(event);
 
-	const { orderId, carrier } = await request.json();
+	const isAmbassador = await db
+		.select({ userId: ambassadorPathway.userId })
+		.from(ambassadorPathway)
+		.where(eq(ambassadorPathway.userId, user.id))
+		.limit(1);
+
+	if (!user.isAdmin && isAmbassador.length === 0) {
+		throw error(403, 'Access denied - admin or ambassador only');
+	}
+
+	const { orderId, carrier } = await event.request.json();
 	if (!orderId) throw error(400, 'Order ID required');
 
 	const order = await db.query.warehouseOrder.findFirst({

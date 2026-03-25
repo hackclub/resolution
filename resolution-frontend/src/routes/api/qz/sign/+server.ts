@@ -1,9 +1,12 @@
 import { env } from '$env/dynamic/private';
 import { createSign } from 'crypto';
+import { requireAuth } from '$lib/server/auth/guard';
 import type { RequestHandler } from './$types';
 
-export const POST: RequestHandler = async ({ request }) => {
-	const toSign = await request.text();
+export const POST: RequestHandler = async (event) => {
+	requireAuth(event);
+
+	const toSign = await event.request.text();
 
 	const privateKey = env.QZ_PRIVATE_KEY?.replace(/\\n/g, '\n');
 	const password = env.QZ_PK_PASSWORD;
