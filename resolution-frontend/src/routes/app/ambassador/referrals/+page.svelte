@@ -3,16 +3,11 @@
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
 
+	import { PATHWAY_INFO } from '$lib/pathways';
+
 	let { data }: { data: PageData } = $props();
 
-	const pathwayInfo: Record<string, { label: string; icon: string; color: string }> = {
-		PYTHON: { label: 'Python', icon: 'terminal', color: 'ec3750' },
-		WEB_DEV: { label: 'Web Dev', icon: 'web', color: '338eda' },
-		GAME_DEV: { label: 'Game Dev', icon: 'controls', color: '33d6a6' },
-		HARDWARE: { label: 'Hardware', icon: 'settings', color: 'ff8c37' },
-		DESIGN: { label: 'Design', icon: 'idea', color: 'a633d6' },
-		GENERAL_CODING: { label: 'General Coding', icon: 'code', color: '5bc0de' }
-	};
+	const pathwayInfo = PATHWAY_INFO;
 
 	let copiedId = $state<string | null>(null);
 	let selectedPathway = $state('');

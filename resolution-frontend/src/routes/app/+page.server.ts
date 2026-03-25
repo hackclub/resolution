@@ -1,13 +1,14 @@
 import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
-import { userPathway, ambassadorPathway } from '$lib/server/db/schema';
+import { userPathway, ambassadorPathway, reviewerPathway } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
+import { PATHWAY_IDS, type PathwayId } from '$lib/pathways';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { user, season, enrollment } = await parent();
 
-	const [pathways, ambassadorCheck] = await Promise.all([
+	const [pathways, ambassadorCheck, reviewerCheck] = await Promise.all([
 		db
 			.select({ pathway: userPathway.pathway })
 			.from(userPathway)
@@ -16,6 +17,11 @@ export const load: PageServerLoad = async ({ parent }) => {
 			.select({ userId: ambassadorPathway.userId })
 			.from(ambassadorPathway)
 			.where(eq(ambassadorPathway.userId, user.id))
+			.limit(1),
+		db
+			.select({ userId: reviewerPathway.userId })
+			.from(reviewerPathway)
+			.where(eq(reviewerPathway.userId, user.id))
 			.limit(1)
 	]);
 
@@ -24,7 +30,8 @@ export const load: PageServerLoad = async ({ parent }) => {
 		season,
 		enrollment,
 		selectedPathways: pathways.map((p) => p.pathway),
-		isAmbassador: ambassadorCheck.length > 0
+		isAmbassador: ambassadorCheck.length > 0,
+		isReviewer: reviewerCheck.length > 0
 	};
 };
 
@@ -44,16 +51,13 @@ export const actions: Actions = {
 			return fail(400, { error: 'Invalid pathways' });
 		}
 
-		const pathways = JSON.parse(pathwaysJson) as string[];
+		const parsed = JSON.parse(pathwaysJson) as string[];
 
-		if (pathways.length > 3) {
-			return fail(400, { error: 'Maximum 3 pathways allowed' });
-		}
-
-		const validPathways = ['PYTHON', 'WEB_DEV', 'GAME_DEV', 'HARDWARE', 'DESIGN', 'GENERAL_CODING'];
-		if (!pathways.every((p) => validPathways.includes(p))) {
+		if (!parsed.every((p) => PATHWAY_IDS.includes(p))) {
 			return fail(400, { error: 'Invalid pathway selected' });
 		}
+
+		const pathways = parsed as PathwayId[];
 
 		await db.delete(userPathway).where(eq(userPathway.userId, user.id));
 
@@ -61,7 +65,7 @@ export const actions: Actions = {
 			await db.insert(userPathway).values(
 				pathways.map((pathway) => ({
 					userId: user.id,
-					pathway: pathway as 'PYTHON' | 'WEB_DEV' | 'GAME_DEV' | 'HARDWARE' | 'DESIGN' | 'GENERAL_CODING'
+					pathway
 				}))
 			);
 		}

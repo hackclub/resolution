@@ -5,15 +5,12 @@ import { eq, and } from 'drizzle-orm';
 import { redirect, error } from '@sveltejs/kit';
 import { PATHWAY_IDS, type PathwayId } from '$lib/pathways';
 
-const validPathways = PATHWAY_IDS;
-type Pathway = PathwayId;
-
 export const load: PageServerLoad = async ({ params, parent }) => {
 	const { user } = await parent();
-	const pathwayId = params.pathway.toUpperCase() as Pathway;
+	const pathwayId = params.pathway.toUpperCase() as PathwayId;
 	const weekNumber = parseInt(params.week);
 
-	if (!validPathways.includes(pathwayId)) {
+	if (!PATHWAY_IDS.includes(pathwayId)) {
 		throw error(404, 'Pathway not found');
 	}
 
@@ -50,7 +47,10 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 	return {
 		pathwayId,
 		weekNumber,
-		title: content[0].title,
-		content: content[0].content
+		user: {
+			email: user.email,
+			firstName: user.firstName,
+			lastName: user.lastName
+		}
 	};
 };

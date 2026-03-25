@@ -2,16 +2,11 @@
 	import type { PageData } from './$types';
 	import InitialPage from '$lib/components/InitialPage.svelte';
 
+	import { PATHWAY_INFO } from '$lib/pathways';
+
 	let { data }: { data: PageData } = $props();
 
-	const pathwayInfo: Record<string, { label: string; icon: string; color: string }> = {
-		PYTHON: { label: 'Python', icon: 'terminal', color: 'ec3750' },
-		WEB_DEV: { label: 'Web Dev', icon: 'web', color: '338eda' },
-		GAME_DEV: { label: 'Game Dev', icon: 'controls', color: '33d6a6' },
-		HARDWARE: { label: 'Hardware', icon: 'settings', color: 'ff8c37' },
-		DESIGN: { label: 'Design', icon: 'idea', color: 'a633d6' },
-		GENERAL_CODING: { label: 'General Coding', icon: 'code', color: '5bc0de' }
-	};
+	const pathwayInfo = PATHWAY_INFO;
 
 	const info = pathwayInfo[data.pathway] || { label: data.pathway, icon: 'code', color: '5bc0de' };
 </script>
@@ -90,16 +85,16 @@
 		justify-content: center;
 		gap: 0.75rem;
 		padding: 1rem 1.5rem;
-		background: rgba(255, 255, 255, 0.95);
-		border-bottom: 2px solid #af98ff;
+		background: var(--color-cta-bg);
+		border-bottom: 2px solid var(--color-cta-border);
 		position: relative;
 		z-index: 10;
 	}
 
 	.referral-banner p {
 		margin: 0;
-		font-family: 'Kodchasan', sans-serif;
+		font-family: var(--font-primary);
 		font-size: 1rem;
-		color: #1a1a2e;
+		color: var(--color-gold-light);
 	}
 </style>

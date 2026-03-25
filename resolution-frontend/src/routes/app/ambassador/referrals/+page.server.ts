@@ -4,6 +4,7 @@ import { ambassadorPathway, referralLink, referralSignup, user } from '$lib/serv
 import { eq, and } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import { createId } from '@paralleldrive/cuid2';
+import { PATHWAY_IDS } from '$lib/pathways';
 
 function generateReferralCode(): string {
 	return createId().slice(0, 8);
@@ -65,7 +66,7 @@ export const actions: Actions = {
 		const label = formData.get('label') as string | null;
 		const customSlug = (formData.get('slug') as string | null)?.trim() || null;
 
-		const validPathways = ['PYTHON', 'WEB_DEV', 'GAME_DEV', 'HARDWARE', 'DESIGN', 'GENERAL_CODING'];
+		const validPathways = PATHWAY_IDS;
 		if (!pathway || !validPathways.includes(pathway)) {
 			return fail(400, { error: 'Invalid pathway' });
 		}

@@ -4,18 +4,14 @@
 
 	let { data }: { data: PageData } = $props();
 
+	import { PATHWAY_LABELS } from '$lib/pathways';
+
 	let searchQuery = $state('');
 	let confirmDelete = $state<string | null>(null);
 	let ambassadorModal = $state<{ userId: string; userName: string } | null>(null);
+	let reviewerModal = $state<{ userId: string; userName: string } | null>(null);
 
-	const pathwayLabels: Record<string, string> = {
-		PYTHON: 'Python',
-		WEB_DEV: 'Web Dev',
-		GAME_DEV: 'Game Dev',
-		HARDWARE: 'Hardware',
-		DESIGN: 'Design',
-		GENERAL_CODING: 'General Coding'
-	};
+	const pathwayLabels = PATHWAY_LABELS;
 
 	const filteredUsers = $derived(
 		data.users.filter(
@@ -26,8 +22,12 @@
 		)
 	);
 
-	function getUserAmbassadorPathways(userId: string) {
+	function getUserAmbassadorPathways(userId: string): string[] {
 		return data.ambassadorsByUser[userId] || [];
+	}
+
+	function getUserReviewerPathways(userId: string): string[] {
+		return data.reviewersByUser[userId] || [];
 	}
 </script>
 
@@ -77,6 +77,7 @@
 							<th>Slack ID</th>
 							<th>Admin</th>
 							<th>Ambassador</th>
+							<th>Reviewer</th>
 							<th>YSWS</th>
 							<th>Joined</th>
 							<th>Actions</th>
@@ -85,6 +86,7 @@
 					<tbody>
 						{#each filteredUsers as u (u.id)}
 							{@const userPathways = getUserAmbassadorPathways(u.id)}
+							{@const reviewerPathways = getUserReviewerPathways(u.id)}
 							<tr>
 								<td>{u.firstName || ''} {u.lastName || ''}</td>
 								<td>{u.email}</td>
@@ -104,6 +106,17 @@
 									{/if}
 								</td>
 								<td>
+									{#if reviewerPathways.length > 0}
+										<div class="pathway-badges">
+											{#each reviewerPathways as pathway}
+												<span class="badge reviewer">{pathwayLabels[pathway]}</span>
+											{/each}
+										</div>
+									{:else}
+										<span class="badge">-</span>
+									{/if}
+								</td>
+								<td>
 									<span class="badge" class:eligible={u.yswsEligible}>{u.yswsEligible ? 'Yes' : 'No'}</span>
 								</td>
 								<td>{new Date(u.createdAt).toLocaleDateString()}</td>
@@ -116,6 +129,9 @@
 									</form>
 									<button type="button" class="action-btn ambassador-btn" onclick={() => ambassadorModal = { userId: u.id, userName: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email }}>
 										Ambassador
+									</button>
+									<button type="button" class="action-btn reviewer-btn" onclick={() => reviewerModal = { userId: u.id, userName: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email }}>
+										Reviewer
 									</button>
 									{#if confirmDelete === u.id}
 										<form method="POST" action="?/deleteUser" use:enhance={() => {
@@ -171,6 +187,42 @@
 				</div>
 
 				<button class="close-btn" onclick={() => ambassadorModal = null}>Close</button>
+			</div>
+		</div>
+	{/if}
+
+	{#if reviewerModal}
+		{@const userPathways = getUserReviewerPathways(reviewerModal.userId)}
+		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+		<div class="modal-overlay" onclick={() => reviewerModal = null}>
+			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+			<div class="modal" onclick={(e) => e.stopPropagation()}>
+				<h3>Manage Reviewer: {reviewerModal.userName}</h3>
+				<p class="modal-subtitle">Assign pathways this user can review</p>
+				
+				<div class="pathway-list">
+					{#each data.pathways as pathway}
+						{@const isAssigned = userPathways.includes(pathway)}
+						<div class="pathway-item">
+							<span class="pathway-name">{pathwayLabels[pathway]}</span>
+							{#if isAssigned}
+								<form method="POST" action="?/removeReviewer" use:enhance>
+									<input type="hidden" name="userId" value={reviewerModal.userId} />
+									<input type="hidden" name="pathway" value={pathway} />
+									<button type="submit" class="action-btn danger">Remove</button>
+								</form>
+							{:else}
+								<form method="POST" action="?/assignReviewer" use:enhance>
+									<input type="hidden" name="userId" value={reviewerModal.userId} />
+									<input type="hidden" name="pathway" value={pathway} />
+									<button type="submit" class="action-btn assign">Assign</button>
+								</form>
+							{/if}
+						</div>
+					{/each}
+				</div>
+
+				<button class="close-btn" onclick={() => reviewerModal = null}>Close</button>
 			</div>
 		</div>
 	{/if}
@@ -362,6 +414,22 @@
 		background: #338eda;
 		color: white;
 		margin: 0.125rem;
+	}
+
+	.badge.reviewer {
+		background: #ff8c37;
+		color: white;
+		margin: 0.125rem;
+	}
+
+	.action-btn.reviewer-btn {
+		border-color: #ff8c37;
+		color: #ff8c37;
+	}
+
+	.action-btn.reviewer-btn:hover {
+		background: #ff8c37;
+		color: white;
 	}
 
 	.pathway-badges {

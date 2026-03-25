@@ -50,16 +50,21 @@
 		"drizzle-orm": "^0.45.1",
 		"jsonwebtoken": "^9.0.3",
 		"lucia": "^3.2.2",
-		"marked": "^17.0.1",
 		"monaco-editor": "^0.55.1",
 		"oslo": "^1.2.1",
 		"pdf-lib": "^1.17.1",
 		"pg": "^8.13.0",
 		"simple-oauth2": "^5.1.0",
+		"svelte-marked": "^0.8.0",
 		"tsparticles": "^3.9.1",
 		"tsparticles-preset-fireworks": "^2.12.0",
 		"uuid": "^13.0.0",
 		"xml2js": "^0.6.2",
 		"zod": "^4.3.5"
+	},
+	"overrides": {
+		"cookie": ">=0.7.0",
+		"dompurify": "$dompurify",
+		"esbuild": ">=0.25.0"
 	}
 }

@@ -5,7 +5,7 @@ import { createId } from '@paralleldrive/cuid2';
 // Enums
 export const enrollmentRoleEnum = pgEnum('enrollment_role', ['PARTICIPANT', 'AMBASSADOR']);
 export const enrollmentStatusEnum = pgEnum('enrollment_status', ['ACTIVE', 'DROPPED', 'COMPLETED']);
-export const pathwayEnum = pgEnum('pathway', ['PYTHON', 'WEB_DEV', 'GAME_DEV', 'HARDWARE', 'DESIGN', 'GENERAL_CODING']);
+export const pathwayEnum = pgEnum('pathway', ['PYTHON', 'RUST', 'GAME_DEV', 'HARDWARE', 'DESIGN', 'GENERAL_CODING']);
 export const difficultyEnum = pgEnum('difficulty', ['BEGINNER', 'INTERMEDIATE', 'ADVANCED']);
 export const shipStatusEnum = pgEnum('ship_status', ['PLANNED', 'IN_PROGRESS', 'SHIPPED', 'MISSED']);
 export const payoutStatusEnum = pgEnum('payout_status', ['DRAFT', 'PENDING', 'PAID', 'CANCELED']);
@@ -152,6 +152,7 @@ export const userRelations = relations(user, ({ many }) => ({
   payouts: many(ambassadorPayout),
   referralLinks: many(referralLink),
   warehouseOrders: many(warehouseOrder),
+  reviewerAssignments: many(reviewerPathway)
   }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -222,6 +223,17 @@ export const ambassadorPathway = pgTable('ambassador_pathway', {
 	uniqueIndex('ambassador_pathway_unique_idx').on(table.userId, table.pathway)
 ]);
 
+// Reviewer pathway assignments - which pathways a reviewer can review
+export const reviewerPathway = pgTable('reviewer_pathway', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	pathway: pathwayEnum('pathway').notNull(),
+	assignedAt: timestamp('assigned_at', { mode: 'date' }).notNull().defaultNow(),
+	assignedBy: text('assigned_by').notNull().references(() => user.id)
+}, (table) => [
+	uniqueIndex('reviewer_pathway_unique_idx').on(table.userId, table.pathway)
+]);
+
 // Pathway week content - stores markdown content for each week
 export const pathwayWeekContent = pgTable('pathway_week_content', {
 	id: text('id').primaryKey().$defaultFn(() => createId()),
@@ -259,6 +271,11 @@ export const referralSignup = pgTable('referral_signup', {
 export const ambassadorPathwayRelations = relations(ambassadorPathway, ({ one }) => ({
 	user: one(user, { fields: [ambassadorPathway.userId], references: [user.id] }),
 	assignedByUser: one(user, { fields: [ambassadorPathway.assignedBy], references: [user.id] })
+}));
+
+export const reviewerPathwayRelations = relations(reviewerPathway, ({ one }) => ({
+	user: one(user, { fields: [reviewerPathway.userId], references: [user.id] }),
+	assignedByUser: one(user, { fields: [reviewerPathway.assignedBy], references: [user.id] })
 }));
 
 export const pathwayWeekContentRelations = relations(pathwayWeekContent, ({ one }) => ({

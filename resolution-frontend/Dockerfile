@@ -29,6 +29,15 @@ WORKDIR /app
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/package-lock.json ./package-lock.json
+
+# Copy drizzle config and schema for drizzle-kit push
+COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder /app/src/lib/server/db/schema.ts ./src/lib/server/db/schema.ts
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+
+# Install drizzle-kit locally so we don't rely on npx fetching it at runtime
+RUN npm install --no-save drizzle-kit
 
 # Copy drizzle files needed for push
 COPY --from=builder /app/drizzle ./drizzle

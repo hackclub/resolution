@@ -2,18 +2,13 @@
 	import type { PageData } from './$types';
 	import { enhance } from '$app/forms';
 	import { onMount } from 'svelte';
-	import { marked } from 'marked';
+	import SvelteMarkdown from 'svelte-marked';
+
+	import { PATHWAY_INFO } from '$lib/pathways';
 
 	let { data }: { data: PageData } = $props();
 
-	const pathwayInfo: Record<string, { label: string; color: string }> = {
-		PYTHON: { label: 'Python', color: 'ec3750' },
-		WEB_DEV: { label: 'Web Dev', color: '338eda' },
-		GAME_DEV: { label: 'Game Dev', color: '33d6a6' },
-		HARDWARE: { label: 'Hardware', color: 'ff8c37' },
-		DESIGN: { label: 'Design', color: 'a633d6' },
-		GENERAL_CODING: { label: 'General Coding', color: '5bc0de' }
-	};
+	const pathwayInfo = PATHWAY_INFO;
 
 	const initialTitle = data.content?.title || '';
 	const initialContent = data.content?.content || '';
@@ -29,7 +24,7 @@
 
 	const pathway = $derived(pathwayInfo[data.pathwayId]);
 
-	const previewHtml = $derived(marked.parse(content) as string);
+
 
 	onMount(() => {
 		let editor: any = null;
@@ -117,7 +112,7 @@
 			{#if showPreview}
 				<div class="preview-container">
 					<div class="preview-content prose">
-						{@html previewHtml}
+						<SvelteMarkdown source={content} />
 					</div>
 				</div>
 			{:else}

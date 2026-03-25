@@ -2,17 +2,11 @@
 	import type { PageData } from './$types';
 	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
 	import { enhance } from '$app/forms';
+	import { PATHWAYS } from '$lib/pathways';
 
 	let { data }: { data: PageData } = $props();
 
-	const pathways = [
-		{ id: 'PYTHON', label: 'Python', icon: 'terminal', color: 'ec3750' },
-		{ id: 'WEB_DEV', label: 'Web Dev', icon: 'web', color: '338eda' },
-		{ id: 'GAME_DEV', label: 'Game Dev', icon: 'controls', color: '33d6a6' },
-		{ id: 'HARDWARE', label: 'Hardware', icon: 'settings', color: 'ff8c37' },
-		{ id: 'DESIGN', label: 'Design', icon: 'idea', color: 'a633d6' },
-		{ id: 'GENERAL_CODING', label: 'General Coding', icon: 'code', color: '5bc0de' }
-	];
+	const pathways = PATHWAYS;
 
 	let selectedPathways = $state<string[]>([]);
 	let isEditing = $state(true);
@@ -28,7 +22,7 @@
 
 		if (selectedPathways.includes(id)) {
 			selectedPathways = selectedPathways.filter((p) => p !== id);
-		} else if (selectedPathways.length < 3) {
+		} else {
 			selectedPathways = [...selectedPathways, id];
 		}
 	}
@@ -52,8 +46,11 @@
 		<header>
 			<h1>Welcome, {data.user.firstName || data.user.email}!</h1>
 			<div class="header-actions">
-				{#if data.isAmbassador || data.user.isAdmin}
-					<a href="/app/warehouse" class="warehouse-btn">Warehouse</a>
+			{#if data.isAmbassador || data.user.isAdmin}
+				<a href="/app/warehouse" class="warehouse-btn">Warehouse</a>
+			{/if}
+			{#if data.isReviewer || data.user.isAdmin}
+				<a href="/app/reviewer" class="reviewer-btn">Reviewer</a>
 				{/if}
 				{#if data.isAmbassador}
 					<a href="/app/ambassador" class="ambassador-btn">Ambassador</a>
@@ -71,7 +68,7 @@
 		<main>
 			<div class="pathway-section">
 				<div class="pathway-header">
-					<h2>{isEditing ? 'Choose up to 3 pathways (You can change these later)' : 'Your Pathways'}</h2>
+					<h2>{isEditing ? 'Choose your pathways (You can change these later)' : 'Your Pathways'}</h2>
 					{#if !isEditing && data.selectedPathways.length > 0}
 						<button type="button" class="edit-btn" onclick={startEditing}>
 							<img src="https://icons.hackclub.com/api/icons/8492a6/edit" alt="Edit" width="16" height="16" />
@@ -83,9 +80,26 @@
 				<div class="options-grid">
 					{#each pathways as pathway}
 						{@const isSelected = selectedPathways.includes(pathway.id)}
-						{@const isLocked = !isEditing && !isSelected && data.selectedPathways.length > 0}
-						{@const isClickable = !isEditing && isSelected}
-						{#if isClickable}
+						{#if isEditing}
+							<button
+								type="button"
+								class="option-card"
+								class:selected={isSelected}
+								class:editing={true}
+								class:selectable={!isSelected}
+								onclick={() => togglePathway(pathway.id)}
+							>
+								<img
+									src="https://icons.hackclub.com/api/icons/{isSelected ? pathway.color : '8492a6'}/{pathway.icon}"
+									alt={pathway.label}
+									class="icon"
+								/>
+								<span class="label">{pathway.label}</span>
+								{#if isSelected}
+									<span class="check-badge">✓</span>
+								{/if}
+							</button>
+						{:else if isSelected}
 							<a
 								href="/app/pathway/{pathway.id.toLowerCase()}"
 								class="option-card selected"
@@ -97,31 +111,6 @@
 								/>
 								<span class="label">{pathway.label}</span>
 							</a>
-						{:else}
-							<button
-								type="button"
-								class="option-card"
-								class:selected={isSelected}
-								class:editing={isEditing}
-								class:locked={isLocked}
-								class:selectable={isEditing && !isSelected && selectedPathways.length < 3}
-								disabled={isLocked}
-								onclick={() => togglePathway(pathway.id)}
-							>
-								{#if isLocked}
-									<img src="https://icons.hackclub.com/api/icons/8492a6/private" alt="Locked" class="icon locked-icon" />
-								{:else}
-									<img
-										src="https://icons.hackclub.com/api/icons/{isSelected || !isEditing ? pathway.color : '8492a6'}/{pathway.icon}"
-										alt={pathway.label}
-										class="icon"
-									/>
-								{/if}
-								<span class="label" class:locked-label={isLocked}>{pathway.label}</span>
-								{#if isSelected && isEditing}
-									<span class="check-badge">✓</span>
-								{/if}
-							</button>
 						{/if}
 					{/each}
 				</div>
@@ -207,7 +196,8 @@
 	.admin-btn,
 	.ambassador-btn,
 	.warehouse-btn,
-	.warehouse-backend-btn {
+	.warehouse-backend-btn,
+	.reviewer-btn {
 		padding: 0.5rem 1rem;
 		background: rgba(255, 255, 255, 0.8);
 		border-radius: 20px;
@@ -235,10 +225,16 @@
 		color: #ff8c37;
 	}
 
+	.reviewer-btn {
+		border: 1px solid #ff8c37;
+		color: #ff8c37;
+	}
+
 	.admin-btn:hover,
 	.ambassador-btn:hover,
 	.warehouse-btn:hover,
-	.warehouse-backend-btn:hover {
+	.warehouse-backend-btn:hover,
+	.reviewer-btn:hover {
 		background: rgba(255, 255, 255, 1);
 	}
 
@@ -310,16 +306,6 @@
 		background: rgba(51, 214, 166, 0.1);
 	}
 
-	.option-card.locked {
-		opacity: 0.5;
-		cursor: not-allowed;
-		border-color: #8492a6;
-	}
-
-	.option-card.locked:hover {
-		transform: none;
-	}
-
 	.option-card.selectable {
 		border-style: dashed;
 	}
@@ -333,10 +319,6 @@
 		font-size: 1.1rem;
 		font-weight: 600;
 		color: #1a1a2e;
-	}
-
-	.option-card .locked-label {
-		color: #8492a6;
 	}
 
 	.check-badge {

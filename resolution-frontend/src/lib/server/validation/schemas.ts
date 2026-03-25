@@ -72,6 +72,48 @@ export const shippingRateSchema = z.object({
 }).and(z.discriminatedUnion('packageType', [envelopeSchema, flatSchema, boxSchema]));
 
 export type ShippingRateInput = z.infer<typeof shippingRateSchema>;
+
+const safeUrl = z.string().url('Please enter a valid URL').max(2000).refine(
+	(val) => /^https?:\/\//i.test(val),
+	{ message: 'URL must use http or https' }
+);
+
+export const projectSubmissionSchema = z.object({
+	codeUrl: safeUrl.refine(
+		(val) => /^https:\/\/github\.com\/.+\/.+/.test(val),
+		{ message: 'Must be a GitHub link (https://github.com/username/repo)' }
+	),
+	playableUrl: safeUrl,
+	howDidYouHear: z.string().max(500).optional().default(''),
+	doingWell: z.string().max(1000).optional().default(''),
+	improvements: z.string().max(1000).optional().default(''),
+	firstName: z.string().min(1, 'First name is required').max(100),
+	lastName: z.string().min(1, 'Last name is required').max(100),
+	email: z.string().email('Please enter a valid email').max(254).transform((v) => v.trim().toLowerCase()),
+	description: z.string().min(1, 'Description is required').max(2000),
+	githubUsername: z.string().min(1, 'GitHub username is required').max(100),
+	addressLine1: z.string().min(1, 'Address is required').max(200),
+	addressLine2: z.string().max(200).optional().default(''),
+	city: z.string().min(1, 'City is required').max(100),
+	stateProvince: z.string().min(1, 'State / Province is required').max(100),
+	country: z.string().min(1, 'Country is required').max(100),
+	zipPostalCode: z.string().min(1, 'ZIP / Postal code is required').max(20),
+	birthday: z.string().min(1, 'Birthday is required').regex(/^\d{4}-\d{2}-\d{2}$/, 'Please enter a valid date'),
+	hackatimeProject: z.string().min(1, 'Hackatime project is required').max(200),
+	hoursSpent: z
+		.string()
+		.min(1, 'Hours spent is required')
+		.refine((v) => {
+			const n = Number(v);
+			return !Number.isNaN(n) && n >= 0;
+		}, { message: 'Hours must be 0 or more' })
+		.transform((v) => Number(v)),
+	pathway: z.string().min(1),
+	week: z.number().int().min(1).max(8)
+});
+
+export type ProjectSubmissionInput = z.infer<typeof projectSubmissionSchema>;
+
 export type CreateShipInput = z.infer<typeof createShipSchema>;
 export type MarkShippedInput = z.infer<typeof markShippedSchema>;
 export type UpdateShipStatusInput = z.infer<typeof updateShipStatusSchema>;

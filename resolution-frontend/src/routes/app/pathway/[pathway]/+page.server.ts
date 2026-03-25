@@ -3,30 +3,28 @@ import { db } from '$lib/server/db';
 import { userPathway, pathwayWeekContent } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { redirect, error } from '@sveltejs/kit';
+import { PATHWAY_IDS, type PathwayId } from '$lib/pathways';
 
-const pathwayCurators: Record<string, string> = {
-	PYTHON: 'Hack Club',
-	WEB_DEV: 'Hack Club',
-	GAME_DEV: 'Hack Club',
-	HARDWARE: 'Hack Club',
-	DESIGN: 'Hack Club',
-	GENERAL_CODING: 'Hack Club'
-};
+const pathwayCurators: Record<string, string> = Object.fromEntries(
+	PATHWAY_IDS.map((id) => [id, 'Hack Club'])
+);
 
-const validPathways = ['PYTHON', 'WEB_DEV', 'GAME_DEV', 'HARDWARE', 'DESIGN', 'GENERAL_CODING'] as const;
+const validPathways = PATHWAY_IDS;
 
 export const load: PageServerLoad = async ({ params, parent }) => {
 	const { user } = await parent();
 	const pathwayId = params.pathway.toUpperCase();
 
-	if (!validPathways.includes(pathwayId as typeof validPathways[number])) {
+	if (!validPathways.includes(pathwayId)) {
 		throw error(404, 'Pathway not found');
 	}
+
+	const typedPathwayId = pathwayId as PathwayId;
 
 	const userPathwayRecord = await db
 		.select()
 		.from(userPathway)
-		.where(and(eq(userPathway.userId, user.id), eq(userPathway.pathway, pathwayId as typeof validPathways[number])))
+		.where(and(eq(userPathway.userId, user.id), eq(userPathway.pathway, typedPathwayId)))
 		.limit(1);
 
 	if (userPathwayRecord.length === 0) {
@@ -40,7 +38,7 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 			isPublished: pathwayWeekContent.isPublished
 		})
 		.from(pathwayWeekContent)
-		.where(eq(pathwayWeekContent.pathway, pathwayId as typeof validPathways[number]));
+		.where(eq(pathwayWeekContent.pathway, typedPathwayId));
 
 	const publishedWeeks = weekContents.reduce((acc, w) => {
 		acc[w.weekNumber] = {
