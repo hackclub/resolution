@@ -169,6 +169,7 @@ export function buildCreateShipmentXml(params: {
 			<currency>CAD</currency>
 			<reason-for-export>SOG</reason-for-export>
 			<other-reason>Merchandise</other-reason>
+			<non-delivery-handling>RASE</non-delivery-handling>
 			<sku-list>${skuLines}</sku-list>
 		</customs>`;
 	}
