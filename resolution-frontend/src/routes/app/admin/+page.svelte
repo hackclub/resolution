@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
+	import DropOffWidget from '$lib/components/DropOffWidget.svelte';
 	import { enhance } from '$app/forms';
 
 	let { data }: { data: PageData } = $props();
@@ -63,6 +64,8 @@
 				<span class="stat-label">Shipped Projects</span>
 			</div>
 		</section>
+
+		<DropOffWidget />
 
 		<section class="users-section">
 			<div class="users-header">

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
+	import DropOffWidget from '$lib/components/DropOffWidget.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -46,6 +47,8 @@
 				</a>
 			</div>
 		</header>
+
+		<DropOffWidget />
 
 		{#if data.assignments.length === 0}
 			<div class="empty-state">
