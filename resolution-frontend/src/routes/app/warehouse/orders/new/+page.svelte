@@ -2,7 +2,9 @@
 	import { enhance } from '$app/forms';
 	import type { PageData } from './$types';
 
-	let { data }: { data: PageData } = $props();
+	import type { ActionData } from './$types';
+
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let step = $state(1);
 
@@ -293,7 +295,15 @@
 	{/each}
 </div>
 
-<form method="POST" action="?/createOrder" use:enhance>
+<form method="POST" action="?/createOrder" use:enhance={() => {
+	return async ({ result, update }) => {
+		if (result.type === 'failure') {
+			await update({ reset: false });
+		} else {
+			await update();
+		}
+	};
+}}>
 	<!-- Step 1: Address -->
 	{#if step === 1}
 		<section class="card">
@@ -628,6 +638,10 @@
 		{/if}
 	{/if}
 
+	{#if form?.error}
+		<div class="form-error">{form.error}</div>
+	{/if}
+
 	<!-- Navigation -->
 	<div class="nav-row">
 		{#if step > 1}
@@ -645,6 +659,16 @@
 </form>
 
 <style>
+	.form-error {
+		background: #fef2f2;
+		border: 1px solid #fca5a5;
+		color: #dc2626;
+		padding: 0.75rem 1rem;
+		border-radius: 8px;
+		font-size: 0.875rem;
+		margin-bottom: 1rem;
+	}
+
 	.steps-indicator {
 		display: flex;
 		align-items: center;
