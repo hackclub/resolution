@@ -46,6 +46,7 @@
 		<header>
 			<h1>Welcome, {data.user.firstName || data.user.email}!</h1>
 			<div class="header-actions">
+				<a href="/app/submissions" class="submissions-btn">My Submissions</a>
 				{#if data.isReviewer || data.user.isAdmin}
 					<a href="/app/reviewer" class="reviewer-btn">Reviewer</a>
 				{/if}
@@ -191,7 +192,8 @@
 
 	.admin-btn,
 	.ambassador-btn,
-	.reviewer-btn {
+	.reviewer-btn,
+	.submissions-btn {
 		padding: 0.5rem 1rem;
 		background: rgba(255, 255, 255, 0.8);
 		border-radius: 20px;
@@ -214,9 +216,15 @@
 		color: #ff8c37;
 	}
 
+	.submissions-btn {
+		border: 1px solid #338eda;
+		color: #338eda;
+	}
+
 	.admin-btn:hover,
 	.ambassador-btn:hover,
-	.reviewer-btn:hover {
+	.reviewer-btn:hover,
+	.submissions-btn:hover {
 		background: rgba(255, 255, 255, 1);
 	}
 
