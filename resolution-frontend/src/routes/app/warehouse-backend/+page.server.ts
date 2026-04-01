@@ -2,7 +2,16 @@ import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
 import { warehouseItem, warehouseCategory } from '$lib/server/db/schema';
 import { eq, asc, desc } from 'drizzle-orm';
-import { fail } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
+
+function requireAdmin(locals: App.Locals) {
+	if (!locals.user || !locals.session) {
+		throw error(401, 'Unauthorized');
+	}
+	if (!locals.user.isAdmin) {
+		throw error(403, 'Access denied - admin only');
+	}
+}
 
 export const load: PageServerLoad = async () => {
 	const [categories, items] = await Promise.all([
@@ -14,7 +23,8 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-	createCategory: async ({ request }) => {
+	createCategory: async ({ request, locals }) => {
+		requireAdmin(locals);
 		const formData = await request.formData();
 		const name = formData.get('name') as string;
 		const sortOrder = parseInt(formData.get('sortOrder') as string);
@@ -31,7 +41,8 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	updateCategory: async ({ request }) => {
+	updateCategory: async ({ request, locals }) => {
+		requireAdmin(locals);
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
 		const name = formData.get('name') as string;
@@ -55,7 +66,8 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	deleteCategory: async ({ request }) => {
+	deleteCategory: async ({ request, locals }) => {
+		requireAdmin(locals);
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
 
@@ -68,7 +80,8 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	createItem: async ({ request }) => {
+	createItem: async ({ request, locals }) => {
+		requireAdmin(locals);
 		const formData = await request.formData();
 		const name = formData.get('name') as string;
 		const sku = formData.get('sku') as string;
@@ -122,7 +135,8 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	updateItem: async ({ request }) => {
+	updateItem: async ({ request, locals }) => {
+		requireAdmin(locals);
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
 		const name = formData.get('name') as string;
@@ -184,7 +198,8 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	deleteItem: async ({ request }) => {
+	deleteItem: async ({ request, locals }) => {
+		requireAdmin(locals);
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
 
