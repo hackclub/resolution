@@ -153,6 +153,14 @@ export const actions: Actions = {
 			return fail(400, { error: 'Batch ID and field mapping are required' });
 		}
 
+		const batch = await db.query.warehouseBatch.findFirst({
+			where: eq(warehouseBatch.id, batchId)
+		});
+		if (!batch) return fail(404, { error: 'Batch not found' });
+		if (!user.isAdmin && batch.createdById !== user.id) {
+			return fail(403, { error: 'Access denied - you do not own this batch' });
+		}
+
 		await db.update(warehouseBatch)
 			.set({ fieldMapping, status: 'MAPPED', updatedAt: new Date() })
 			.where(eq(warehouseBatch.id, batchId));
@@ -182,6 +190,9 @@ export const actions: Actions = {
 		});
 
 		if (!batch) return fail(404, { error: 'Batch not found' });
+		if (!user.isAdmin && batch.createdById !== user.id) {
+			return fail(403, { error: 'Access denied - you do not own this batch' });
+		}
 		if (batch.status !== 'MAPPED') return fail(400, { error: 'Batch must be mapped before processing' });
 		if (!batch.fieldMapping) return fail(400, { error: 'No field mapping found' });
 
@@ -325,6 +336,9 @@ export const actions: Actions = {
 		});
 
 		if (!batch) return fail(404, { error: 'Batch not found' });
+		if (!user.isAdmin && batch.createdById !== user.id) {
+			return fail(403, { error: 'Access denied - you do not own this batch' });
+		}
 		if (!batch.fieldMapping) return fail(400, { error: 'No field mapping found' });
 
 		const mapping: Record<string, string> = JSON.parse(batch.fieldMapping);
