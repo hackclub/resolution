@@ -1,7 +1,7 @@
 import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
 import { warehouseItem, warehouseCategory, warehouseOrder, warehouseOrderItem, warehouseOrderTag, ambassadorPathway } from '$lib/server/db/schema';
-import { eq, asc, desc, sql, inArray } from 'drizzle-orm';
+import { eq, and, gte, asc, desc, sql, inArray } from 'drizzle-orm';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { createHcbTransfer, getOrgIdForPathway } from '$lib/server/hcb';
 
@@ -117,13 +117,14 @@ export const actions: Actions = {
 			)
 		);
 
-		await Promise.all(
-			items.map((item) =>
-				db.update(warehouseItem)
-					.set({ quantity: sql`${warehouseItem.quantity} - ${item.quantity}` })
-					.where(eq(warehouseItem.id, item.warehouseItemId))
-			)
-		);
+		for (const item of items) {
+			const result = await db.update(warehouseItem)
+				.set({ quantity: sql`${warehouseItem.quantity} - ${item.quantity}` })
+				.where(and(eq(warehouseItem.id, item.warehouseItemId), gte(warehouseItem.quantity, item.quantity)));
+			if (result.rowCount === 0) {
+				return fail(409, { error: `Insufficient stock (concurrent update). Please try again.` });
+			}
+		}
 
 		if (tagsString && tagsString.trim()) {
 			const tags = tagsString.split(',').map((t) => t.trim()).filter((t) => t.length > 0);

@@ -1,7 +1,7 @@
 import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
 import { warehouseBatch, warehouseBatchTag, warehouseOrderTemplate, warehouseOrder, warehouseOrderItem, warehouseOrderTag, warehouseItem, ambassadorPathway } from '$lib/server/db/schema';
-import { eq, desc, asc, sql, inArray } from 'drizzle-orm';
+import { eq, and, gte, desc, asc, sql, inArray } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { fetchCheapestRate } from '$lib/server/canada-post';
@@ -285,13 +285,14 @@ export const actions: Actions = {
 					}))
 				);
 
-				await Promise.all(
-					batch.template.items.map((ti) =>
-						db.update(warehouseItem)
-							.set({ quantity: sql`${warehouseItem.quantity} - ${ti.quantity}` })
-							.where(eq(warehouseItem.id, ti.warehouseItemId))
-					)
-				);
+				for (const ti of batch.template.items) {
+					const result = await db.update(warehouseItem)
+						.set({ quantity: sql`${warehouseItem.quantity} - ${ti.quantity}` })
+						.where(and(eq(warehouseItem.id, ti.warehouseItemId), gte(warehouseItem.quantity, ti.quantity)));
+					if (result.rowCount === 0) {
+						return fail(409, { error: `Insufficient stock (concurrent update). Please try again.` });
+					}
+				}
 			}
 
 			if (batch.tags.length > 0) {
