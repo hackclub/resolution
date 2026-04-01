@@ -79,6 +79,10 @@ export const POST: RequestHandler = async (event) => {
 
 	if (!order) throw error(404, 'Order not found');
 
+	if (!user.isAdmin && order.createdById !== user.id) {
+		throw error(403, 'Access denied - you do not own this order');
+	}
+
 	// If the order already has a label, re-fetch and return it as base64
 	if (order.labelUrl) {
 		let labelUrl = order.labelUrl;
