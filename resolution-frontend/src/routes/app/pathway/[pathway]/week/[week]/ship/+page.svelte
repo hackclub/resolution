@@ -28,7 +28,6 @@
 	let lastName = $state(data.user.lastName || '');
 	let email = $state(data.user.email || '');
 	let description = $state('');
-	let githubUsername = $state('');
 	let addressLine1 = $state('');
 	let addressLine2 = $state('');
 	let city = $state('');
@@ -84,7 +83,6 @@
 			formData.append('lastName', lastName);
 			formData.append('email', email);
 			formData.append('description', description);
-			formData.append('githubUsername', githubUsername);
 			formData.append('addressLine1', addressLine1);
 			formData.append('addressLine2', addressLine2);
 			formData.append('city', city);
@@ -162,8 +160,8 @@
 
 						<div class="form-row">
 							<div class="form-group">
-								<label for="codeUrl">Link to your code</label>
-								<input type="url" id="codeUrl" bind:value={codeUrl} required placeholder="https://github.com/username/repo" pattern="https://github\.com/.+/.+" title="Must be a GitHub link (https://github.com/username/repo)" />
+								<label for="codeUrl">Code URL</label>
+								<input type="url" id="codeUrl" bind:value={codeUrl} required placeholder="https://..." />
 							</div>
 							<div class="form-group">
 								<label for="playableUrl">Link to try it out</label>
@@ -208,15 +206,9 @@
 							</div>
 						</div>
 
-						<div class="form-row">
-							<div class="form-group">
-								<label for="email">Email</label>
-								<input type="email" id="email" bind:value={email} required maxlength="254" />
-							</div>
-							<div class="form-group">
-								<label for="githubUsername">GitHub Username</label>
-								<input type="text" id="githubUsername" bind:value={githubUsername} required maxlength="100" placeholder="octocat" />
-							</div>
+						<div class="form-group">
+							<label for="email">Email</label>
+							<input type="email" id="email" bind:value={email} required maxlength="254" />
 						</div>
 
 						<div class="form-group">

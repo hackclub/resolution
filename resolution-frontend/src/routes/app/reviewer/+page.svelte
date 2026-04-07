@@ -18,7 +18,6 @@
 		playableUrl: string;
 		screenshotUrl: string | null;
 		hackatimeProject: string;
-		githubUsername: string;
 		hoursSpent: number | null;
 		submittedAt: string;
 	}

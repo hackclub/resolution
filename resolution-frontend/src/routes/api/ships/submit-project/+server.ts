@@ -85,7 +85,6 @@ export const POST: RequestHandler = async (event) => {
 			'Last Name': parsed.lastName,
 			'Email': parsed.email,
 			'Description': parsed.description,
-			'GitHub Username': parsed.githubUsername,
 			'Address (Line 1)': parsed.addressLine1,
 			'Address (Line 2)': parsed.addressLine2 || '',
 			'City': parsed.city,
