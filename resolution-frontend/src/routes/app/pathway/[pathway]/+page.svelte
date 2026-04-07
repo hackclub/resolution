@@ -31,10 +31,23 @@
 
 <PlatformBackground>
 	<div class="pathway-container">
-		<a href="/app" class="back-link">
-			<img src="https://icons.hackclub.com/api/icons/8492a6/back" alt="Back" width="20" height="20" />
-			Back to Dashboard
-		</a>
+		<div class="top-bar">
+			<a href="/app" class="back-link">
+				<img src="https://icons.hackclub.com/api/icons/8492a6/back" alt="Back" width="20" height="20" />
+				Back to Dashboard
+			</a>
+			{#if data.hasShop}
+				<a href="/app/pathway/{data.pathwayId.toLowerCase()}/shop" class="shop-link" title="Shop">
+					<span class="balance">{data.balance} {data.currencyName}</span>
+					<img
+						src="https://icons.hackclub.com/api/icons/{pathway.color}/bag"
+						alt="Shop"
+						width="28"
+						height="28"
+					/>
+				</a>
+			{/if}
+		</div>
 
 		<header>
 			<img
@@ -79,15 +92,44 @@
 		align-items: center;
 	}
 
+	.top-bar {
+		width: 100%;
+		max-width: 800px;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 2rem;
+	}
+
 	.back-link {
-		align-self: flex-start;
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 		color: #8492a6;
 		text-decoration: none;
 		font-size: 0.9rem;
-		margin-bottom: 2rem;
+	}
+
+	.shop-link {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		text-decoration: none;
+		color: #1a1a2e;
+		font-family: 'Kodchasan', sans-serif;
+		font-weight: 600;
+		padding: 0.4rem 0.8rem;
+		border: 2px solid #8492a6;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.85);
+	}
+
+	.shop-link:hover {
+		border-color: #af98ff;
+	}
+
+	.balance {
+		font-size: 0.85rem;
 	}
 
 	.back-link:hover {

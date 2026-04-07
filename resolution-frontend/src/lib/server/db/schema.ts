@@ -11,6 +11,7 @@ export const shipStatusEnum = pgEnum('ship_status', ['PLANNED', 'IN_PROGRESS', '
 export const payoutStatusEnum = pgEnum('payout_status', ['DRAFT', 'PENDING', 'PAID', 'CANCELED']);
 export const warehouseOrderStatusEnum = pgEnum('warehouse_order_status', ['DRAFT', 'ESTIMATED', 'APPROVED', 'SHIPPED', 'CANCELED']);
 export const warehouseBatchStatusEnum = pgEnum('warehouse_batch_status', ['AWAITING_MAPPING', 'MAPPED', 'PROCESSED']);
+export const shopOrderStatusEnum = pgEnum('shop_order_status', ['PENDING', 'FULFILLED', 'SENT_TO_WAREHOUSE', 'CANCELED']);
 
 // Tables
 export const user = pgTable('user', {
@@ -136,6 +137,7 @@ export const userPathway = pgTable('user_pathway', {
   id: text('id').primaryKey().$defaultFn(() => createId()),
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
   pathway: pathwayEnum('pathway').notNull(),
+  balance: integer('balance').notNull().default(0),
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow()
 }, (table) => [
   uniqueIndex('user_pathway_unique_idx').on(table.userId, table.pathway)
@@ -447,3 +449,79 @@ export const warehouseBatchTagRelations = relations(warehouseBatchTag, ({ one })
 	batch: one(warehouseBatch, { fields: [warehouseBatchTag.batchId], references: [warehouseBatch.id] })
 }));
 
+// =====================================================================
+// Pathway Shops
+// =====================================================================
+
+export const pathwayShop = pgTable('pathway_shop', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	pathway: pathwayEnum('pathway').notNull().unique(),
+	currencyName: text('currency_name').notNull().default('Coins'),
+	currencyIconUrl: text('currency_icon_url'),
+	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
+});
+
+export const shopItem = pgTable('shop_item', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	pathway: pathwayEnum('pathway').notNull(),
+	name: text('name').notNull(),
+	description: text('description').notNull().default(''),
+	imageUrl: text('image_url'),
+	costCurrency: integer('cost_currency').notNull(),
+	warehouseItemId: text('warehouse_item_id').references(() => warehouseItem.id, { onDelete: 'set null' }),
+	isActive: boolean('is_active').notNull().default(true),
+	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
+}, (table) => [
+	index('shop_item_pathway_idx').on(table.pathway)
+]);
+
+export const shopOrder = pgTable('shop_order', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	pathway: pathwayEnum('pathway').notNull(),
+	status: shopOrderStatusEnum('status').notNull().default('PENDING'),
+	totalCurrency: integer('total_currency').notNull(),
+	firstName: text('first_name').notNull(),
+	lastName: text('last_name').notNull(),
+	email: text('email').notNull(),
+	phone: text('phone'),
+	addressLine1: text('address_line_1').notNull(),
+	addressLine2: text('address_line_2'),
+	city: text('city').notNull(),
+	stateProvince: text('state_province').notNull(),
+	postalCode: text('postal_code'),
+	country: text('country').notNull(),
+	trackingNumber: text('tracking_number'),
+	carrier: text('carrier'),
+	warehouseOrderId: text('warehouse_order_id').references(() => warehouseOrder.id, { onDelete: 'set null' }),
+	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+	fulfilledAt: timestamp('fulfilled_at', { mode: 'date' })
+}, (table) => [
+	index('shop_order_user_idx').on(table.userId),
+	index('shop_order_pathway_status_idx').on(table.pathway, table.status)
+]);
+
+export const shopOrderItem = pgTable('shop_order_item', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	orderId: text('order_id').notNull().references(() => shopOrder.id, { onDelete: 'cascade' }),
+	shopItemId: text('shop_item_id').notNull().references(() => shopItem.id, { onDelete: 'restrict' }),
+	quantity: integer('quantity').notNull().default(1),
+	unitCostCurrency: integer('unit_cost_currency').notNull()
+});
+
+export const shopItemRelations = relations(shopItem, ({ one }) => ({
+	warehouseItem: one(warehouseItem, { fields: [shopItem.warehouseItemId], references: [warehouseItem.id] })
+}));
+
+export const shopOrderRelations = relations(shopOrder, ({ one, many }) => ({
+	user: one(user, { fields: [shopOrder.userId], references: [user.id] }),
+	warehouseOrder: one(warehouseOrder, { fields: [shopOrder.warehouseOrderId], references: [warehouseOrder.id] }),
+	items: many(shopOrderItem)
+}));
+
+export const shopOrderItemRelations = relations(shopOrderItem, ({ one }) => ({
+	order: one(shopOrder, { fields: [shopOrderItem.orderId], references: [shopOrder.id] }),
+	shopItem: one(shopItem, { fields: [shopOrderItem.shopItemId], references: [shopItem.id] })
+}));

@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
-import { userPathway, pathwayWeekContent } from '$lib/server/db/schema';
+import { userPathway, pathwayWeekContent, pathwayShop } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { redirect, error } from '@sveltejs/kit';
 import { PATHWAY_IDS, type PathwayId } from '$lib/pathways';
@@ -48,9 +48,20 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 		return acc;
 	}, {} as Record<number, { title: string; isPublished: boolean }>);
 
+	const shopRow = await db
+		.select({ id: pathwayShop.id, currencyName: pathwayShop.currencyName })
+		.from(pathwayShop)
+		.where(eq(pathwayShop.pathway, typedPathwayId))
+		.limit(1);
+
+	const userBalance = userPathwayRecord[0].balance ?? 0;
+
 	return {
 		pathwayId,
 		curator: pathwayCurators[pathwayId] || 'Unknown',
-		publishedWeeks
+		publishedWeeks,
+		hasShop: shopRow.length > 0,
+		balance: userBalance,
+		currencyName: shopRow[0]?.currencyName ?? 'Coins'
 	};
 };

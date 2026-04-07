@@ -114,6 +114,67 @@ export const projectSubmissionSchema = z.object({
 
 export type ProjectSubmissionInput = z.infer<typeof projectSubmissionSchema>;
 
+// =====================================================================
+// Pathway Shop schemas
+// =====================================================================
+
+export const pathwayIdSchema = z.enum(['PYTHON', 'RUST', 'GAME_DEV', 'HARDWARE', 'DESIGN', 'GENERAL_CODING']);
+
+export const shopItemSchema = z.object({
+	name: z.string().min(1, 'Name is required').max(120),
+	description: z.string().max(2000).optional().default(''),
+	imageUrl: z.string().url().max(2000).nullable().optional(),
+	costCurrency: z.coerce.number().int().min(0, 'Cost must be 0 or more'),
+	warehouseItemId: z.string().min(1).nullable().optional(),
+	isActive: z.coerce.boolean().optional()
+});
+
+export const shopSettingsSchema = z.object({
+	currencyName: z.string().min(1, 'Currency name is required').max(40),
+	currencyIconUrl: z.string().url().max(2000).nullable().optional()
+});
+
+export const balanceAdjustSchema = z.object({
+	userId: z.string().min(1),
+	value: z.coerce.number().int().min(0)
+});
+
+const shopAddressSchema = z.object({
+	firstName: z.string().min(1).max(100),
+	lastName: z.string().min(1).max(100),
+	email: z.string().email().max(254),
+	phone: z.string().max(40).optional().nullable(),
+	addressLine1: z.string().min(1).max(200),
+	addressLine2: z.string().max(200).optional().nullable(),
+	city: z.string().min(1).max(100),
+	stateProvince: z.string().min(1).max(100),
+	postalCode: z.string().max(20).optional().nullable(),
+	country: z.string().min(1).max(100)
+});
+
+export const shopPurchaseSchema = z.object({
+	itemId: z.string().min(1),
+	quantity: z.coerce.number().int().min(1).max(10).default(1)
+}).and(shopAddressSchema);
+
+export const sendToWarehouseSchema = z.object({
+	orderIds: z.array(z.string().min(1)).min(1),
+	serviceCode: z.string().min(1),
+	estimatedShippingCents: z.coerce.number().int().min(0)
+});
+
+export const markFulfilledSchema = z.object({
+	orderId: z.string().min(1),
+	trackingNumber: z.string().min(1).max(200),
+	carrier: z.string().min(1).max(80)
+});
+
+export type ShopItemInput = z.infer<typeof shopItemSchema>;
+export type ShopSettingsInput = z.infer<typeof shopSettingsSchema>;
+export type ShopPurchaseInput = z.infer<typeof shopPurchaseSchema>;
+export type SendToWarehouseInput = z.infer<typeof sendToWarehouseSchema>;
+export type MarkFulfilledInput = z.infer<typeof markFulfilledSchema>;
+
 export type CreateShipInput = z.infer<typeof createShipSchema>;
 export type MarkShippedInput = z.infer<typeof markShippedSchema>;
 export type UpdateShipStatusInput = z.infer<typeof updateShipStatusSchema>;
