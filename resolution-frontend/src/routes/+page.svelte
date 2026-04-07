@@ -6,8 +6,7 @@
 	<title>Resolution - Choose Your Challenge, Ship Every Week</title>
 </svelte:head>
 
-<div class="page-container">
-	<InitialPage
+<InitialPage
 		heroDescription="Choose your challenge and ship every week. Earn prizes each week, and a giant prize if you stay til the end."
 		ctaText="START BUILDING"
 		ctaHref="/api/auth/login"
@@ -50,12 +49,4 @@
 			}
 		]}
 	/>
-</div>
-
-<style>
-	.page-container {
-		padding: 0 0.5rem;
-		background-color: var(--color-bg-dark);
-	}
-</style>
 

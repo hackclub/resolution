@@ -1,14 +1,6 @@
 <script lang="ts">
 	import type { Step, FAQ } from '$lib/types';
-	import heroBg from '$lib/assets/hero_bg.png';
-	import darkBg from '$lib/assets/dark_bg.png';
-	import swirlBg from '$lib/assets/swirl_overlay.png';
-	import lightBlueBg from '$lib/assets/light_blue_bg.png';
-	import fireworks from '$lib/assets/firework_burst.png';
-	import fireworksGif from '$lib/assets/fireworks_gif.png';
-	import sparklyBorder from '$lib/assets/gold_glitter_border.png';
-	import vectorLine from '$lib/assets/vector_divider.svg';
-
+	import PlatformBackground from './PlatformBackground.svelte';
 
 	interface Props {
 		heroDescription?: string;
@@ -21,21 +13,11 @@
 	}
 
 	let {
-		heroDescription = "Ship every week. Earn prizes. Most people quit. Will you be different?",
+		heroDescription = 'Ship every week. Earn prizes. Most people quit. Will you be different?',
 		ctaText = "I'M INSPIRED",
-		ctaHref = "/rsvp",
-		steps = [
-			{ title: "Step 1", description: "asfdskfhsdsdfasdfsdafdsdsfasdfsdaf" },
-			{ title: "Step 2", description: "asfdskfhsdsdfasdfsdafdsdsfasdfsdaf" },
-			{ title: "Step 3", description: "asfdskfhsdsdfasdfsdafdsdsfasdfsdaf" }
-		],
-		faqs = [
-			{ question: "Question 1" },
-			{ question: "Question 2" },
-			{ question: "Question 3" },
-			{ question: "Question 4" },
-			{ question: "Question 5" }
-		],
+		ctaHref = '/rsvp',
+		steps = [],
+		faqs = [],
 		showSteps = false,
 		showFaq = false
 	}: Props = $props();
@@ -43,520 +25,346 @@
 	let openFaqIndex = $state<number | null>(null);
 
 	function toggleFaq(index: number) {
-		if (openFaqIndex === index) {
-			openFaqIndex = null;
-		} else {
-			openFaqIndex = index;
-		}
+		openFaqIndex = openFaqIndex === index ? null : index;
 	}
 </script>
 
-<div class="initial-page">
-	<!-- HERO SECTION -->
-	<section class="hero">
-		<img src={heroBg} alt="" class="hero-bg" />
-		
-		<div class="decoration fireworks-left">
-			<img src={fireworksGif} alt="" />
-		</div>
-		<div class="decoration fireworks-right">
-			<img src={fireworksGif} alt="" />
-		</div>
+<PlatformBackground>
+	<div class="page">
+		<!-- HERO -->
+		<section class="hero">
+			<div class="eyebrow">
+				<span class="dot"></span>
+				<span>A Hack Club program · 8 weeks</span>
+			</div>
 
-		<div class="hero-content">
-			<p class="hero-description">{heroDescription}</p>
+			<h1 class="wordmark">
+				<span class="word">Resolution</span>
+			</h1>
 
-			<div class="hero-buttons">
-				<a href={ctaHref} class="cta-button full-width">
+			<p class="tagline">{heroDescription}</p>
+
+			<div class="cta-row">
+				<a href={ctaHref} class="cta">
 					<span>{ctaText}</span>
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M5 12h14M13 5l7 7-7 7"/>
+					</svg>
 				</a>
-			</div>
-		</div>
-	</section>
-
-	<!-- STEPS SECTION -->
-	{#if showSteps}
-		<section class="steps-section">
-			<div class="decoration sparkly-border">
-				<img src={sparklyBorder} alt="" />
+				{#if showFaq}
+					<a href="#faq" class="cta-ghost">Learn more</a>
+				{/if}
 			</div>
 
-			<div class="steps-backgrounds">
-				<img src={darkBg} alt="" class="dark-bg dark-bg-1" />
-				<img src={darkBg} alt="" class="dark-bg dark-bg-2" />
-				<img src={swirlBg} alt="" class="swirl-overlay" />
-			</div>
-			
-			<div class="decoration big-firework">
-				<img src={fireworks} alt="" />
-			</div>
-
-			<div class="decoration fireworks-decoration">
-				<img src={fireworks} alt="" />
-			</div>
-
-			<div class="steps-content">
-				<div class="step step-1">
-					<p class="step-text">{steps[0]?.title}:<br/>{steps[0]?.description}</p>
-				</div>
-
-				<div class="step step-2">
-					<p class="step-text">{steps[1]?.title}:<br/>{steps[1]?.description}</p>
-				</div>
-
-				<div class="step step-3">
-					<p class="step-text">{steps[2]?.title}:<br/>{steps[2]?.description}</p>
-				</div>
+			<div class="hero-meta">
+				<div class="meta-item"><strong>6</strong><span>pathways</span></div>
+				<div class="meta-divider"></div>
+				<div class="meta-item"><strong>8</strong><span>weeks</span></div>
+				<div class="meta-divider"></div>
+				<div class="meta-item"><strong>∞</strong><span>shipped</span></div>
 			</div>
 		</section>
-	{/if}
 
-	<!-- EVENTS & FAQ SECTION -->
-	{#if showFaq}
-		<section class="events-faq-section">
-			<img src={lightBlueBg} alt="" class="section-bg" />
-			
-				<div class="faq-section">
-
-
-					<h2 class="faq-title">FAQ</h2>
-
-					<div class="faq-content">
-						<div class="faq-list">
-							{#each faqs as faq, i}
-								<button 
-									class="faq-item" 
-									class:is-open={openFaqIndex === i}
-									onclick={() => toggleFaq(i)}
-								>
-									<div class="faq-header">
-										<span class="faq-question">{faq.question}</span>
-										<span class="faq-chevron">{openFaqIndex === i ? '▲' : '▼'}</span>
-									</div>
-									{#if openFaqIndex === i && faq.answer}
-										<div class="faq-answer">
-											<p>{faq.answer}</p>
-										</div>
-									{/if}
-								</button>
-								{#if i < faqs.length - 1}
-									<img src={vectorLine} alt="" class="faq-divider" />
-								{/if}
-							{/each}
+		<!-- STEPS -->
+		{#if showSteps && steps.length > 0}
+			<section class="steps">
+				<div class="section-head">
+					<span class="kicker">How it works</span>
+					<h2>Three steps. Eight weeks. One you.</h2>
+				</div>
+				<div class="steps-grid">
+					{#each steps as step, i}
+						<div class="step-card" style="--delay: {i * 80}ms">
+							<div class="step-num">{String(i + 1).padStart(2, '0')}</div>
+							<h3>{step.title}</h3>
+							<p>{step.description}</p>
 						</div>
-
-					</div>
+					{/each}
 				</div>
-		</section>
-	{/if}
-</div>
+			</section>
+		{/if}
+
+		<!-- FAQ -->
+		{#if showFaq && faqs.length > 0}
+			<section class="faq" id="faq">
+				<div class="section-head">
+					<span class="kicker">FAQ</span>
+					<h2>Questions, answered.</h2>
+				</div>
+				<div class="faq-list">
+					{#each faqs as faq, i}
+						<button
+							type="button"
+							class="faq-item"
+							class:open={openFaqIndex === i}
+							onclick={() => toggleFaq(i)}
+						>
+							<span class="q">{faq.question}</span>
+							<span class="chev" aria-hidden="true">+</span>
+							{#if openFaqIndex === i && faq.answer}
+								<p class="a">{faq.answer}</p>
+							{/if}
+						</button>
+					{/each}
+				</div>
+			</section>
+		{/if}
+
+		<footer class="foot">
+			<span>© Resolution · Made by Hack Club</span>
+		</footer>
+	</div>
+</PlatformBackground>
 
 <style>
-	.initial-page {
-		width: 100%;
-		overflow-x: hidden;
-		font-family: var(--font-primary);
+	.page {
+		max-width: 1100px;
+		margin: 0 auto;
+		padding: 5rem 1.5rem 4rem;
 	}
 
-	/* ========== HERO SECTION ========== */
+	/* ===== Hero ===== */
 	.hero {
-		position: relative;
-		width: 100%;
-		overflow: hidden;
-	}
-
-	.hero-bg {
-		width: 100%;
-		height: auto;
-		display: block;
-	}
-
-	.fireworks-left,
-	.fireworks-right {
-		top: 0;
-		width: 40%;
-		max-width: 1035px;
-	}
-
-	.fireworks-left {
-		left: 1%;
-	}
-
-	.fireworks-right {
-		left: 45%;
-		transform: rotate(180deg) scaleY(-1);
-	}
-
-	.hero-content {
-		position: absolute;
-		top: 55%;
-		left: 50%;
-		transform: translateX(-50%);
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 1.6rem;
-		z-index: var(--z-overlay);
-		width: 90%;
-		max-width: 560px;
-	}
-
-	.hero-buttons {
-		display: flex;
-		gap: 1rem;
-	}
-
-	.hero-description {
-		font-family: var(--font-primary);
-		font-weight: 400;
-		color: var(--color-gold);
-		font-size: 1.2rem;
 		text-align: center;
-		text-shadow: var(--shadow-glow-gold);
-		line-height: 1.5;
-		margin: 0;
+		padding: 4rem 0 6rem;
 	}
 
-	.cta-button {
-		background: var(--color-cta-bg);
-		border: 3px solid var(--color-cta-border);
-		border-radius: var(--radius-button);
-		padding: 0.75rem 1.75rem;
-		text-decoration: none;
-		transition: all var(--transition-normal);
-		cursor: pointer;
+	.eyebrow {
 		display: inline-flex;
 		align-items: center;
-		justify-content: center;
-		min-height: 48px;
+		gap: 0.6rem;
+		padding: 0.45rem 1rem;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		border-radius: var(--radius-pill);
+		font-size: 0.82rem;
+		color: var(--color-text-dim);
+		backdrop-filter: blur(10px);
+	}
+	.dot {
+		width: 7px; height: 7px; border-radius: 50%;
+		background: var(--color-gold);
+		box-shadow: 0 0 12px var(--color-gold);
 	}
 
-	.cta-button:hover {
-		background: var(--color-cta-hover);
-		transform: scale(1.05);
-	}
-
-	.cta-button span {
-		color: var(--color-cta-text);
-		font-size: clamp(1rem, 0.9rem + 0.5vw, 1.5rem);
-		font-weight: 500;
-		white-space: nowrap;
-	}
-
-	.cta-button.full-width {
-		width: 100%;
-	}
-
-	/* ========== STEPS SECTION ========== */
-	.steps-section {
-		position: relative;
-		width: 100%;
-		aspect-ratio: 2560 / 3385;
-	}
-
-	.sparkly-border {
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 8%;
-		z-index: 10;
-		transform: translateY(-50%);
-		overflow: hidden;
-	}
-
-	.steps-backgrounds {
-		position: absolute;
-		inset: 0;
-	}
-
-	.dark-bg {
-		position: absolute;
-		width: 100%;
-		height: 50%;
-		object-fit: cover;
-		z-index: var(--z-base);
-	}
-
-	.dark-bg-1 {
-		top: 0;
-	}
-
-	.dark-bg-2 {
-		top: 50%;
-	}
-
-	.swirl-overlay {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: auto;
-		z-index: var(--z-raised);
-	}
-
-	.steps-content {
-		position: absolute;
-		inset: 0;
-		z-index: 5;
-	}
-
-	.step {
-		position: absolute;
-		max-width: 30%;
-	}
-
-	.step-1 {
-		left: 25%;
-		top: 12%;
-		transform: translateX(-50%);
-	}
-
-	.step-2 {
-		left: 67%;
-		top: 47%;
-		transform: translateX(-50%);
-	}
-
-	.step-3 {
-		left: 30%;
-		top: 83%;
-		transform: translateX(-50%);
-	}
-
-	.step-text {
-		font-family: var(--font-primary);
-		color: var(--color-gold-light);
-		font-size: clamp(1.1rem, 1rem + 1vw, 2.25rem);
-		text-align: center;
-		text-shadow: var(--shadow-glow-gold);
-		line-height: 1.35;
-		margin: 0;
-	}
-
-	.big-firework {
-		left: -46%;
-		top: -25%;
-		width: 100%;
-		transform: rotate(-40deg);
-		filter: blur(10px);
-		opacity: 0.8;
-	}
-
-	.fireworks-decoration {
-		right: -20%;
-		left: auto;
-		top: 45%;
-		width: 50%;
-	}
-
-	/* ========== EVENTS & FAQ SECTION ========== */
-	.events-faq-section {
-		position: relative;
-		margin-top: 21%;
-		width: 100%;
-		aspect-ratio: 2560 / 4257;
-		overflow: hidden;
-	}
-
-	/* ========== FAQ SECTION ========== */
-	.faq-section {
-		position: absolute;
-		top: 10%;
-		left: 0;
-		right: 0;
-		height: 55%;
-		z-index: var(--z-overlay);
-	}
-
-	
-
-	.faq-title {
-		position: absolute;
-		top: 8%;
-		left: 50%;
-		transform: translateX(-50%);
-		font-family: var(--font-primary);
+	.wordmark {
+		font-family: var(--font-display);
 		font-weight: 700;
-		color: var(--color-white);
-		font-size: clamp(3rem, 8vw, 12rem);
-		text-align: center;
-		margin: 0;
-		z-index: var(--z-overlay);
+		font-size: clamp(3.5rem, 11vw, 9rem);
+		line-height: 0.95;
+		margin: 1.8rem 0 1.2rem;
+		letter-spacing: -0.04em;
+	}
+	.wordmark .word {
+		background: var(--gradient-gold);
+		background-clip: text;
+		-webkit-background-clip: text;
+		color: transparent;
+		filter: drop-shadow(0 0 32px rgba(255, 214, 107, 0.35));
 	}
 
-	.faq-content {
-		position: absolute;
-		top: 32%;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 90%;
-		max-width: 900px;
-		display: flex;
-		align-items: flex-start;
-		justify-content: center;
-		z-index: var(--z-overlay);
-	}
-
-	.faq-list {
-		background: var(--color-white);
-		border-radius: clamp(2rem, 5vw, 7.8rem);
-		padding: clamp(1.5rem, 3vw, 3rem) clamp(2rem, 4vw, 4rem);
-		width: 100%;
-		max-width: 700px;
-	}
-
-	.faq-item {
-		width: 100%;
-		padding: clamp(0.75rem, 1.5vw, 1.25rem) 0;
-		text-align: center;
-		background: transparent;
-		border: none;
-		cursor: pointer;
-		font-family: inherit;
-		transition: all 0.2s ease;
-	}
-
-	.faq-item:hover {
-		background: rgba(145, 200, 255, 0.08);
-		border-radius: 1rem;
-	}
-
-	.faq-item.is-open {
-		background: rgba(145, 200, 255, 0.12);
-		border-radius: 1rem;
-		padding: clamp(0.75rem, 1.5vw, 1.25rem);
-	}
-
-	.faq-header {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 1rem;
-	}
-
-	.faq-chevron {
-		font-size: clamp(0.75rem, 1vw, 1rem);
-		color: var(--color-blue);
-		opacity: 0.6;
-		transition: transform 0.2s ease;
-	}
-
-	.faq-item.is-open .faq-chevron {
-		opacity: 1;
-	}
-
-	.faq-answer {
-		margin-top: 1rem;
-		padding: 0 1rem;
-		animation: slideDown 0.3s ease;
-	}
-
-	.faq-answer p {
-		font-family: var(--font-primary);
-		font-weight: 400;
-		color: #5a5a7a;
-		font-size: clamp(0.9rem, 1.2vw + 0.3rem, 1.25rem);
+	.tagline {
+		max-width: 620px;
+		margin: 0 auto;
+		font-size: clamp(1.05rem, 1.5vw, 1.25rem);
 		line-height: 1.6;
-		margin: 0;
+		color: var(--color-text-dim);
+	}
+
+	.cta-row {
+		display: flex;
+		gap: 0.8rem;
+		justify-content: center;
+		margin: 2.4rem 0 3rem;
+		flex-wrap: wrap;
+	}
+
+	.cta {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.6rem;
+		padding: 1rem 1.8rem;
+		background: var(--gradient-gold);
+		color: #1a1100;
+		border-radius: var(--radius-pill);
+		font-weight: 700;
+		font-size: 1rem;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+		box-shadow: var(--shadow-glow-gold);
+		transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+	}
+	.cta:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 0 40px rgba(255, 214, 107, 0.7);
+	}
+
+	.cta-ghost {
+		display: inline-flex;
+		align-items: center;
+		padding: 1rem 1.6rem;
+		border: 1px solid var(--color-border-strong);
+		background: var(--color-surface);
+		color: var(--color-text);
+		border-radius: var(--radius-pill);
+		font-weight: 500;
+		backdrop-filter: blur(10px);
+		transition: background var(--transition-fast);
+	}
+	.cta-ghost:hover { background: var(--color-surface-2); }
+
+	.hero-meta {
+		display: inline-flex;
+		align-items: center;
+		gap: 1.6rem;
+		padding: 1rem 1.8rem;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		border-radius: var(--radius-lg);
+		backdrop-filter: blur(10px);
+	}
+	.meta-item {
+		display: flex; flex-direction: column; align-items: center; gap: 0.1rem;
+	}
+	.meta-item strong {
+		font-family: var(--font-display);
+		font-size: 1.6rem;
+		color: var(--color-gold);
+	}
+	.meta-item span {
+		font-size: 0.75rem;
+		color: var(--color-text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+	}
+	.meta-divider {
+		width: 1px; height: 30px;
+		background: var(--color-border);
+	}
+
+	/* ===== Section heads ===== */
+	.section-head {
 		text-align: center;
+		margin-bottom: 3rem;
+	}
+	.kicker {
+		display: inline-block;
+		font-size: 0.78rem;
+		text-transform: uppercase;
+		letter-spacing: 0.18em;
+		color: var(--color-gold);
+		margin-bottom: 0.8rem;
+	}
+	.section-head h2 {
+		font-family: var(--font-display);
+		font-size: clamp(1.8rem, 4vw, 2.8rem);
+		font-weight: 700;
+		margin: 0;
+		letter-spacing: -0.02em;
 	}
 
-	@keyframes slideDown {
-		from {
-			opacity: 0;
-			transform: translateY(-8px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
+	/* ===== Steps ===== */
+	.steps {
+		padding: 5rem 0;
 	}
-
-	.faq-divider {
-		width: 100%;
-		height: auto;
-		display: block;
-		opacity: 0.8;
+	.steps-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1.2rem;
 	}
-
-	.faq-question {
-		font-family: var(--font-primary);
+	.step-card {
+		padding: 2rem 1.6rem;
+		background: var(--gradient-card);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		backdrop-filter: blur(10px);
+		transition: transform var(--transition-normal), border-color var(--transition-normal);
+	}
+	.step-card:hover {
+		transform: translateY(-4px);
+		border-color: var(--color-gold);
+	}
+	.step-num {
+		font-family: var(--font-display);
+		font-size: 0.9rem;
 		font-weight: 600;
-		color: var(--color-blue);
-		font-size: clamp(1rem, 1.5vw + 0.5rem, 2rem);
-		word-break: break-word;
+		color: var(--color-gold);
+		letter-spacing: 0.1em;
+		margin-bottom: 1rem;
+	}
+	.step-card h3 {
+		font-family: var(--font-display);
+		font-size: 1.4rem;
+		margin: 0 0 0.6rem;
+		color: var(--color-text);
+	}
+	.step-card p {
+		margin: 0;
+		color: var(--color-text-dim);
+		line-height: 1.6;
+		font-size: 0.95rem;
 	}
 
-	
-	/* ========== RESPONSIVE ========== */
-	@media (max-width: 480px) {
-		.hero-buttons {
-			flex-direction: column;
-			width: 100%;
-			gap: 0.75rem;
-		}
-
-		.cta-button {
-			width: 100%;
-			text-align: center;
-		}
+	/* ===== FAQ ===== */
+	.faq {
+		padding: 5rem 0;
+		max-width: 760px;
+		margin: 0 auto;
+	}
+	.faq-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.7rem;
+	}
+	.faq-item {
+		text-align: left;
+		width: 100%;
+		padding: 1.2rem 1.5rem;
+		background: var(--gradient-card);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		transition: all var(--transition-fast);
+		display: grid;
+		grid-template-columns: 1fr auto;
+		align-items: center;
+		gap: 1rem;
+		backdrop-filter: blur(10px);
+	}
+	.faq-item:hover { border-color: var(--color-border-strong); }
+	.faq-item.open {
+		border-color: var(--color-gold);
+		background: rgba(255, 214, 107, 0.04);
+	}
+	.q {
+		font-weight: 600;
+		font-size: 1rem;
+		color: var(--color-text);
+	}
+	.chev {
+		font-size: 1.4rem;
+		color: var(--color-gold);
+		transition: transform var(--transition-fast);
+	}
+	.faq-item.open .chev { transform: rotate(45deg); }
+	.a {
+		grid-column: 1 / -1;
+		margin: 0.6rem 0 0;
+		color: var(--color-text-dim);
+		line-height: 1.65;
+		font-size: 0.95rem;
 	}
 
-	@media (max-width: 768px) {
-		.fireworks-left,
-		.fireworks-right {
-			width: 50%;
-		}
+	.foot {
+		text-align: center;
+		padding: 3rem 0 1rem;
+		color: var(--color-text-muted);
+		font-size: 0.85rem;
+	}
 
-		.fireworks-right {
-			left: auto;
-			right: 0;
-		}
-
-		.hero-content {
-			top: 55%;
-			max-width: 90%;
-		}
-
-		.step {
-			max-width: 70%;
-		}
-
-		.step-1,
-		.step-2,
-		.step-3 {
-			left: 50%;
-		}
-
-		.step-1 {
-			top: 15%;
-		}
-
-		.step-2 {
-			top: 50%;
-		}
-
-		.step-3 {
-			top: 80%;
-		}
-
-		.events-faq-section {
-			aspect-ratio: auto;
-			min-height: 180vh;
-		}
-
-		.faq-content {
-			flex-direction: column;
-			left: 5%;
-			width: 90%;
-		}
-
-		.faq-list {
-			width: 100%;
-			border-radius: 32px;
-			padding: 1.5rem;
-			margin-left: 0;
-		}
-
+	@media (max-width: 720px) {
+		.steps-grid { grid-template-columns: 1fr; }
+		.hero { padding: 2rem 0 4rem; }
+		.page { padding-top: 3rem; }
 	}
 </style>

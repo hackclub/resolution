@@ -1,59 +1,83 @@
 :root {
 	/* Typography */
-	--font-primary: 'Kodchasan', sans-serif;
+	--font-primary: 'Inter', 'Kodchasan', system-ui, sans-serif;
+	--font-display: 'Space Grotesk', 'Inter', sans-serif;
 	--font-handwritten: 'Patrick Hand', cursive;
+	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-	/* Brand Colors */
-	--color-gold: #ffe475;
-	--color-gold-dark: #a58d28;
-	--color-gold-light: #fff2b9;
-	--color-gold-muted: #fff0af;
+	/* Cosmic palette */
+	--color-bg: #07071a;
+	--color-bg-deep: #04030f;
+	--color-bg-elev: #11112a;
+	--color-surface: rgba(255, 255, 255, 0.04);
+	--color-surface-2: rgba(255, 255, 255, 0.07);
+	--color-border: rgba(255, 255, 255, 0.10);
+	--color-border-strong: rgba(255, 255, 255, 0.18);
 
-	/* CTA Colors */
-	--color-cta-bg: rgba(253, 205, 5, 0.36);
-	--color-cta-border: rgba(253, 205, 5, 0.69);
-	--color-cta-hover: rgba(253, 205, 5, 0.5);
-	--color-cta-text: #fff0af;
+	/* Text */
+	--color-text: #f5f5ff;
+	--color-text-dim: #b8b8d4;
+	--color-text-muted: #7a7a99;
 
-	/* Accent Colors */
-	--color-pink: #e472ab;
-	--color-blue: #91c8ff;
-	--color-blue-light: #a8d4f5;
-	--color-green: #4a7c59;
+	/* Brand: gold = the "Resolution" star */
+	--color-gold: #ffd66b;
+	--color-gold-light: #ffe9a8;
+	--color-gold-dark: #b88a18;
+	--color-gold-glow: rgba(255, 214, 107, 0.55);
 
-	/* Neutral Colors */
-	--color-white: #ffffff;
-	--color-paper: #5a5247;
-	--color-paper-light: #7a7060;
-	--color-text-muted: #aaaaaa;
-	--color-error: #cc4444;
+	/* Accents */
+	--color-accent: #8a7bff;       /* nebula purple */
+	--color-accent-2: #5ad8ff;     /* aurora cyan */
+	--color-pink: #ff6fa3;
+	--color-green: #4ade80;
+	--color-error: #ff5572;
 
-	/* Background Colors */
-	--color-bg-dark: #050417;
+	/* Gradients */
+	--gradient-cosmic: radial-gradient(ellipse at 20% -10%, #2a1a5e 0%, transparent 55%),
+		radial-gradient(ellipse at 90% 10%, #4a1f6b 0%, transparent 50%),
+		radial-gradient(ellipse at 50% 110%, #1b3a6b 0%, transparent 60%),
+		linear-gradient(180deg, #07071a 0%, #04030f 100%);
+	--gradient-gold: linear-gradient(135deg, #ffe9a8 0%, #ffd66b 45%, #b88a18 100%);
+	--gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
 
 	/* Shadows */
-	--shadow-glow-gold: 0 0 12.8px var(--color-gold);
-	--shadow-glow-cta: 0 0 13.6px 5px var(--color-gold);
-	--shadow-card: 0px 8px 4px rgba(0, 0, 0, 0.25);
-	--shadow-card-lg: 0px 8px 15.7px rgba(0, 0, 0, 0.25);
-	--shadow-input: 2px 2px 0 0 var(--color-paper);
-	--shadow-input-focus: 2px 2px 0 0 var(--color-pink);
+	--shadow-glow-gold: 0 0 24px rgba(255, 214, 107, 0.45);
+	--shadow-card: 0 12px 40px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+	--shadow-elev: 0 24px 60px rgba(0, 0, 0, 0.55);
 
-	/* Border Radius */
-	--radius-sm: 4px;
-	--radius-lg: 50px;
-	--radius-xl: 60px;
-	--radius-pill: 7.8rem;
-	--radius-button: 50px;
+	/* Radius */
+	--radius-sm: 8px;
+	--radius-md: 14px;
+	--radius-lg: 20px;
+	--radius-xl: 28px;
+	--radius-pill: 999px;
+	--radius-button: 999px;
 
-	/* Transitions */
-	--transition-fast: 0.2s ease;
-	--transition-normal: 0.3s ease;
-	--transition-slow: 0.8s ease-out;
+	/* Motion */
+	--transition-fast: 0.18s ease;
+	--transition-normal: 0.28s cubic-bezier(0.2, 0.7, 0.2, 1);
+	--transition-slow: 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
 
-	/* Z-index Scale */
+	/* Z */
 	--z-base: 0;
 	--z-raised: 1;
 	--z-overlay: 2;
-	--z-modal: 3;
+	--z-modal: 50;
+
+	/* Legacy aliases (for pages not yet rewritten) */
+	--color-white: var(--color-text);
+	--color-blue: var(--color-accent-2);
+	--color-blue-light: var(--color-accent-2);
+	--color-paper: var(--color-bg-elev);
+	--color-paper-light: var(--color-surface-2);
+	--color-bg-dark: var(--color-bg);
+	--color-cta-bg: rgba(255, 214, 107, 0.12);
+	--color-cta-border: rgba(255, 214, 107, 0.55);
+	--color-cta-hover: rgba(255, 214, 107, 0.22);
+	--color-cta-text: var(--color-gold-light);
+	--shadow-glow-cta: 0 0 32px rgba(255, 214, 107, 0.55);
+	--shadow-card-lg: var(--shadow-elev);
+	--shadow-input: 0 0 0 1px var(--color-border);
+	--shadow-input-focus: 0 0 0 2px var(--color-gold);
+	--radius-lg-old: 50px;
 }

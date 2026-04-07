@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Kodchasan:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import './lib/styles/tokens.css';
 
 *,
 *::before,
@@ -10,7 +11,47 @@ html,
 body {
 	margin: 0;
 	padding: 0;
-	height: 100%;
+	min-height: 100%;
 	width: 100%;
-	font-family: 'Kodchasan', sans-serif;
+	font-family: var(--font-primary);
+	color: var(--color-text);
+	background: var(--color-bg);
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+body {
+	background: var(--gradient-cosmic);
+	background-attachment: fixed;
+}
+
+::selection {
+	background: var(--color-gold);
+	color: var(--color-bg-deep);
+}
+
+a {
+	color: var(--color-accent-2);
+	text-decoration: none;
+}
+
+button {
+	font-family: inherit;
+	color: inherit;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.08);
+	border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.16);
 }
