@@ -55,6 +55,11 @@ export const actions: Actions = {
 			return fail(400, { error: 'Category name is required' });
 		}
 
+		const existing = await db.select({ id: warehouseCategory.id }).from(warehouseCategory).where(eq(warehouseCategory.id, id)).limit(1);
+		if (existing.length === 0) {
+			return fail(404, { error: 'Category not found' });
+		}
+
 		await db
 			.update(warehouseCategory)
 			.set({
@@ -73,6 +78,11 @@ export const actions: Actions = {
 
 		if (!id) {
 			return fail(400, { error: 'Category ID is required' });
+		}
+
+		const existing = await db.select({ id: warehouseCategory.id }).from(warehouseCategory).where(eq(warehouseCategory.id, id)).limit(1);
+		if (existing.length === 0) {
+			return fail(404, { error: 'Category not found' });
 		}
 
 		await db.delete(warehouseCategory).where(eq(warehouseCategory.id, id));
@@ -156,6 +166,12 @@ export const actions: Actions = {
 		if (!id) {
 			return fail(400, { error: 'Item ID is required' });
 		}
+
+		const existing = await db.select({ id: warehouseItem.id }).from(warehouseItem).where(eq(warehouseItem.id, id)).limit(1);
+		if (existing.length === 0) {
+			return fail(404, { error: 'Item not found' });
+		}
+
 		if (!name) {
 			return fail(400, { error: 'Item name is required' });
 		}
@@ -205,6 +221,11 @@ export const actions: Actions = {
 
 		if (!id) {
 			return fail(400, { error: 'Item ID is required' });
+		}
+
+		const existing = await db.select({ id: warehouseItem.id }).from(warehouseItem).where(eq(warehouseItem.id, id)).limit(1);
+		if (existing.length === 0) {
+			return fail(404, { error: 'Item not found' });
 		}
 
 		await db.delete(warehouseItem).where(eq(warehouseItem.id, id));
