@@ -79,7 +79,15 @@ export const POST: RequestHandler = async (event) => {
 	if (order.labelUrl) {
 		let labelUrl = order.labelUrl;
 		if (!labelUrl.startsWith('data:')) {
-			console.log('Fetching label from:', labelUrl);
+			try {
+				const parsed = new URL(labelUrl);
+				if (!['http:', 'https:'].includes(parsed.protocol)) {
+					throw error(400, 'Invalid label URL protocol');
+				}
+			} catch (e: any) {
+				if (e?.status) throw e;
+				throw error(400, 'Invalid label URL');
+			}
 			const labelRes = await fetch(labelUrl);
 			console.log('Label fetch status:', labelRes.status, labelRes.statusText);
 			if (labelRes.ok) {
