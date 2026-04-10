@@ -1,6 +1,6 @@
 ALTER TABLE "warehouse_item" ADD COLUMN "package_type" text DEFAULT 'box' NOT NULL;
 --> statement-breakpoint
-CREATE TYPE "warehouse_order_status" AS ENUM ('DRAFT', 'ESTIMATED', 'APPROVED', 'SHIPPED', 'CANCELED');
+CREATE TYPE "warehouse_order_status" AS ENUM ('DRAFT', 'ESTIMATED', 'APPROVED', 'SHIPPED', 'CANCELLED');
 --> statement-breakpoint
 CREATE TABLE "warehouse_order" (
 	"id" text PRIMARY KEY NOT NULL,

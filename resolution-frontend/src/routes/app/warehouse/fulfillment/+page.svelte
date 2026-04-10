@@ -17,7 +17,7 @@
 			ESTIMATED: 'Estimated',
 			APPROVED: 'Approved',
 			SHIPPED: 'Shipped',
-			CANCELED: 'Canceled'
+			CANCELLED: 'Cancelled'
 		};
 		return map[status] || status;
 	}
@@ -28,7 +28,7 @@
 			ESTIMATED: 'status-estimated',
 			APPROVED: 'status-approved',
 			SHIPPED: 'status-shipped',
-			CANCELED: 'status-canceled'
+			CANCELLED: 'status-cancelled'
 		};
 		return map[status] || '';
 	}
@@ -38,7 +38,7 @@
 		return name || creator.email;
 	}
 
-	const statuses = ['ESTIMATED', 'APPROVED', 'SHIPPED', 'CANCELED'];
+	const statuses = ['ESTIMATED', 'APPROVED', 'SHIPPED', 'CANCELLED'];
 
 	const filteredOrders = $derived(() => {
 		let orders = data.orders;
@@ -507,7 +507,7 @@
 	.status-estimated { background: #e8f4ff; color: #338eda; }
 	.status-approved { background: #e8fff0; color: #33d6a6; }
 	.status-shipped { background: #f0e8ff; color: #af98ff; }
-	.status-canceled { background: #ffe8ea; color: #ec3750; }
+	.status-cancelled { background: #ffe8ea; color: #ec3750; }
 
 	.actions {
 		white-space: nowrap;
