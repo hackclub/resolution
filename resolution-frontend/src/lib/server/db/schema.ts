@@ -348,6 +348,7 @@ export const warehouseOrder = pgTable('warehouse_order', {
 	estimatedTotalWeightGrams: real('estimated_total_weight_grams'),
 	trackingNumber: text('tracking_number'),
 	labelUrl: text('label_url'),
+	// Nullable because DRAFT orders don't have a shipping method yet; set when label is created
 	shippingMethod: text('shipping_method'), // 'canada_post', 'lettermail', or 'chitchats'
 	notes: text('notes'),
 	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
