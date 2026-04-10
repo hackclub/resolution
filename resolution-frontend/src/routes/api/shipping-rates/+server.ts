@@ -88,13 +88,14 @@ export const POST: RequestHandler = async (event) => {
 	}> = [];
 	try {
 		if (env.CHITCHATS_ACCESS_TOKEN && env.CHITCHATS_CLIENT_ID) {
+			// Chit Chats requires a temporary shipment to return rates — use actual address data
 			chitChatsRates = await fetchChitChatsRates({
 				country: data.country,
 				postalCode: data.postalCode,
 				province: data.province,
 				name: 'Rate Quote',
-				address1: '123 Main St',
-				city: data.city || 'Unknown',
+				address1: data.street,
+				city: data.city,
 				weightGrams: data.weight,
 				lengthIn: effectiveLength,
 				widthIn: effectiveWidth,
