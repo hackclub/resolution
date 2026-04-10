@@ -248,78 +248,85 @@ export const actions: Actions = {
 			}
 		}
 
-		for (const row of dataRows) {
-			const getValue = (field: string): string => {
-				const colName = mapping[field];
-				if (!colName) return '';
-				const colIndex = headers.indexOf(colName);
-				if (colIndex === -1) return '';
-				return (row[colIndex] || '').trim();
-			};
+		// Use a transaction so all orders + stock decrements are atomic
+		try {
+			await db.transaction(async (tx) => {
+				for (const row of dataRows) {
+					const getValue = (field: string): string => {
+						const colName = mapping[field];
+						if (!colName) return '';
+						const colIndex = headers.indexOf(colName);
+						if (colIndex === -1) return '';
+						return (row[colIndex] || '').trim();
+					};
 
-			const firstName = getValue('firstName');
-			const lastName = getValue('lastName');
-			const email = getValue('email');
-			const addressLine1 = getValue('addressLine1');
-			const city = getValue('city');
-			const stateProvince = getValue('stateProvince');
-			const rawCountry = getValue('country');
+					const firstName = getValue('firstName');
+					const lastName = getValue('lastName');
+					const email = getValue('email');
+					const addressLine1 = getValue('addressLine1');
+					const city = getValue('city');
+					const stateProvince = getValue('stateProvince');
+					const rawCountry = getValue('country');
 
-			if (!firstName || !lastName || !email || !addressLine1 || !city || !stateProvince || !rawCountry) {
-				continue;
-			}
+					if (!firstName || !lastName || !email || !addressLine1 || !city || !stateProvince || !rawCountry) {
+						continue;
+					}
 
-			const country = resolveCountryCode(rawCountry);
-			const resolvedState = resolveStateCode(stateProvince, country);
+					const country = resolveCountryCode(rawCountry);
+					const resolvedState = resolveStateCode(stateProvince, country);
 
-			const [order] = await db.insert(warehouseOrder).values({
-				createdById: user.id,
-				batchId,
-				status: 'APPROVED',
-				firstName,
-				lastName,
-				email,
-				phone: getValue('phone') || null,
-				addressLine1,
-				addressLine2: getValue('addressLine2') || null,
-				city,
-				stateProvince: resolvedState,
-				postalCode: getValue('postalCode') || null,
-				country
-			}).returning({ id: warehouseOrder.id });
+					const [order] = await tx.insert(warehouseOrder).values({
+						createdById: user.id,
+						batchId,
+						status: 'APPROVED',
+						firstName,
+						lastName,
+						email,
+						phone: getValue('phone') || null,
+						addressLine1,
+						addressLine2: getValue('addressLine2') || null,
+						city,
+						stateProvince: resolvedState,
+						postalCode: getValue('postalCode') || null,
+						country
+					}).returning({ id: warehouseOrder.id });
 
-			if (batch.template.items.length > 0) {
-				await db.insert(warehouseOrderItem).values(
-					batch.template.items.map((ti) => ({
-						orderId: order.id,
-						warehouseItemId: ti.warehouseItemId,
-						quantity: ti.quantity
-					}))
-				);
+					if (batch.template.items.length > 0) {
+						await tx.insert(warehouseOrderItem).values(
+							batch.template.items.map((ti) => ({
+								orderId: order.id,
+								warehouseItemId: ti.warehouseItemId,
+								quantity: ti.quantity
+							}))
+						);
 
-				for (const ti of batch.template.items) {
-					const result = await db.update(warehouseItem)
-						.set({ quantity: sql`${warehouseItem.quantity} - ${ti.quantity}` })
-						.where(and(eq(warehouseItem.id, ti.warehouseItemId), gte(warehouseItem.quantity, ti.quantity)));
-					if (result.rowCount === 0) {
-						return fail(409, { error: `Insufficient stock (concurrent update). Please try again.` });
+						for (const ti of batch.template.items) {
+							const result = await tx.update(warehouseItem)
+								.set({ quantity: sql`${warehouseItem.quantity} - ${ti.quantity}` })
+								.where(and(eq(warehouseItem.id, ti.warehouseItemId), gte(warehouseItem.quantity, ti.quantity)));
+							if (result.rowCount === 0) {
+								throw new Error('Insufficient stock (concurrent update)');
+							}
+						}
+					}
+
+					if (batch.tags.length > 0) {
+						await tx.insert(warehouseOrderTag).values(
+							batch.tags.map((t) => ({
+								orderId: order.id,
+								tag: t.tag
+							}))
+						);
 					}
 				}
-			}
 
-			if (batch.tags.length > 0) {
-				await db.insert(warehouseOrderTag).values(
-					batch.tags.map((t) => ({
-						orderId: order.id,
-						tag: t.tag
-					}))
-				);
-			}
+				await tx.update(warehouseBatch)
+					.set({ status: 'PROCESSED', updatedAt: new Date() })
+					.where(eq(warehouseBatch.id, batchId));
+			});
+		} catch (e: any) {
+			return fail(409, { error: e.message || 'Batch processing failed. Please try again.' });
 		}
-
-		await db.update(warehouseBatch)
-			.set({ status: 'PROCESSED', updatedAt: new Date() })
-			.where(eq(warehouseBatch.id, batchId));
 
 		return { success: true };
 	},
