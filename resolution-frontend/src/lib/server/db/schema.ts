@@ -361,6 +361,7 @@ export const warehouseOrderItem = pgTable('warehouse_order_item', {
 	orderId: text('order_id').notNull().references(() => warehouseOrder.id, { onDelete: 'cascade' }),
 	warehouseItemId: text('warehouse_item_id').notNull().references(() => warehouseItem.id, { onDelete: 'restrict' }),
 	quantity: integer('quantity').notNull().default(1),
+	// Selected size variant (e.g. 'S', 'M', 'L') when the warehouse item has sizing options
 	sizingChoice: text('sizing_choice')
 });
 
@@ -389,7 +390,8 @@ export const warehouseOrderTagRelations = relations(warehouseOrderTag, ({ one })
 	order: one(warehouseOrder, { fields: [warehouseOrderTag.orderId], references: [warehouseOrder.id] })
 }));
 
-// Order templates
+// Order templates — reusable item lists for quickly creating warehouse orders (e.g. "Sticker Pack")
+// isPublic controls whether other ambassadors can see and use this template
 export const warehouseOrderTemplate = pgTable('warehouse_order_template', {
 	id: text('id').primaryKey().$defaultFn(() => createId()),
 	createdById: text('created_by_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
