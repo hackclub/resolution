@@ -101,6 +101,7 @@ export const POST: RequestHandler = async (event) => {
 	}
 
 	// Calculate package totals from items
+	const MAX_HEIGHT_IN = 48; // Cap at 48 inches to prevent unrealistic box dimensions
 	let totalWeight = 0;
 	let maxLength = 0;
 	let maxWidth = 0;
@@ -113,6 +114,7 @@ export const POST: RequestHandler = async (event) => {
 		maxWidth = Math.max(maxWidth, item.widthIn);
 		totalHeight += item.heightIn * oi.quantity;
 	}
+	totalHeight = Math.min(totalHeight, MAX_HEIGHT_IN);
 
 	const packingSlipBase64 = buildPackingSlipBase64(order);
 
