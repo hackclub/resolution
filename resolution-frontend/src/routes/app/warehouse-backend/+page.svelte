@@ -132,7 +132,7 @@
 							<td>{cat.sortOrder}</td>
 							<td class="actions-cell">
 								<button class="btn btn-primary btn-sm" onclick={() => startEditCategory(cat)}>Edit</button>
-								<form method="POST" action="?/deleteCategory" use:enhance class="inline-form">
+								<form method="POST" action="?/deleteCategory" onsubmit={(e) => { if (!confirm('Are you sure you want to delete this category?')) e.preventDefault(); }} use:enhance class="inline-form">
 									<input type="hidden" name="id" value={cat.id} />
 									<button type="submit" class="btn btn-danger btn-sm">Delete</button>
 								</form>
@@ -213,7 +213,7 @@
 										<td>{item.quantity}</td>
 										<td class="actions-cell">
 											<button class="btn btn-primary btn-sm" onclick={() => startEditItem(item)}>Edit</button>
-											<form method="POST" action="?/deleteItem" use:enhance class="inline-form">
+											<form method="POST" action="?/deleteItem" onsubmit={(e) => { if (!confirm('Are you sure you want to delete this item?')) e.preventDefault(); }} use:enhance class="inline-form">
 												<input type="hidden" name="id" value={item.id} />
 												<button type="submit" class="btn btn-danger btn-sm">Delete</button>
 											</form>
