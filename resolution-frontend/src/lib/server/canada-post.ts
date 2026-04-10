@@ -482,34 +482,23 @@ export async function createShipment(params: {
 		? `${baseUrl}/rs/${customerNumber}/${customerNumber}/shipment`
 		: `${baseUrl}/rs/${customerNumber}/ncshipment`;
 
-	const maxRetries = 3;
-	let cpRes: Response | null = null;
-	for (let attempt = 0; attempt < maxRetries; attempt++) {
-		cpRes = await fetch(cpEndpoint, {
-			method: 'POST',
-			headers: {
-				'Content-Type': contractId ? 'application/vnd.cpc.shipment-v8+xml' : 'application/vnd.cpc.ncshipment-v4+xml',
-				Accept: contractId ? 'application/vnd.cpc.shipment-v8+xml' : 'application/vnd.cpc.ncshipment-v4+xml',
-				Authorization: authHeader,
-				'Accept-language': 'en-CA',
-				...(params.order.country === 'US' && env.ZONOS_ACCOUNT_KEY ? { 'X-CPC-Zonos-Key': env.ZONOS_ACCOUNT_KEY } : {})
-			},
-			body: shipmentXml
-		});
+	// No retry loop: retrying shipment creation risks duplicate labels and double-charging carriers
+	const cpRes = await fetch(cpEndpoint, {
+		method: 'POST',
+		headers: {
+			'Content-Type': contractId ? 'application/vnd.cpc.shipment-v8+xml' : 'application/vnd.cpc.ncshipment-v4+xml',
+			Accept: contractId ? 'application/vnd.cpc.shipment-v8+xml' : 'application/vnd.cpc.ncshipment-v4+xml',
+			Authorization: authHeader,
+			'Accept-language': 'en-CA',
+			...(params.order.country === 'US' && env.ZONOS_ACCOUNT_KEY ? { 'X-CPC-Zonos-Key': env.ZONOS_ACCOUNT_KEY } : {})
+		},
+		body: shipmentXml
+	});
 
-		if (cpRes.ok || cpRes.status < 500) break;
-
+	if (!cpRes.ok) {
 		const errText = await cpRes.text();
-		console.error(`Canada Post Create Shipment error (attempt ${attempt + 1}/${maxRetries}):`, errText);
-		if (attempt < maxRetries - 1) {
-			await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-		}
-	}
-
-	if (!cpRes!.ok) {
-		const errText = await cpRes!.text();
 		console.error('Canada Post Create Shipment error:', errText);
-		throw new Error(`Canada Post shipment creation failed: ${cpRes!.status}`);
+		throw new Error(`Canada Post shipment creation failed: ${cpRes.status}`);
 	}
 
 	const cpXml = await cpRes!.text();
