@@ -2,7 +2,7 @@ import { env } from '$env/dynamic/private';
 import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { warehouseOrder, ambassadorPathway } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 import { requireAuth } from '$lib/server/auth/guard';
 import { GRAMS_TO_KG, inchesToCm, isLettermail, getServiceCode, createShipment } from '$lib/server/canada-post';
@@ -98,6 +98,11 @@ export const POST: RequestHandler = async (event) => {
 			packingSlipBase64: buildPackingSlipBase64(order),
 			shippingMethod: order.shippingMethod || ''
 		});
+	}
+
+	// Prevent duplicate shipment creation from concurrent requests
+	if (order.status === 'SHIPPED') {
+		throw error(409, 'Order has already been shipped');
 	}
 
 	// Calculate package totals from items
