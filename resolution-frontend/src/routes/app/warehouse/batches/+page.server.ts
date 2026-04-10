@@ -6,45 +6,11 @@ import { error, fail } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { fetchCheapestRate } from '$lib/server/canada-post';
 import { resolveCountryCode, resolveStateCode } from '$lib/server/countries';
+import Papa from 'papaparse';
 
 function parseCsv(raw: string): string[][] {
-	const rows: string[][] = [];
-	const lines = raw.split(/\r?\n/);
-	for (const line of lines) {
-		if (!line.trim()) continue;
-		const cells: string[] = [];
-		let i = 0;
-		while (i < line.length) {
-			if (line[i] === '"') {
-				let value = '';
-				i++; // skip opening quote
-				while (i < line.length) {
-					if (line[i] === '"' && i + 1 < line.length && line[i + 1] === '"') {
-						value += '"';
-						i += 2;
-					} else if (line[i] === '"') {
-						i++; // skip closing quote
-						break;
-					} else {
-						value += line[i];
-						i++;
-					}
-				}
-				cells.push(value);
-				if (i < line.length && line[i] === ',') i++; // skip comma
-			} else {
-				let value = '';
-				while (i < line.length && line[i] !== ',') {
-					value += line[i];
-					i++;
-				}
-				cells.push(value.trim());
-				if (i < line.length && line[i] === ',') i++;
-			}
-		}
-		rows.push(cells);
-	}
-	return rows;
+	const result = Papa.parse<string[]>(raw, { header: false, skipEmptyLines: true });
+	return result.data;
 }
 
 export const load: PageServerLoad = async ({ parent }) => {
