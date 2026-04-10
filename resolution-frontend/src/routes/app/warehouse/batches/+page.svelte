@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance, deserialize } from '$app/forms';
 	import type { PageData } from './$types';
+	import Papa from 'papaparse';
 
 	let { data }: { data: PageData } = $props();
 
@@ -38,39 +39,8 @@
 
 	const csvHeaders = $derived(() => {
 		if (!activeBatch) return [];
-		const firstLine = activeBatch.csvData.split(/\r?\n/)[0];
-		if (!firstLine) return [];
-		const headers: string[] = [];
-		let i = 0;
-		while (i < firstLine.length) {
-			if (firstLine[i] === '"') {
-				let val = '';
-				i++;
-				while (i < firstLine.length) {
-					if (firstLine[i] === '"' && i + 1 < firstLine.length && firstLine[i + 1] === '"') {
-						val += '"';
-						i += 2;
-					} else if (firstLine[i] === '"') {
-						i++;
-						break;
-					} else {
-						val += firstLine[i];
-						i++;
-					}
-				}
-				headers.push(val);
-				if (i < firstLine.length && firstLine[i] === ',') i++;
-			} else {
-				let val = '';
-				while (i < firstLine.length && firstLine[i] !== ',') {
-					val += firstLine[i];
-					i++;
-				}
-				headers.push(val.trim());
-				if (i < firstLine.length && firstLine[i] === ',') i++;
-			}
-		}
-		return headers;
+		const result = Papa.parse<string[]>(activeBatch.csvData, { header: false, preview: 1 });
+		return result.data[0] ?? [];
 	});
 
 	const mappingComplete = $derived(() => {
