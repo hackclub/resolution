@@ -118,8 +118,15 @@ export const actions: Actions = {
 			return fail(400, { error: 'Template and CSV data are required' });
 		}
 
+		if (csvData.length > 5 * 1024 * 1024) {
+			return fail(400, { error: 'CSV data exceeds 5MB limit' });
+		}
+
 		const rows = parseCsv(csvData);
-		const addressCount = rows.length > 1 ? rows.length - 1 : 0;
+		if (rows.length < 2) {
+			return fail(400, { error: 'CSV must have a header row and at least one data row' });
+		}
+		const addressCount = rows.length - 1;
 
 		const [batch] = await db.insert(warehouseBatch).values({
 			createdById: user.id,
