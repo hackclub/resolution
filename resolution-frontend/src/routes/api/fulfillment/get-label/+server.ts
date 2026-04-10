@@ -7,15 +7,7 @@ import type { RequestHandler } from './$types';
 import { requireAuth } from '$lib/server/auth/guard';
 import { GRAMS_TO_KG, inchesToCm, isLettermail, getServiceCode, createShipment } from '$lib/server/canada-post';
 import { createChitChatsShipment } from '$lib/server/chit-chats';
-
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-	const bytes = new Uint8Array(buffer);
-	let binary = '';
-	for (let i = 0; i < bytes.length; i++) {
-		binary += String.fromCharCode(bytes[i]);
-	}
-	return btoa(binary);
-}
+import { arrayBufferToBase64 } from '$lib/server/utils';
 
 function buildPackingSlipBase64(order: any): string {
 	const lines: string[] = [

@@ -4,6 +4,7 @@ import { PDFDocument } from 'pdf-lib';
 import { fetchChitChatsRates } from './chit-chats';
 import { resolveStateCode } from './countries';
 import { getCadToUsdRate } from './exchange-rate';
+import { arrayBufferToBase64 } from './utils';
 
 export const INCHES_TO_CM = 2.54;
 export const GRAMS_TO_KG = 0.001;
@@ -120,22 +121,7 @@ export function buildCreateShipmentXml(params: {
 	const customerNumber = env.CP_CUSTOMER_NUMBER;
 	const contractId = env.CP_CONTRACT_ID;
 
-	let destinationXml = '';
-	if (order.country === 'CA') {
-		destinationXml = `<domestic>
-			<postal-code>${(order.postalCode ?? '').replace(/\s/g, '').toUpperCase()}</postal-code>
-		</domestic>`;
-	} else if (order.country === 'US') {
-		destinationXml = `<united-states>
-			<zip-code>${(order.postalCode ?? '').replace(/\s/g, '')}</zip-code>
-			<state-code>${escapeXml(order.stateProvince)}</state-code>
-		</united-states>`;
-	} else {
-		destinationXml = `<international>
-			<country-code>${escapeXml(order.country)}</country-code>
-			${order.postalCode ? `<postal-code>${escapeXml(order.postalCode)}</postal-code>` : ''}
-		</international>`;
-	}
+	const destinationXml = buildDestinationXml(order.country, order.postalCode, order.stateProvince);
 
 	let customsXml = '';
 	if (order.country !== 'CA') {
@@ -478,14 +464,6 @@ export async function fetchRates(params: {
 	});
 }
 
-function arrayBufferToBase64(buffer: ArrayBuffer | Uint8Array): string {
-	const bytes = new Uint8Array(buffer);
-	let binary = '';
-	for (let i = 0; i < bytes.length; i++) {
-		binary += String.fromCharCode(bytes[i]);
-	}
-	return btoa(binary);
-}
 
 export async function createShipment(params: {
 	order: any;

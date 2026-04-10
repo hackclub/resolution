@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import type { RateOption } from './canada-post';
 import { getCadToUsdRate } from './exchange-rate';
+import { arrayBufferToBase64 } from './utils';
 
 function formatHsCode(code: string | null | undefined): string {
 	if (!code) return '7117199000';
@@ -10,14 +11,6 @@ function formatHsCode(code: string | null | undefined): string {
 	return digits;
 }
 
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-	const bytes = new Uint8Array(buffer);
-	let binary = '';
-	for (let i = 0; i < bytes.length; i++) {
-		binary += String.fromCharCode(bytes[i]);
-	}
-	return btoa(binary);
-}
 
 export function getChitChatsConfig(): { baseUrl: string; accessToken: string; clientId: string } {
 	const accessToken = env.CHITCHATS_ACCESS_TOKEN;
