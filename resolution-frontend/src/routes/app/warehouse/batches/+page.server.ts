@@ -390,20 +390,8 @@ export const actions: Actions = {
 			}
 		}
 
-		// Calculate shipping for each valid order
-		const orderCosts: Array<{
-			recipient: string;
-			country: string;
-			itemsCostUsd: number;
-			shippingCostUsd: number | null;
-			shippingMethod: string | null;
-			totalUsd: number | null;
-		}> = [];
-
-		let totalItemsCostCents = 0;
-		let totalShippingUsd = 0;
-		let shippingFailures = 0;
-
+		// Build list of valid orders to calculate rates for
+		const validRows: Array<{ recipient: string; country: string; postalCode?: string; province: string; itemsCostUsd: number }> = [];
 		for (const row of dataRows) {
 			const getValue = (field: string): string => {
 				const colName = mapping[field];
@@ -425,43 +413,69 @@ export const actions: Actions = {
 				continue;
 			}
 
-			const country = resolveCountryCode(rawCountry);
-			const resolvedState = resolveStateCode(stateProvince, country);
-			const postalCode = getValue('postalCode') || undefined;
-			const itemsCostUsd = itemsCostCentsPerOrder / 100;
-			totalItemsCostCents += itemsCostCentsPerOrder;
-
-			const rate = await fetchCheapestRate({
-				country,
-				postalCode,
-				province: resolvedState,
-				weightGrams: totalWeight,
-				lengthIn: maxLength,
-				widthIn: maxWidth,
-				heightIn: totalHeight,
-				packageType
+			validRows.push({
+				recipient: `${firstName} ${lastName}`,
+				country: resolveCountryCode(rawCountry),
+				postalCode: getValue('postalCode') || undefined,
+				province: resolveStateCode(stateProvince, resolveCountryCode(rawCountry)),
+				itemsCostUsd: itemsCostCentsPerOrder / 100
 			});
+		}
 
-			if (rate) {
-				totalShippingUsd += rate.shippingCostUsd;
-				orderCosts.push({
-					recipient: `${firstName} ${lastName}`,
-					country,
-					itemsCostUsd,
-					shippingCostUsd: rate.shippingCostUsd,
-					shippingMethod: rate.serviceName,
-					totalUsd: Math.round((itemsCostUsd + rate.shippingCostUsd) * 100) / 100
+		// Calculate shipping rates in parallel batches of 5 to prevent timeout on large batches
+		const BATCH_SIZE = 5;
+		const orderCosts: Array<{
+			recipient: string;
+			country: string;
+			itemsCostUsd: number;
+			shippingCostUsd: number | null;
+			shippingMethod: string | null;
+			totalUsd: number | null;
+		}> = [];
+
+		let totalItemsCostCents = 0;
+		let totalShippingUsd = 0;
+		let shippingFailures = 0;
+
+		for (let i = 0; i < validRows.length; i += BATCH_SIZE) {
+			const chunk = validRows.slice(i, i + BATCH_SIZE);
+			const results = await Promise.all(chunk.map(async (row) => {
+				totalItemsCostCents += itemsCostCentsPerOrder;
+				const rate = await fetchCheapestRate({
+					country: row.country,
+					postalCode: row.postalCode,
+					province: row.province,
+					weightGrams: totalWeight,
+					lengthIn: maxLength,
+					widthIn: maxWidth,
+					heightIn: totalHeight,
+					packageType
 				});
-			} else {
-				shippingFailures++;
-				orderCosts.push({
-					recipient: `${firstName} ${lastName}`,
-					country,
-					itemsCostUsd,
-					shippingCostUsd: null,
-					shippingMethod: null,
-					totalUsd: null
-				});
+				return { row, rate };
+			}));
+
+			for (const { row, rate } of results) {
+				if (rate) {
+					totalShippingUsd += rate.shippingCostUsd;
+					orderCosts.push({
+						recipient: row.recipient,
+						country: row.country,
+						itemsCostUsd: row.itemsCostUsd,
+						shippingCostUsd: rate.shippingCostUsd,
+						shippingMethod: rate.serviceName,
+						totalUsd: Math.round((row.itemsCostUsd + rate.shippingCostUsd) * 100) / 100
+					});
+				} else {
+					shippingFailures++;
+					orderCosts.push({
+						recipient: row.recipient,
+						country: row.country,
+						itemsCostUsd: row.itemsCostUsd,
+						shippingCostUsd: null,
+						shippingMethod: null,
+						totalUsd: null
+					});
+				}
 			}
 		}
 
