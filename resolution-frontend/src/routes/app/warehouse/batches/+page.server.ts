@@ -203,7 +203,12 @@ export const actions: Actions = {
 		if (batch.status !== 'MAPPED') return fail(400, { error: 'Batch must be mapped before processing' });
 		if (!batch.fieldMapping) return fail(400, { error: 'No field mapping found' });
 
-		const mapping: Record<string, string> = JSON.parse(batch.fieldMapping);
+		let mapping: Record<string, string>;
+		try {
+			mapping = JSON.parse(batch.fieldMapping);
+		} catch {
+			return fail(400, { error: 'Invalid field mapping data' });
+		}
 		const rows = parseCsv(batch.csvData);
 
 		if (rows.length < 2) return fail(400, { error: 'CSV has no data rows' });
@@ -349,7 +354,12 @@ export const actions: Actions = {
 		}
 		if (!batch.fieldMapping) return fail(400, { error: 'No field mapping found' });
 
-		const mapping: Record<string, string> = JSON.parse(batch.fieldMapping);
+		let mapping: Record<string, string>;
+		try {
+			mapping = JSON.parse(batch.fieldMapping);
+		} catch {
+			return fail(400, { error: 'Invalid field mapping data' });
+		}
 		const rows = parseCsv(batch.csvData);
 		if (rows.length < 2) return fail(400, { error: 'CSV has no data rows' });
 
