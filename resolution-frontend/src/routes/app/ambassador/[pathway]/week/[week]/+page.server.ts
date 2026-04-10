@@ -3,7 +3,7 @@ import { db } from '$lib/server/db';
 import { ambassadorPathway, pathwayWeekContent } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
+import { HACK_CLUB_CDN_API_KEY } from '$env/static/private';
 
 const validPathways = ['PYTHON', 'RUST', 'GAME_DEV', 'HARDWARE', 'DESIGN', 'GENERAL_CODING'] as const;
 type Pathway = typeof validPathways[number];
@@ -167,7 +167,7 @@ export const actions: Actions = {
 		const uploadResponse = await fetch('https://cdn.hackclub.com/api/v4/upload', {
 			method: 'POST',
 			headers: {
-				Authorization: `Bearer ${env.HACK_CLUB_CDN_API_KEY}`
+				Authorization: `Bearer ${HACK_CLUB_CDN_API_KEY}`
 			},
 			body: upstreamForm
 		});
