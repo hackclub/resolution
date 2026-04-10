@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/private';
 import type { RateOption } from './canada-post';
+import { getCadToUsdRate } from './exchange-rate';
 
 function formatHsCode(code: string | null | undefined): string {
 	if (!code) return '7117199000';
@@ -264,7 +265,7 @@ export async function fetchChitChatsRates(params: {
 	const shipmentId = shipment.id;
 	const rates = shipment.rates || [];
 
-	const CAD_TO_USD = 0.73;
+	const cadToUsd = await getCadToUsdRate();
 
 	const rateOptions: RateOption[] = rates.map((rate: any) => {
 		const transitMatch = (rate.delivery_time_description || '').match(/(\d+)/);
@@ -272,11 +273,11 @@ export async function fetchChitChatsRates(params: {
 			serviceName: rate.postage_description || rate.postage_type,
 			serviceCode: `CHITCHATS.${rate.postage_type}`,
 			priceDetails: {
-				base: parseFloat(rate.purchase_amount || '0') * CAD_TO_USD,
-				gst: parseFloat(rate.federal_tax || '0') * CAD_TO_USD,
-				pst: parseFloat(rate.provincial_tax || '0') * CAD_TO_USD,
+				base: parseFloat(rate.purchase_amount || '0') * cadToUsd,
+				gst: parseFloat(rate.federal_tax || '0') * cadToUsd,
+				pst: parseFloat(rate.provincial_tax || '0') * cadToUsd,
 				hst: 0,
-				total: parseFloat(rate.payment_amount || '0') * CAD_TO_USD
+				total: parseFloat(rate.payment_amount || '0') * cadToUsd
 			},
 			deliveryDate: 'N/A',
 			transitDays: transitMatch ? transitMatch[0] : 'N/A',

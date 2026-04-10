@@ -7,6 +7,7 @@ import { db } from '$lib/server/db';
 import { ambassadorPathway } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { GRAMS_TO_KG, inchesToCm, fetchRates, getLetterMailOptions, calculateZonosDuties } from '$lib/server/canada-post';
+import { getCadToUsdRate } from '$lib/server/exchange-rate';
 import { fetchChitChatsRates } from '$lib/server/chit-chats';
 
 export const POST: RequestHandler = async (event) => {
@@ -110,7 +111,8 @@ export const POST: RequestHandler = async (event) => {
 	let zonosDuties = null;
 	if (data.country === 'US' && data.items && data.items.length > 0) {
 		const cheapestRate = allRates.reduce((min, r) => r.priceDetails.total < min ? r.priceDetails.total : min, Infinity);
-		const shippingCostCad = cheapestRate !== Infinity ? cheapestRate / 0.73 : 0;
+		const cadToUsd = await getCadToUsdRate();
+		const shippingCostCad = cheapestRate !== Infinity ? cheapestRate / cadToUsd : 0;
 
 		zonosDuties = await calculateZonosDuties({
 			items: data.items.map((item: any) => ({

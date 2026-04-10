@@ -3,6 +3,7 @@ import xml2js from 'xml2js';
 import { PDFDocument } from 'pdf-lib';
 import { fetchChitChatsRates } from './chit-chats';
 import { resolveStateCode } from './countries';
+import { getCadToUsdRate } from './exchange-rate';
 
 export const INCHES_TO_CM = 2.54;
 export const GRAMS_TO_KG = 0.001;
@@ -304,6 +305,7 @@ export function getLetterMailOptions(
 	const isStandardSize = lengthMm <= 245 && widthMm <= 156 && heightMm <= 5;
 	const isOversizeSize = lengthMm <= 380 && widthMm <= 270 && heightMm <= 20;
 
+	// Lettermail prices from Canada Post's published rate card (updated periodically)
 	if (meetsMinDimensions && isStandardSize && weightGrams <= 30 && weightGrams >= 2) {
 		let price: number;
 		if (country === 'CA') price = 1.75;
@@ -322,6 +324,7 @@ export function getLetterMailOptions(
 		});
 	}
 
+	// Bubble packet prices from Canada Post's published rate card (updated periodically)
 	if (isOversizeSize && weightGrams >= 5 && weightGrams <= 500) {
 		let price: number;
 		const countryLabel = country === 'CA' ? 'Domestic' : country === 'US' ? 'USA' : 'International';
@@ -442,7 +445,7 @@ export async function fetchRates(params: {
 
 	const parser = new xml2js.Parser({ explicitArray: false });
 	const result = await parser.parseStringPromise(xmlResponse);
-	const cadToUsd = 0.73;
+	const cadToUsd = await getCadToUsdRate();
 	const handlingFee = 2.0;
 
 	const priceQuotes = result['price-quotes'] as { 'price-quote'?: PriceQuote | PriceQuote[] } | undefined;
