@@ -140,13 +140,12 @@
 			const result = await res.json();
 			labelResults[orderId] = result;
 
-			// Update the order status in the local data
-			const order = data.orders.find((o: any) => o.id === orderId);
-			if (order) {
-				(order as any).status = 'SHIPPED';
-				(order as any).trackingNumber = result.trackingNumber;
-				(order as any).labelUrl = result.labelUrl;
-			}
+			// Update the order status in local data — reassign to trigger Svelte 5 reactivity
+			data.orders = data.orders.map((o: any) =>
+				o.id === orderId
+					? { ...o, status: 'SHIPPED', trackingNumber: result.trackingNumber, labelUrl: result.labelUrl }
+					: o
+			);
 		} catch (e: any) {
 			labelErrors[orderId] = e?.message || 'Network error';
 		} finally {
