@@ -55,8 +55,18 @@ export const POST: RequestHandler = async (event) => {
 		throw error(403, 'Access denied - admin or ambassador only');
 	}
 
-	const { orderId, carrier } = await event.request.json();
-	if (!orderId) throw error(400, 'Order ID required');
+	let body: any;
+	try {
+		body = await event.request.json();
+	} catch {
+		throw error(400, 'Invalid JSON body');
+	}
+	const orderId = body?.orderId;
+	const carrier = body?.carrier;
+	if (!orderId || typeof orderId !== 'string') throw error(400, 'Order ID required');
+	if (carrier && !['auto', 'canada_post', 'chitchats', 'lettermail'].includes(carrier)) {
+		throw error(400, 'Invalid carrier');
+	}
 
 	const order = await db.query.warehouseOrder.findFirst({
 		where: eq(warehouseOrder.id, orderId),
