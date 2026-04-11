@@ -14,6 +14,7 @@
 	let tagInput = $state('');
 	let csvText = $state('');
 	let csvFileName = $state('');
+	let processingBatch = $state(false);
 
 	let fieldMapping = $state<Record<string, string>>({});
 
@@ -521,14 +522,18 @@
 		{/if}
 
 		<form method="POST" action="?/processBatch" use:enhance={() => {
+			processingBatch = true;
 			return async ({ update }) => {
+				processingBatch = false;
 				await update();
 				backToIndex();
 			};
 		}}>
 			<input type="hidden" name="batchId" value={activeBatch.id} />
 			<div class="form-actions">
-				<button type="submit" class="submit-btn submit-process" disabled={calcLoading || !!calcError}>Process Batch</button>
+				<button type="submit" class="submit-btn submit-process" disabled={calcLoading || !!calcError || processingBatch}>
+					{processingBatch ? 'Processing...' : 'Process Batch'}
+				</button>
 			</div>
 		</form>
 	</section>
