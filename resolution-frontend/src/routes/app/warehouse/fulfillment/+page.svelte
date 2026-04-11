@@ -86,7 +86,8 @@
 					qz.security.setSignaturePromise(function(toSign: string) {
 						return function(resolve: any, reject: any) {
 							fetch('/api/qz/sign', { method: 'POST', cache: 'no-store', body: toSign, headers: { 'Content-Type': 'text/plain' } })
-								.then((r: Response) => r.ok ? resolve(r.text()) : reject(r.text()));
+								.then((r: Response) => r.ok ? resolve(r.text()) : reject(r.text()))
+								.catch((err: any) => reject(err));
 						};
 					});
 				}
