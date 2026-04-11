@@ -118,8 +118,9 @@
 
 		// Print packing slip
 		if (result.packingSlipBase64) {
-			const text = decodeURIComponent(escape(atob(result.packingSlipBase64)));
-			const html = `<pre style="font-family:monospace;font-size:11px;padding:10px;white-space:pre-wrap;">${text}</pre>`;
+			const rawText = decodeURIComponent(escape(atob(result.packingSlipBase64)));
+			const escapedText = rawText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+			const html = `<pre style="font-family:monospace;font-size:11px;padding:10px;white-space:pre-wrap;">${escapedText}</pre>`;
 			await qz.print(config(), [{ type: 'html', format: 'plain', data: html }]);
 		}
 	}
