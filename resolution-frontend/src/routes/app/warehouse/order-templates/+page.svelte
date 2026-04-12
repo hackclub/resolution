@@ -197,7 +197,7 @@
 					</ul>
 					<div class="template-footer">
 						<span class="hint">{new Date(template.createdAt).toLocaleDateString()}</span>
-						<form method="POST" action="?/deleteTemplate" use:enhance>
+						<form method="POST" action="?/deleteTemplate" onsubmit={(e) => { if (!confirm('Are you sure you want to delete this template?')) e.preventDefault(); }} use:enhance>
 							<input type="hidden" name="templateId" value={template.id} />
 							<button type="submit" class="delete-btn">Delete</button>
 						</form>
@@ -232,7 +232,7 @@
 					<div class="template-footer">
 						<span class="hint">{new Date(template.createdAt).toLocaleDateString()}</span>
 						{#if data.isAdmin}
-							<form method="POST" action="?/deleteTemplate" use:enhance>
+							<form method="POST" action="?/deleteTemplate" onsubmit={(e) => { if (!confirm('Are you sure you want to delete this template?')) e.preventDefault(); }} use:enhance>
 								<input type="hidden" name="templateId" value={template.id} />
 								<button type="submit" class="delete-btn">Delete</button>
 							</form>
