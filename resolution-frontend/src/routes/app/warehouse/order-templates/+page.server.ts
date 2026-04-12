@@ -27,7 +27,14 @@ export const load: PageServerLoad = async ({ parent }) => {
 	const [templates, items] = await Promise.all([
 		db.query.warehouseOrderTemplate.findMany({
 			with: {
-				createdBy: true,
+				createdBy: {
+				columns: {
+					id: true,
+					firstName: true,
+					lastName: true,
+					email: true
+				}
+			},
 				items: {
 					with: {
 						warehouseItem: true
@@ -47,6 +54,17 @@ export const actions: Actions = {
 		const user = locals.user;
 		if (!user) {
 			return fail(401, { error: 'Not logged in' });
+		}
+
+		if (!user.isAdmin) {
+			const ambassadorCheck = await db
+				.select({ userId: ambassadorPathway.userId })
+				.from(ambassadorPathway)
+				.where(eq(ambassadorPathway.userId, user.id))
+				.limit(1);
+			if (ambassadorCheck.length === 0) {
+				return fail(403, { error: 'Access denied - admin or ambassador only' });
+			}
 		}
 
 		const formData = await request.formData();
@@ -69,24 +87,26 @@ export const actions: Actions = {
 			return fail(400, { error: 'At least one item is required' });
 		}
 
-		const [template] = await db
-			.insert(warehouseOrderTemplate)
-			.values({
-				createdById: user.id,
-				name: name.trim(),
-				isPublic
-			})
-			.returning({ id: warehouseOrderTemplate.id });
-
-		await Promise.all(
-			items.map((item) =>
-				db.insert(warehouseOrderTemplateItem).values({
-					templateId: template.id,
-					warehouseItemId: item.warehouseItemId,
-					quantity: item.quantity
+		await db.transaction(async (tx) => {
+			const [template] = await tx
+				.insert(warehouseOrderTemplate)
+				.values({
+					createdById: user.id,
+					name: name.trim(),
+					isPublic
 				})
-			)
-		);
+				.returning({ id: warehouseOrderTemplate.id });
+
+			await Promise.all(
+				items.map((item) =>
+					tx.insert(warehouseOrderTemplateItem).values({
+						templateId: template.id,
+						warehouseItemId: item.warehouseItemId,
+						quantity: item.quantity
+					})
+				)
+			);
+		});
 
 		return { success: true };
 	},
@@ -95,6 +115,17 @@ export const actions: Actions = {
 		const user = locals.user;
 		if (!user) {
 			return fail(401, { error: 'Not logged in' });
+		}
+
+		if (!user.isAdmin) {
+			const ambassadorCheck = await db
+				.select({ userId: ambassadorPathway.userId })
+				.from(ambassadorPathway)
+				.where(eq(ambassadorPathway.userId, user.id))
+				.limit(1);
+			if (ambassadorCheck.length === 0) {
+				return fail(403, { error: 'Access denied - admin or ambassador only' });
+			}
 		}
 
 		const formData = await request.formData();
