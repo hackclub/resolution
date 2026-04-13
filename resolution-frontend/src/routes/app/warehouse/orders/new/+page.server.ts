@@ -36,6 +36,17 @@ export const actions: Actions = {
 			return fail(401, { error: 'Not logged in' });
 		}
 
+		if (!user.isAdmin) {
+			const ambassadorCheck = await db
+				.select({ userId: ambassadorPathway.userId })
+				.from(ambassadorPathway)
+				.where(eq(ambassadorPathway.userId, user.id))
+				.limit(1);
+			if (ambassadorCheck.length === 0) {
+				return fail(403, { error: 'Access denied - admin or ambassador only' });
+			}
+		}
+
 		const formData = await request.formData();
 
 		const firstName = formData.get('firstName') as string;
@@ -87,58 +98,68 @@ export const actions: Actions = {
 			}
 		}
 
-		const [order] = await db.insert(warehouseOrder).values({
-			createdById: user.id,
-			firstName,
-			lastName,
-			email,
-			phone: phone || null,
-			addressLine1,
-			addressLine2: addressLine2 || null,
-			city,
-			stateProvince,
-			postalCode: postalCode || null,
-			country,
-			notes: notes || null,
-			status: 'APPROVED',
-			estimatedShippingCents: estimatedShippingCents ? parseInt(estimatedShippingCents) : null,
-			estimatedServiceName: estimatedServiceName || null,
-			estimatedServiceCode: estimatedServiceCode || null
-		}).returning({ id: warehouseOrder.id });
+		// Use a transaction so order + items + stock decrement are atomic
+		let orderId: string;
+		try {
+			orderId = await db.transaction(async (tx) => {
+				const [order] = await tx.insert(warehouseOrder).values({
+					createdById: user.id,
+					firstName,
+					lastName,
+					email,
+					phone: phone || null,
+					addressLine1,
+					addressLine2: addressLine2 || null,
+					city,
+					stateProvince,
+					postalCode: postalCode || null,
+					country,
+					notes: notes || null,
+					status: 'APPROVED',
+					estimatedShippingCents: estimatedShippingCents ? parseInt(estimatedShippingCents) : null,
+					estimatedServiceName: estimatedServiceName || null,
+					estimatedServiceCode: estimatedServiceCode || null
+				}).returning({ id: warehouseOrder.id });
 
-		await Promise.all(
-			items.map((item) =>
-				db.insert(warehouseOrderItem).values({
-					orderId: order.id,
-					warehouseItemId: item.warehouseItemId,
-					quantity: item.quantity,
-					sizingChoice: item.sizingChoice || null
-				})
-			)
-		);
-
-		for (const item of items) {
-			const result = await db.update(warehouseItem)
-				.set({ quantity: sql`${warehouseItem.quantity} - ${item.quantity}` })
-				.where(and(eq(warehouseItem.id, item.warehouseItemId), gte(warehouseItem.quantity, item.quantity)));
-			if (result.rowCount === 0) {
-				return fail(409, { error: `Insufficient stock (concurrent update). Please try again.` });
-			}
-		}
-
-		if (tagsString && tagsString.trim()) {
-			const tags = tagsString.split(',').map((t) => t.trim()).filter((t) => t.length > 0);
-			if (tags.length > 0) {
-				await db.insert(warehouseOrderTag).values(
-					tags.map((tag) => ({
-						orderId: order.id,
-						tag
-					}))
+				await Promise.all(
+					items.map((item) =>
+						tx.insert(warehouseOrderItem).values({
+							orderId: order.id,
+							warehouseItemId: item.warehouseItemId,
+							quantity: item.quantity,
+							sizingChoice: item.sizingChoice || null
+						})
+					)
 				);
-			}
+
+				for (const item of items) {
+					const result = await tx.update(warehouseItem)
+						.set({ quantity: sql`${warehouseItem.quantity} - ${item.quantity}` })
+						.where(and(eq(warehouseItem.id, item.warehouseItemId), gte(warehouseItem.quantity, item.quantity)));
+					if (result.rowCount === 0) {
+						throw new Error('Insufficient stock (concurrent update)');
+					}
+				}
+
+				if (tagsString && tagsString.trim()) {
+					const tags = tagsString.split(',').map((t) => t.trim()).filter((t) => t.length > 0);
+					if (tags.length > 0) {
+						await tx.insert(warehouseOrderTag).values(
+							tags.map((tag) => ({
+								orderId: order.id,
+								tag
+							}))
+						);
+					}
+				}
+
+				return order.id;
+			});
+		} catch (e: any) {
+			return fail(409, { error: e.message || 'Order creation failed. Please try again.' });
 		}
 
-		// HCB billing: charge the ambassador's pathway org
+		// HCB billing: charge the ambassador's pathway org (outside transaction — order is committed)
 		if (!user.isAdmin) {
 			const ambassadorPathways = await db
 				.select({ pathway: ambassadorPathway.pathway })
@@ -160,11 +181,17 @@ export const actions: Actions = {
 					const totalCents = itemsTotalCents + shippingCents;
 
 					if (totalCents > 0) {
-						await createHcbTransfer(
-							orgId,
-							totalCents,
-							`Warehouse order #${order.id} by ${firstName} ${lastName}`
-						);
+						try {
+							await createHcbTransfer(
+								orgId,
+								totalCents,
+								`Warehouse order #${orderId} by ${firstName} ${lastName}`
+							);
+						} catch (e: any) {
+							console.error('HCB transfer failed for order', orderId, e.message);
+							// Order is already committed — log and continue rather than failing the user
+							// TODO: flag order for manual billing review
+						}
 					}
 				}
 			}
