@@ -3,6 +3,23 @@ import { db } from '$lib/server/db';
 import { warehouseItem, warehouseCategory } from '$lib/server/db/schema';
 import { eq, asc, desc } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
+import { z } from 'zod';
+
+const warehouseItemFormSchema = z.object({
+	name: z.string().min(1, 'Item name is required'),
+	sku: z.string().min(1, 'SKU is required'),
+	categoryId: z.string().nullable(),
+	sizing: z.string().nullable(),
+	packageType: z.string().default('box'),
+	lengthIn: z.coerce.number().positive('Valid dimensions are required'),
+	widthIn: z.coerce.number().positive('Valid dimensions are required'),
+	heightIn: z.coerce.number().nonnegative('Valid dimensions are required'),
+	weightGrams: z.coerce.number().positive('Valid weight is required'),
+	costDollars: z.coerce.number().nonnegative('Valid cost is required'),
+	hsCode: z.string().min(1, 'HS Code is required'),
+	quantity: z.coerce.number().int().nonnegative().default(0),
+	imageUrl: z.string().nullable()
+});
 
 function requireAdmin(locals: App.Locals) {
 	if (!locals.user || !locals.session) {
@@ -93,53 +110,30 @@ export const actions: Actions = {
 	createItem: async ({ request, locals }) => {
 		requireAdmin(locals);
 		const formData = await request.formData();
-		const name = formData.get('name') as string;
-		const sku = formData.get('sku') as string;
-		const categoryId = formData.get('categoryId') as string | null;
-		const sizing = formData.get('sizing') as string | null;
-		const packageType = formData.get('packageType') as string;
-		const lengthIn = parseFloat(formData.get('lengthIn') as string);
-		const widthIn = parseFloat(formData.get('widthIn') as string);
-		const heightIn = parseFloat(formData.get('heightIn') as string);
-		const weightGrams = parseFloat(formData.get('weightGrams') as string);
-		const costDollars = parseFloat(formData.get('costDollars') as string);
-		const hsCode = formData.get('hsCode') as string;
-		const quantity = parseInt(formData.get('quantity') as string);
-		const imageUrl = formData.get('imageUrl') as string | null;
+		const result = warehouseItemFormSchema.safeParse({
+			name: formData.get('name'),
+			sku: formData.get('sku'),
+			categoryId: formData.get('categoryId') || null,
+			sizing: formData.get('sizing') || null,
+			packageType: formData.get('packageType'),
+			lengthIn: formData.get('lengthIn'),
+			widthIn: formData.get('widthIn'),
+			heightIn: formData.get('heightIn'),
+			weightGrams: formData.get('weightGrams'),
+			costDollars: formData.get('costDollars'),
+			hsCode: formData.get('hsCode'),
+			quantity: formData.get('quantity'),
+			imageUrl: formData.get('imageUrl') || null
+		});
 
-		if (!name) {
-			return fail(400, { error: 'Item name is required' });
-		}
-		if (!sku) {
-			return fail(400, { error: 'SKU is required' });
-		}
-		if (isNaN(lengthIn) || isNaN(widthIn) || isNaN(heightIn)) {
-			return fail(400, { error: 'Valid dimensions are required' });
-		}
-		if (isNaN(weightGrams)) {
-			return fail(400, { error: 'Valid weight is required' });
-		}
-		if (isNaN(costDollars)) {
-			return fail(400, { error: 'Valid cost is required' });
-		}
-		if (!hsCode) {
-			return fail(400, { error: 'HS Code is required' });
+		if (!result.success) {
+			return fail(400, { error: result.error.issues[0].message });
 		}
 
+		const { costDollars, ...rest } = result.data;
 		await db.insert(warehouseItem).values({
-			name,
-			sku,
-			categoryId: categoryId || null,
-			sizing: sizing || null,
-			packageType: packageType || 'box',
-			lengthIn,
-			widthIn,
-			heightIn,
-			weightGrams,
-			costCents: Math.round(costDollars * 100),
-			hsCode,
-			quantity: isNaN(quantity) ? 0 : quantity,
-			imageUrl: imageUrl || null
+			...rest,
+			costCents: Math.round(costDollars * 100)
 		});
 
 		return { success: true };
@@ -149,19 +143,6 @@ export const actions: Actions = {
 		requireAdmin(locals);
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
-		const name = formData.get('name') as string;
-		const sku = formData.get('sku') as string;
-		const categoryId = formData.get('categoryId') as string | null;
-		const sizing = formData.get('sizing') as string | null;
-		const packageType = formData.get('packageType') as string;
-		const lengthIn = parseFloat(formData.get('lengthIn') as string);
-		const widthIn = parseFloat(formData.get('widthIn') as string);
-		const heightIn = parseFloat(formData.get('heightIn') as string);
-		const weightGrams = parseFloat(formData.get('weightGrams') as string);
-		const costDollars = parseFloat(formData.get('costDollars') as string);
-		const hsCode = formData.get('hsCode') as string;
-		const quantity = parseInt(formData.get('quantity') as string);
-		const imageUrl = formData.get('imageUrl') as string | null;
 
 		if (!id) {
 			return fail(400, { error: 'Item ID is required' });
@@ -172,41 +153,32 @@ export const actions: Actions = {
 			return fail(404, { error: 'Item not found' });
 		}
 
-		if (!name) {
-			return fail(400, { error: 'Item name is required' });
-		}
-		if (!sku) {
-			return fail(400, { error: 'SKU is required' });
-		}
-		if (isNaN(lengthIn) || isNaN(widthIn) || isNaN(heightIn)) {
-			return fail(400, { error: 'Valid dimensions are required' });
-		}
-		if (isNaN(weightGrams)) {
-			return fail(400, { error: 'Valid weight is required' });
-		}
-		if (isNaN(costDollars)) {
-			return fail(400, { error: 'Valid cost is required' });
-		}
-		if (!hsCode) {
-			return fail(400, { error: 'HS Code is required' });
+		const result = warehouseItemFormSchema.safeParse({
+			name: formData.get('name'),
+			sku: formData.get('sku'),
+			categoryId: formData.get('categoryId') || null,
+			sizing: formData.get('sizing') || null,
+			packageType: formData.get('packageType'),
+			lengthIn: formData.get('lengthIn'),
+			widthIn: formData.get('widthIn'),
+			heightIn: formData.get('heightIn'),
+			weightGrams: formData.get('weightGrams'),
+			costDollars: formData.get('costDollars'),
+			hsCode: formData.get('hsCode'),
+			quantity: formData.get('quantity'),
+			imageUrl: formData.get('imageUrl') || null
+		});
+
+		if (!result.success) {
+			return fail(400, { error: result.error.issues[0].message });
 		}
 
+		const { costDollars, ...rest } = result.data;
 		await db
 			.update(warehouseItem)
 			.set({
-				name,
-				sku,
-				categoryId: categoryId || null,
-				sizing: sizing || null,
-				packageType: packageType || 'box',
-				lengthIn,
-				widthIn,
-				heightIn,
-				weightGrams,
+				...rest,
 				costCents: Math.round(costDollars * 100),
-				hsCode,
-				quantity: isNaN(quantity) ? 0 : quantity,
-				imageUrl: imageUrl || null,
 				updatedAt: new Date()
 			})
 			.where(eq(warehouseItem.id, id));

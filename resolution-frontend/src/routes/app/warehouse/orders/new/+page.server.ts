@@ -4,6 +4,7 @@ import { warehouseItem, warehouseCategory, warehouseOrder, warehouseOrderItem, w
 import { eq, and, gte, asc, sql, inArray } from 'drizzle-orm';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { createHcbTransfer, getOrgIdForPathway } from '$lib/server/hcb';
+import { z } from 'zod';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { user } = await parent();
@@ -65,13 +66,24 @@ export const actions: Actions = {
 		const estimatedServiceName = formData.get('estimatedServiceName') as string;
 		const estimatedServiceCode = formData.get('estimatedServiceCode') as string;
 
+		const orderItemSchema = z.object({
+			warehouseItemId: z.string().min(1),
+			quantity: z.number().int().min(1),
+			sizingChoice: z.string().optional()
+		});
+
 		const itemsJson = formData.get('items') as string;
-		let items: { warehouseItemId: string; quantity: number; sizingChoice?: string }[] = [];
+		let parsed: unknown;
 		try {
-			items = JSON.parse(itemsJson || '[]');
+			parsed = JSON.parse(itemsJson || '[]');
 		} catch {
 			return fail(400, { error: 'Invalid items data' });
 		}
+		const parseResult = z.array(orderItemSchema).safeParse(parsed);
+		if (!parseResult.success) {
+			return fail(400, { error: 'Invalid items data' });
+		}
+		const items = parseResult.data;
 
 		if (!firstName || !lastName || !email || !phone || !addressLine1 || !city || !stateProvince || !country) {
 			return fail(400, { error: 'Missing required fields' });
@@ -133,10 +145,11 @@ export const actions: Actions = {
 				);
 
 				for (const item of items) {
-					const result = await tx.update(warehouseItem)
+					const [updated] = await tx.update(warehouseItem)
 						.set({ quantity: sql`${warehouseItem.quantity} - ${item.quantity}` })
-						.where(and(eq(warehouseItem.id, item.warehouseItemId), gte(warehouseItem.quantity, item.quantity)));
-					if (result.rowCount === 0) {
+						.where(and(eq(warehouseItem.id, item.warehouseItemId), gte(warehouseItem.quantity, item.quantity)))
+						.returning({ id: warehouseItem.id });
+					if (!updated) {
 						throw new Error('Insufficient stock (concurrent update)');
 					}
 				}

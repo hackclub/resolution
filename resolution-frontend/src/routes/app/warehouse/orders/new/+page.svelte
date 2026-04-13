@@ -834,7 +834,6 @@
 		max-height: 200px;
 		overflow-y: auto;
 		z-index: 10;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 	}
 
 	.search-dropdown li {
@@ -1024,7 +1023,6 @@
 		max-height: 150px;
 		overflow-y: auto;
 		z-index: 10;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 	}
 
 	.tag-suggestions li {

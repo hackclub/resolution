@@ -216,6 +216,8 @@ export const actions: Actions = {
 		// Use a transaction so all orders + stock decrements are atomic
 		try {
 			await db.transaction(async (tx) => {
+				let validOrderCount = 0;
+
 				for (const row of dataRows) {
 					const getValue = (field: string): string => {
 						const colName = mapping[field];
@@ -237,6 +239,7 @@ export const actions: Actions = {
 						continue;
 					}
 
+					validOrderCount++;
 					const country = resolveCountryCode(rawCountry);
 					const resolvedState = resolveStateCode(stateProvince, country);
 
@@ -264,15 +267,6 @@ export const actions: Actions = {
 								quantity: ti.quantity
 							}))
 						);
-
-						for (const ti of batch.template.items) {
-							const result = await tx.update(warehouseItem)
-								.set({ quantity: sql`${warehouseItem.quantity} - ${ti.quantity}` })
-								.where(and(eq(warehouseItem.id, ti.warehouseItemId), gte(warehouseItem.quantity, ti.quantity)));
-							if (result.rowCount === 0) {
-								throw new Error('Insufficient stock (concurrent update)');
-							}
-						}
 					}
 
 					if (batch.tags.length > 0) {
@@ -282,6 +276,20 @@ export const actions: Actions = {
 								tag: t.tag
 							}))
 						);
+					}
+				}
+
+				// Batch inventory deduction: one update per template item instead of per-row
+				if (batch.template.items.length > 0 && validOrderCount > 0) {
+					for (const ti of batch.template.items) {
+						const totalQty = ti.quantity * validOrderCount;
+						const [updated] = await tx.update(warehouseItem)
+							.set({ quantity: sql`${warehouseItem.quantity} - ${totalQty}` })
+							.where(and(eq(warehouseItem.id, ti.warehouseItemId), gte(warehouseItem.quantity, totalQty)))
+							.returning({ id: warehouseItem.id });
+						if (!updated) {
+							throw new Error('Insufficient stock (concurrent update)');
+						}
 					}
 				}
 

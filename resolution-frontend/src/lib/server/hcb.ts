@@ -18,12 +18,27 @@ const PATHWAY_ORG_MAP: Record<string, string> = {
 let cachedAccessToken: string | null = null;
 let cachedRefreshToken: string | null = null;
 let tokenExpiresAt = 0;
+let refreshPromise: Promise<string> | null = null;
 
 async function getAccessToken(): Promise<string> {
 	if (cachedAccessToken && Date.now() < tokenExpiresAt) {
 		return cachedAccessToken;
 	}
 
+	// Deduplicate concurrent refresh calls
+	if (refreshPromise) {
+		return refreshPromise;
+	}
+
+	refreshPromise = refreshAccessToken();
+	try {
+		return await refreshPromise;
+	} finally {
+		refreshPromise = null;
+	}
+}
+
+async function refreshAccessToken(): Promise<string> {
 	const clientId = env.HCB_CLIENT_ID;
 	const clientSecret = env.HCB_CLIENT_SECRET;
 	const refreshToken = cachedRefreshToken || env.HCB_REFRESH_TOKEN;
@@ -58,7 +73,6 @@ async function getAccessToken(): Promise<string> {
 	const data = await res.json();
 	cachedAccessToken = data.access_token;
 	cachedRefreshToken = data.refresh_token;
-	// Use expires_in from OAuth response if available, otherwise fall back to default
 	const expiresInMs = data.expires_in ? data.expires_in * 1000 : DEFAULT_REFRESH_INTERVAL_MS;
 	tokenExpiresAt = Date.now() + expiresInMs;
 

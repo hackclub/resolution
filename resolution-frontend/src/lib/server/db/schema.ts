@@ -363,7 +363,10 @@ export const warehouseOrderItem = pgTable('warehouse_order_item', {
 	quantity: integer('quantity').notNull().default(1),
 	// Selected size variant (e.g. 'S', 'M', 'L') when the warehouse item has sizing options
 	sizingChoice: text('sizing_choice')
-});
+}, (table) => [
+	index('warehouse_order_item_order_id_idx').on(table.orderId),
+	index('warehouse_order_item_warehouse_item_id_idx').on(table.warehouseItemId)
+]);
 
 // Warehouse order tags for filtering
 export const warehouseOrderTag = pgTable('warehouse_order_tag', {
