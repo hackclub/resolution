@@ -1,7 +1,7 @@
 import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
 import { warehouseItem, warehouseCategory, warehouseOrder, warehouseOrderItem, warehouseOrderTag, ambassadorPathway } from '$lib/server/db/schema';
-import { eq, and, gte, asc, desc, sql, inArray } from 'drizzle-orm';
+import { eq, and, gte, asc, sql, inArray } from 'drizzle-orm';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { createHcbTransfer, getOrgIdForPathway } from '$lib/server/hcb';
 

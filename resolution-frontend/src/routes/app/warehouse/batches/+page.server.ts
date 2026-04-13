@@ -3,7 +3,6 @@ import { db } from '$lib/server/db';
 import { warehouseBatch, warehouseBatchTag, warehouseOrderTemplate, warehouseOrder, warehouseOrderItem, warehouseOrderTag, warehouseItem, ambassadorPathway } from '$lib/server/db/schema';
 import { eq, and, gte, desc, asc, sql, inArray } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
 import { fetchCheapestRate } from '$lib/server/canada-post';
 import { resolveCountryCode, resolveStateCode } from '$lib/server/countries';
 import Papa from 'papaparse';

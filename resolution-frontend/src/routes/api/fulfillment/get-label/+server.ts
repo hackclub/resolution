@@ -2,7 +2,7 @@ import { env } from '$env/dynamic/private';
 import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { warehouseOrder, ambassadorPathway } from '$lib/server/db/schema';
-import { eq, and, ne } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 import { requireAuth } from '$lib/server/auth/guard';
 import { GRAMS_TO_KG, inchesToCm, isLettermail, getServiceCode, createShipment } from '$lib/server/canada-post';

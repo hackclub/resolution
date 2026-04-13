@@ -121,8 +121,6 @@ export function buildCreateShipmentXml(params: {
 	const customerNumber = env.CP_CUSTOMER_NUMBER;
 	const contractId = env.CP_CONTRACT_ID;
 
-	const destinationXml = buildDestinationXml(order.country, order.postalCode, order.stateProvince);
-
 	let customsXml = '';
 	if (order.country !== 'CA') {
 		const items = (order.items || []).filter((oi: any) => oi.warehouseItem);
