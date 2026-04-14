@@ -46,7 +46,7 @@ async function refreshAccessToken(): Promise<string> {
 		throw new Error('HCB not configured: HCB_CLIENT_ID, HCB_CLIENT_SECRET, and HCB_REFRESH_TOKEN required');
 	}
 
-	// Use initial access token on first call if not yet refreshed
+	// On first call, seed from env and let the 401-retry path handle a stale token
 	if (!cachedAccessToken && env.HCB_ACCESS_TOKEN) {
 		cachedAccessToken = env.HCB_ACCESS_TOKEN;
 		cachedRefreshToken = refreshToken;
@@ -78,14 +78,13 @@ async function refreshAccessToken(): Promise<string> {
 	return cachedAccessToken!;
 }
 
-export async function createHcbTransfer(
+async function doTransfer(
 	fromOrgId: string,
 	amountCents: number,
-	memo: string
-): Promise<{ id: string; amount_cents: number; name: string }> {
-	const accessToken = await getAccessToken();
-
-	const res = await fetch(`${HCB_BASE_URL}/organizations/${fromOrgId}/transfers`, {
+	memo: string,
+	accessToken: string
+): Promise<Response> {
+	return fetch(`${HCB_BASE_URL}/organizations/${fromOrgId}/transfers`, {
 		method: 'POST',
 		headers: {
 			'Authorization': `Bearer ${accessToken}`,
@@ -97,6 +96,23 @@ export async function createHcbTransfer(
 			name: memo
 		})
 	});
+}
+
+export async function createHcbTransfer(
+	fromOrgId: string,
+	amountCents: number,
+	memo: string
+): Promise<{ id: string; amount_cents: number; name: string }> {
+	let accessToken = await getAccessToken();
+	let res = await doTransfer(fromOrgId, amountCents, memo, accessToken);
+
+	// If we get a 401, the cached token may have expired — force a refresh and retry once
+	if (res.status === 401) {
+		cachedAccessToken = null;
+		tokenExpiresAt = 0;
+		accessToken = await getAccessToken();
+		res = await doTransfer(fromOrgId, amountCents, memo, accessToken);
+	}
 
 	if (!res.ok) {
 		const body = await res.text();
