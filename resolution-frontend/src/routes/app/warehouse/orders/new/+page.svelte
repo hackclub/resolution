@@ -251,9 +251,19 @@
 		return countries.find((c) => c.code === country)?.name || country;
 	});
 
+	let stockErrors = $derived(() => {
+		return addedItems()
+			.filter((item) => (itemQuantities[item.id] || 0) > item.quantity)
+			.map((item) => ({
+				name: item.name,
+				requested: itemQuantities[item.id] || 0,
+				available: item.quantity
+			}));
+	});
+
 	function canAdvance(s: number): boolean {
 		if (s === 1) return !!firstName && !!lastName && !!email && !!addressLine1 && !!city && !!stateProvince && !!postalCode && !!country;
-		if (s === 2) return addedItems().length > 0;
+		if (s === 2) return addedItems().length > 0 && stockErrors().length === 0;
 		if (s === 3) return !!selectedRate;
 		if (s === 4) return true;
 		return false;
@@ -380,9 +390,12 @@
 					<ul class="search-dropdown">
 						{#each searchResults() as item (item.id)}
 							<li>
-								<button type="button" class="search-result-btn" onclick={() => addItem(item)}>
+								<button type="button" class="search-result-btn" onclick={() => addItem(item)} disabled={item.quantity === 0}>
 									<span class="result-name">{item.name}</span>
 									<code>{item.sku}</code>
+									<span class="result-stock" class:result-stock-low={item.quantity > 0 && item.quantity <= 5} class:result-stock-out={item.quantity === 0}>
+										{item.quantity === 0 ? 'Out of stock' : `${item.quantity} in stock`}
+									</span>
 								</button>
 							</li>
 						{/each}
@@ -408,8 +421,14 @@
 							{#each addedItems() as item (item.id)}
 								{@const sizingOptions = item.sizing ? item.sizing.split(',').map((s) => s.trim()) : []}
 								{@const qty = itemQuantities[item.id] || 0}
-								<tr>
-									<td class="item-name">{item.name}</td>
+								{@const overStock = qty > item.quantity}
+								<tr class:row-error={overStock}>
+									<td class="item-name">
+										{item.name}
+										<span class="stock-badge" class:stock-badge-low={item.quantity > 0 && item.quantity <= 5} class:stock-badge-out={item.quantity === 0}>
+											{item.quantity} in stock
+										</span>
+									</td>
 									<td><code>{item.sku}</code></td>
 									<td>
 										{#if sizingOptions.length > 0}
@@ -432,10 +451,15 @@
 										<input
 											type="number"
 											class="qty-input"
+											class:qty-input-error={overStock}
 											min="1"
+											max={item.quantity || undefined}
 											value={qty}
 											oninput={(e) => { itemQuantities[item.id] = parseInt((e.target as HTMLInputElement).value) || 0; }}
 										/>
+										{#if overStock}
+											<div class="qty-error">Max {item.quantity}</div>
+										{/if}
 									</td>
 									<td>
 										<button
@@ -449,6 +473,13 @@
 						</tbody>
 					</table>
 				</div>
+				{#if stockErrors().length > 0}
+					<div class="stock-error-banner">
+						{#each stockErrors() as err}
+							<div>Not enough stock for <strong>{err.name}</strong>: {err.available} available, {err.requested} requested</div>
+						{/each}
+					</div>
+				{/if}
 			{:else}
 				<p class="hint" style="margin-top: 1rem;">Search above to add items to your order.</p>
 			{/if}
@@ -934,6 +965,79 @@
 		font-size: 0.875rem;
 		font-family: inherit;
 		text-align: center;
+	}
+
+	.qty-input-error {
+		border-color: #dc2626;
+	}
+
+	.qty-error {
+		color: #dc2626;
+		font-size: 0.75rem;
+		margin-top: 0.25rem;
+	}
+
+	.row-error {
+		background: #fff5f5;
+	}
+
+	.stock-badge {
+		display: inline-block;
+		font-size: 0.7rem;
+		font-weight: 500;
+		color: #8492a6;
+		background: #f0f0f0;
+		border-radius: 4px;
+		padding: 0.1rem 0.35rem;
+		margin-left: 0.4rem;
+	}
+
+	.stock-badge-low {
+		color: #b45309;
+		background: #fef3c7;
+	}
+
+	.stock-badge-out {
+		color: #dc2626;
+		background: #fef2f2;
+	}
+
+	.result-stock {
+		font-size: 0.75rem;
+		color: #8492a6;
+		margin-left: auto;
+		padding-left: 0.75rem;
+	}
+
+	.result-stock-low {
+		color: #b45309;
+	}
+
+	.result-stock-out {
+		color: #dc2626;
+		font-weight: 500;
+	}
+
+	.search-result-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.search-result-btn:disabled:hover {
+		background: none;
+	}
+
+	.stock-error-banner {
+		background: #fef2f2;
+		border: 1px solid #fca5a5;
+		color: #dc2626;
+		padding: 0.75rem 1rem;
+		border-radius: 8px;
+		font-size: 0.875rem;
+		margin-top: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
 	}
 
 	.tag-input-wrapper {
