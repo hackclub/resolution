@@ -69,7 +69,7 @@ export const actions: Actions = {
 		const orderItemSchema = z.object({
 			warehouseItemId: z.string().min(1),
 			quantity: z.number().int().min(1),
-			sizingChoice: z.string().optional()
+			sizingChoice: z.string().nullable().optional()
 		});
 
 		const itemsJson = formData.get('items') as string;
