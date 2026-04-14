@@ -10,13 +10,12 @@
 
 	const pathwayInfo = PATHWAY_INFO;
 
-	const initialTitle = data.content?.title || '';
-	const initialContent = data.content?.content || '';
-	const initialPublished = data.content?.isPublished || false;
-
-	let title = $state(initialTitle);
-	let content = $state(initialContent);
-	let isPublished = $state(initialPublished);
+	// svelte-ignore state_referenced_locally
+	let title = $state(data.content?.title || '');
+	// svelte-ignore state_referenced_locally
+	let content = $state(data.content?.content || '');
+	// svelte-ignore state_referenced_locally
+	let isPublished = $state(data.content?.isPublished || false);
 	let editorContainer = $state<HTMLDivElement | null>(null);
 	let monacoEditor: any = null;
 	let saving = $state(false);

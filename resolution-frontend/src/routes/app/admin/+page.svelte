@@ -158,9 +158,9 @@
 	{#if ambassadorModal}
 		{@const userPathways = getUserAmbassadorPathways(ambassadorModal.userId)}
 		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-		<div class="modal-overlay" onclick={() => ambassadorModal = null}>
+		<div class="modal-overlay" role="button" tabindex="-1" onclick={() => ambassadorModal = null}>
 			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-			<div class="modal" onclick={(e) => e.stopPropagation()}>
+			<div class="modal" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()}>
 				<h3>Manage Ambassador: {ambassadorModal.userName}</h3>
 				<p class="modal-subtitle">Assign pathways this user can edit</p>
 				
@@ -194,9 +194,9 @@
 	{#if reviewerModal}
 		{@const userPathways = getUserReviewerPathways(reviewerModal.userId)}
 		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-		<div class="modal-overlay" onclick={() => reviewerModal = null}>
+		<div class="modal-overlay" role="button" tabindex="-1" onclick={() => reviewerModal = null}>
 			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-			<div class="modal" onclick={(e) => e.stopPropagation()}>
+			<div class="modal" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()}>
 				<h3>Manage Reviewer: {reviewerModal.userName}</h3>
 				<p class="modal-subtitle">Assign pathways this user can review</p>
 				

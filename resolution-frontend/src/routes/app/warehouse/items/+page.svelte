@@ -100,11 +100,6 @@
 {/if}
 
 <style>
-	h2 {
-		font-size: 1.25rem;
-		margin: 0 0 1rem 0;
-	}
-
 	.category-heading {
 		font-size: 1rem;
 		font-weight: 600;
