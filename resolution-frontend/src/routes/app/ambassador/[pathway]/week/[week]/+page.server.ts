@@ -306,6 +306,14 @@ export const actions: Actions = {
 		const pathwayId = params.pathway.toUpperCase() as Pathway;
 		const weekNumber = parseInt(params.week);
 
+		if (!validPathways.includes(pathwayId)) {
+			return fail(400, { error: 'Invalid pathway' });
+		}
+
+		if (isNaN(weekNumber) || weekNumber < 1 || weekNumber > 8) {
+			return fail(400, { error: 'Invalid week number' });
+		}
+
 		const assignment = await db
 			.select()
 			.from(ambassadorPathway)

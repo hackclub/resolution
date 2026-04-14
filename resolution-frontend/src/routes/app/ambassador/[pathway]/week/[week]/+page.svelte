@@ -11,11 +11,11 @@
 
 	const pathwayInfo = PATHWAY_INFO;
 
-	let title = $state('');
-	let content = $state('');
-	let prizeImageUrl = $state('');
-	let isPublished = $state(false);
-	let isSubmissionsOpen = $state(true);
+	let title = $state(data.content?.title || '');
+	let content = $state(data.content?.content || '');
+	let prizeImageUrl = $state(data.content?.prizeImageUrl || '');
+	let isPublished = $state(data.content?.isPublished || false);
+	let isSubmissionsOpen = $state(data.content?.isSubmissionsOpen ?? true);
 	let editorContainer = $state<HTMLDivElement | null>(null);
 	let monacoEditor: any = null;
 	let saving = $state(false);
@@ -26,13 +26,24 @@
 	let prizeFileInput = $state<HTMLInputElement | null>(null);
 
 	const pathway = $derived(pathwayInfo[data.pathwayId]);
+	let loadedPathwayId = data.pathwayId;
+	let loadedWeekNumber = data.weekNumber;
 
 	$effect(() => {
+		if (data.pathwayId === loadedPathwayId && data.weekNumber === loadedWeekNumber) {
+			return;
+		}
+
+		loadedPathwayId = data.pathwayId;
+		loadedWeekNumber = data.weekNumber;
+
 		title = data.content?.title || '';
 		content = data.content?.content || '';
 		prizeImageUrl = data.content?.prizeImageUrl || '';
 		isPublished = data.content?.isPublished || false;
 		isSubmissionsOpen = data.content?.isSubmissionsOpen ?? true;
+
+		monacoEditor?.setValue(content);
 	});
 
 
@@ -173,7 +184,14 @@
 					<form method="POST" action="?/toggleSubmissions" use:enhance={() => {
 						return async ({ result }) => {
 							if (result.type === 'success') {
-								isSubmissionsOpen = !isSubmissionsOpen;
+								const resultData =
+									result.data && typeof result.data === 'object'
+										? (result.data as Record<string, unknown>)
+										: null;
+
+								if (typeof resultData?.isSubmissionsOpen === 'boolean') {
+									isSubmissionsOpen = resultData.isSubmissionsOpen;
+								}
 							}
 						};
 					}}>

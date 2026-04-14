@@ -31,27 +31,25 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 		throw redirect(302, '/app');
 	}
 
-	const content = await db
+	const [content] = await db
 		.select()
 		.from(pathwayWeekContent)
-		.where(
-			and(
-				eq(pathwayWeekContent.pathway, pathwayId),
-				eq(pathwayWeekContent.weekNumber, weekNumber),
-				eq(pathwayWeekContent.isPublished, true)
-			)
-		)
+		.where(and(eq(pathwayWeekContent.pathway, pathwayId), eq(pathwayWeekContent.weekNumber, weekNumber)))
 		.limit(1);
 
-	if (content.length === 0) {
+	if (!content || !content.isPublished) {
 		throw error(404, 'This week is not yet available');
+	}
+
+	if (!content.isSubmissionsOpen) {
+		throw error(403, 'Submissions have been closed for this week');
 	}
 
 	return {
 		pathwayId,
 		weekNumber,
-		title: content[0].title,
-		content: content[0].content,
-		isSubmissionsOpen: content[0].isSubmissionsOpen
+		title: content.title,
+		content: content.content,
+		isSubmissionsOpen: content.isSubmissionsOpen
 	};
 };

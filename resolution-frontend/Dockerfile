@@ -2,8 +2,8 @@
 FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
-# Copy package.json and configuration files
-COPY package.json package-lock.json* svelte.config.js vite.config.ts* tsconfig.json* ./
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --ignore-scripts
 
 # Install all dependencies
 RUN npm install
