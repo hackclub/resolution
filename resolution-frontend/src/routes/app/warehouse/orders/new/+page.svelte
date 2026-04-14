@@ -120,6 +120,15 @@
 		{ code: 'CN', name: 'China' }
 	];
 
+	const usStates = [
+		'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+		'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+		'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+		'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+		'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
+		'DC'
+	];
+
 	let itemQuantities = $state<Record<string, number>>({});
 	let itemSizing = $state<Record<string, string>>({});
 	let searchQuery = $state('');
@@ -355,7 +364,16 @@
 				</label>
 				<label class="field">
 					<span class="label">State / Province <span class="required">*</span></span>
-					<input type="text" bind:value={stateProvince} required />
+					{#if country === 'US'}
+						<select bind:value={stateProvince} required>
+							<option value="">Select state</option>
+							{#each usStates as s}
+								<option value={s}>{s}</option>
+							{/each}
+						</select>
+					{:else}
+						<input type="text" bind:value={stateProvince} required />
+					{/if}
 				</label>
 			</div>
 			<div class="form-grid">
@@ -365,7 +383,7 @@
 				</label>
 				<label class="field">
 					<span class="label">Country <span class="required">*</span></span>
-					<select bind:value={country} required>
+					<select bind:value={country} onchange={() => { stateProvince = ''; }} required>
 						{#each countries as c}
 							<option value={c.code}>{c.name}</option>
 						{/each}
