@@ -1,6 +1,5 @@
 import { env } from '$env/dynamic/private';
 import xml2js from 'xml2js';
-import { PDFDocument } from 'pdf-lib';
 import { fetchChitChatsRates } from './chit-chats';
 import { resolveStateCode } from './countries';
 import { getCadToUsdRate } from './exchange-rate';
@@ -32,24 +31,6 @@ function formatHsTariffCode(code: string | null | undefined): string {
 	return formatted;
 }
 
-async function cropLabelTo4x6(pdfBuffer: ArrayBuffer): Promise<Uint8Array> {
-	const srcDoc = await PDFDocument.load(pdfBuffer);
-	const page = srcDoc.getPage(0);
-
-	// Canada Post non-contract labels are landscape 792x612 (11x8.5in)
-	// Label content is in the right portion of the page
-	// Crop tightly to the label borders for thermal printing
-	const cropX = 448;
-	const cropY = 100;
-	const cropWidth = 330;
-	const cropHeight = 445;
-
-	page.setMediaBox(cropX, cropY, cropWidth, cropHeight);
-	page.setCropBox(cropX, cropY, cropWidth, cropHeight);
-	// Do NOT call page.setSize() - it overrides MediaBox and breaks the crop
-
-	return await srcDoc.save();
-}
 
 export function inchesToCm(inches: number): number {
 	return Math.round(inches * INCHES_TO_CM * 10) / 10;
@@ -198,10 +179,10 @@ export function buildCreateShipmentXml(params: {
 				<height>${Math.max(1, heightCm)}</height>
 			</dimensions>
 		</parcel-characteristics>
-		${contractId ? `<print-preferences>
+		<print-preferences>
 			<output-format>4x6</output-format>
 			<encoding>PDF</encoding>
-		</print-preferences>` : ''}
+		</print-preferences>
 		<preferences>
 			<show-packing-instructions>false</show-packing-instructions>
 		</preferences>
@@ -519,10 +500,7 @@ export async function createShipment(params: {
 				}
 			});
 			if (labelRes.ok) {
-				let labelBuffer: ArrayBuffer | Uint8Array = await labelRes.arrayBuffer();
-				if (!contractId) {
-					labelBuffer = await cropLabelTo4x6(labelBuffer);
-				}
+				const labelBuffer = await labelRes.arrayBuffer();
 				labelBase64 = `data:application/pdf;base64,${arrayBufferToBase64(labelBuffer)}`;
 			}
 		}
