@@ -76,12 +76,14 @@ export const actions: Actions = {
 		let parsed: unknown;
 		try {
 			parsed = JSON.parse(itemsJson || '[]');
-		} catch {
-			return fail(400, { error: 'Invalid items data' });
+		} catch (e) {
+			console.error('warehouse/orders/new: failed to parse items JSON', { itemsJson, error: String(e), userId: user.id });
+			return fail(400, { error: 'Invalid items data: could not parse JSON' });
 		}
 		const parseResult = z.array(orderItemSchema).safeParse(parsed);
 		if (!parseResult.success) {
-			return fail(400, { error: 'Invalid items data' });
+			console.error('warehouse/orders/new: items failed schema validation', { issues: parseResult.error.issues, parsed, userId: user.id });
+			return fail(400, { error: `Invalid items data: ${parseResult.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(', ')}` });
 		}
 		const items = parseResult.data;
 

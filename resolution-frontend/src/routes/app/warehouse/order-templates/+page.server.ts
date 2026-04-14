@@ -8,6 +8,7 @@ import {
 } from '$lib/server/db/schema';
 import { eq, asc, desc } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
+import { z } from 'zod';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { user } = await parent();
@@ -72,16 +73,28 @@ export const actions: Actions = {
 		const isPublic = formData.get('isPublic') === 'true';
 		const itemsJson = formData.get('items') as string;
 
-		let items: { warehouseItemId: string; quantity: number }[] = [];
-		try {
-			items = JSON.parse(itemsJson || '[]');
-		} catch {
-			return fail(400, { error: 'Invalid items data' });
-		}
-
 		if (!name || !name.trim()) {
 			return fail(400, { error: 'Template name is required' });
 		}
+
+		let parsedItems: unknown;
+		try {
+			parsedItems = JSON.parse(itemsJson || '[]');
+		} catch (e) {
+			console.error('warehouse/order-templates: failed to parse items JSON', { itemsJson, error: String(e), userId: user.id });
+			return fail(400, { error: 'Invalid items data: could not parse JSON' });
+		}
+
+		const templateItemSchema = z.object({
+			warehouseItemId: z.string().min(1),
+			quantity: z.number().int().min(1)
+		});
+		const itemsResult = z.array(templateItemSchema).safeParse(parsedItems);
+		if (!itemsResult.success) {
+			console.error('warehouse/order-templates: items failed schema validation', { issues: itemsResult.error.issues, parsedItems, userId: user.id });
+			return fail(400, { error: `Invalid items data: ${itemsResult.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(', ')}` });
+		}
+		const items = itemsResult.data;
 
 		if (items.length === 0) {
 			return fail(400, { error: 'At least one item is required' });
