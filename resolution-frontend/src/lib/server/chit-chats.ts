@@ -50,9 +50,7 @@ export async function createChitChatsShipment(params: {
 		address_1: order.addressLine1,
 		address_2: order.addressLine2 || undefined,
 		city: order.city,
-		...(order.country === 'CA'
-			? { province_code: order.stateProvince }
-			: { state_code: order.stateProvince }),
+		...(order.country === 'CA' && order.stateProvince ? { province_code: order.stateProvince } : {}),
 		postal_code: order.postalCode || '',
 		country_code: order.country,
 		email: order.email || undefined,
@@ -205,9 +203,7 @@ export async function fetchChitChatsRates(params: {
 		name: params.name,
 		address_1: params.address1,
 		city: params.city,
-		...(params.country === 'CA'
-			? { province_code: params.province || '' }
-			: { state_code: params.province || '' }),
+		...(params.country === 'CA' && params.province ? { province_code: params.province } : {}),
 		postal_code: params.postalCode || '',
 		country_code: params.country,
 		package_contents: 'merchandise',
