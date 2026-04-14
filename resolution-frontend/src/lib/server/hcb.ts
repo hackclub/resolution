@@ -2,7 +2,7 @@ import { env } from '$env/dynamic/private';
 
 const HCB_BASE_URL = 'https://hcb.hackclub.com/api/v4';
 const HCB_TOKEN_URL = 'https://hcb.hackclub.com/api/v4/oauth/token';
-const DEFAULT_REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes fallback
+const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 
 const RESOLUTION_ORG_ID = 'org_0zuxO2';
 
@@ -50,7 +50,7 @@ async function refreshAccessToken(): Promise<string> {
 	if (!cachedAccessToken && env.HCB_ACCESS_TOKEN) {
 		cachedAccessToken = env.HCB_ACCESS_TOKEN;
 		cachedRefreshToken = refreshToken;
-		tokenExpiresAt = Date.now() + DEFAULT_REFRESH_INTERVAL_MS;
+		tokenExpiresAt = Date.now() + REFRESH_INTERVAL_MS;
 		return cachedAccessToken;
 	}
 
@@ -73,8 +73,7 @@ async function refreshAccessToken(): Promise<string> {
 	const data = await res.json();
 	cachedAccessToken = data.access_token;
 	cachedRefreshToken = data.refresh_token;
-	const expiresInMs = data.expires_in ? data.expires_in * 1000 : DEFAULT_REFRESH_INTERVAL_MS;
-	tokenExpiresAt = Date.now() + expiresInMs;
+	tokenExpiresAt = Date.now() + REFRESH_INTERVAL_MS;
 
 	return cachedAccessToken!;
 }
