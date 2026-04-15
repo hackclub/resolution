@@ -60,7 +60,10 @@ export const POST: RequestHandler = async (event) => {
 		}
 
 		const [weekContent] = await db
-			.select({ isPublished: pathwayWeekContent.isPublished })
+			.select({
+				isPublished: pathwayWeekContent.isPublished,
+				isSubmissionsOpen: pathwayWeekContent.isSubmissionsOpen
+			})
 			.from(pathwayWeekContent)
 			.where(and(
 				eq(pathwayWeekContent.pathway, parsed.pathway as PathwayId),
@@ -70,6 +73,10 @@ export const POST: RequestHandler = async (event) => {
 
 		if (!weekContent?.isPublished) {
 			return json({ error: 'This week is not available for submissions' }, { status: 403 });
+		}
+
+		if (!weekContent.isSubmissionsOpen) {
+			return json({ error: 'Submissions have been closed for this week' }, { status: 403 });
 		}
 
 		const base = new Airtable({ apiKey: env.AIRTABLE_API_TOKEN }).base(env.AIRTABLE_BASE_ID);

@@ -11,15 +11,11 @@
 
 	const pathwayInfo = PATHWAY_INFO;
 
-	const initialTitle = data.content?.title || '';
-	const initialContent = data.content?.content || '';
-	const initialPrizeImageUrl = data.content?.prizeImageUrl || '';
-	const initialPublished = data.content?.isPublished || false;
-
-	let title = $state(initialTitle);
-	let content = $state(initialContent);
-	let prizeImageUrl = $state(initialPrizeImageUrl);
-	let isPublished = $state(initialPublished);
+	let title = $state(data.content?.title || '');
+	let content = $state(data.content?.content || '');
+	let prizeImageUrl = $state(data.content?.prizeImageUrl || '');
+	let isPublished = $state(data.content?.isPublished || false);
+	let isSubmissionsOpen = $state(data.content?.isSubmissionsOpen ?? true);
 	let editorContainer = $state<HTMLDivElement | null>(null);
 	let monacoEditor: any = null;
 	let saving = $state(false);
@@ -30,6 +26,25 @@
 	let prizeFileInput = $state<HTMLInputElement | null>(null);
 
 	const pathway = $derived(pathwayInfo[data.pathwayId]);
+	let loadedPathwayId = data.pathwayId;
+	let loadedWeekNumber = data.weekNumber;
+
+	$effect(() => {
+		if (data.pathwayId === loadedPathwayId && data.weekNumber === loadedWeekNumber) {
+			return;
+		}
+
+		loadedPathwayId = data.pathwayId;
+		loadedWeekNumber = data.weekNumber;
+
+		title = data.content?.title || '';
+		content = data.content?.content || '';
+		prizeImageUrl = data.content?.prizeImageUrl || '';
+		isPublished = data.content?.isPublished || false;
+		isSubmissionsOpen = data.content?.isSubmissionsOpen ?? true;
+
+		monacoEditor?.setValue(content);
+	});
 
 
 
@@ -161,8 +176,29 @@
 					<span class="status-badge" class:published={isPublished}>
 						{isPublished ? 'Published' : 'Draft'}
 					</span>
+					<span class="status-badge submissions" class:closed={!isSubmissionsOpen}>
+						{isSubmissionsOpen ? 'Submissions Open' : 'Submissions Closed'}
+					</span>
 				</div>
 				<div class="header-actions">
+					<form method="POST" action="?/toggleSubmissions" use:enhance={() => {
+						return async ({ result }) => {
+							if (result.type === 'success') {
+								const resultData =
+									result.data && typeof result.data === 'object'
+										? (result.data as Record<string, unknown>)
+										: null;
+
+								if (typeof resultData?.isSubmissionsOpen === 'boolean') {
+									isSubmissionsOpen = resultData.isSubmissionsOpen;
+								}
+							}
+						};
+					}}>
+						<button type="submit" class="submission-btn" class:closed={!isSubmissionsOpen}>
+							{isSubmissionsOpen ? 'Close Submissions' : 'Open Submissions'}
+						</button>
+					</form>
 					<button type="button" class="preview-btn" onclick={() => showPreview = !showPreview}>
 						{showPreview ? 'Edit' : 'Preview'}
 					</button>
@@ -336,6 +372,14 @@
 		background: #33d6a6;
 	}
 
+	.status-badge.submissions {
+		background: #33d6a6;
+	}
+
+	.status-badge.submissions.closed {
+		background: #8492a6;
+	}
+
 	.header-actions {
 		display: flex;
 		gap: 0.75rem;
@@ -375,7 +419,27 @@
 		opacity: 0.9;
 	}
 
-	form {
+	.submission-btn {
+		padding: 0.5rem 1rem;
+		background: #ec3750;
+		border: none;
+		color: white;
+		border-radius: 8px;
+		cursor: pointer;
+		font-family: inherit;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.submission-btn.closed {
+		background: #33d6a6;
+	}
+
+	.submission-btn:hover {
+		opacity: 0.9;
+	}
+
+	.editor-container > form {
 		flex: 1;
 		display: flex;
 		flex-direction: column;

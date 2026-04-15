@@ -29,6 +29,13 @@
       "when": 1775185421664,
       "tag": "0003_misty_week_prize_image",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776130671597,
+      "tag": "0004_left_pretty_boy",
+      "breakpoints": true
     }
   ]
 }
