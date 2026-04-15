@@ -63,7 +63,6 @@
 	"overrides": {
 		"cookie": ">=0.7.0",
 		"dompurify": "$dompurify",
-		"esbuild": ">=0.25.0",
-		"estree-walker": "^3.0.0"
+		"esbuild": ">=0.25.0"
 	}
 }
