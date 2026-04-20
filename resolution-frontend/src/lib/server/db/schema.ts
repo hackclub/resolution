@@ -146,6 +146,7 @@ export const submissionClosureException = pgTable('submission_closure_exception'
   pathway: pathwayEnum('pathway').notNull(),
   weekNumber: integer('week_number').notNull(),
   reason: text('reason').notNull(),
+  isActive: boolean('is_active').notNull().default(true),
   expiresAt: timestamp('expires_at', { mode: 'date' }).notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   createdBy: text('created_by').notNull().references(() => user.id, { onDelete: 'cascade' })
