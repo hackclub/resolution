@@ -139,6 +139,34 @@ export const userPathway = pgTable('user_pathway', {
   uniqueIndex('user_pathway_unique_idx').on(table.userId, table.pathway)
 ]);
 
+export const submissionClosureException = pgTable('submission_closure_exception', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  seasonId: text('season_id').notNull().references(() => programSeason.id, { onDelete: 'cascade' }),
+  pathway: pathwayEnum('pathway').notNull(),
+  weekNumber: integer('week_number').notNull(),
+  reason: text('reason').notNull(),
+  expiresAt: timestamp('expires_at', { mode: 'date' }).notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+  createdBy: text('created_by').notNull().references(() => user.id, { onDelete: 'cascade' })
+}, (table) => [
+  uniqueIndex('submission_exception_unique_idx').on(
+    table.userId,
+    table.seasonId,
+    table.pathway,
+    table.weekNumber
+  ),
+  index('submission_exception_lookup_idx').on(
+    table.seasonId,
+    table.pathway,
+    table.weekNumber
+  ),
+  index('submission_exception_user_idx').on(
+    table.userId,
+    table.seasonId
+  )
+]);
+
 // Relations
 export const userRelations = relations(user, ({ many }) => ({
   pathways: many(userPathway),
@@ -149,7 +177,8 @@ export const userRelations = relations(user, ({ many }) => ({
   weeklyShips: many(weeklyShip),
   payouts: many(ambassadorPayout),
   referralLinks: many(referralLink),
-  reviewerAssignments: many(reviewerPathway)
+  reviewerAssignments: many(reviewerPathway),
+  exceptions: many(submissionClosureException)
   }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -161,7 +190,8 @@ export const programSeasonRelations = relations(programSeason, ({ many }) => ({
   workshops: many(workshop),
   completions: many(workshopCompletion),
   weeklyShips: many(weeklyShip),
-  payouts: many(ambassadorPayout)
+  payouts: many(ambassadorPayout),
+  exceptions: many(submissionClosureException)
 }));
 
 export const programEnrollmentRelations = relations(programEnrollment, ({ one }) => ({
@@ -208,6 +238,12 @@ export const ambassadorPayoutItemRelations = relations(ambassadorPayoutItem, ({ 
 export const userPathwayRelations = relations(userPathway, ({ one }) => ({
 	user: one(user, { fields: [userPathway.userId], references: [user.id] })
 }));
+
+export const submissionClosureExceptionRelations = relations(submissionClosureException, ({ one }) => ({
+  user: one(user, { fields: [submissionClosureException.userId], references: [user.id] }),
+  createdBy: one(user, { fields: [submissionClosureException.createdBy], references: [user.id] }),
+  season: one(programSeason, { fields: [submissionClosureException.seasonId], references: [programSeason.id]})
+}))
 
 // Ambassador pathway assignments - which pathways an ambassador can edit
 export const ambassadorPathway = pgTable('ambassador_pathway', {
