@@ -128,8 +128,7 @@
 												)}
 										>
 											<span class="result-name">
-												{u.firstName || ''}
-												{u.lastName || ''}
+												{[u.firstName, u.lastName].filter(Boolean).join(' ') || u.email}
 											</span>
 											<span class="result-email">{u.email}</span>
 										</button>
