@@ -60,7 +60,14 @@ export const load: PageServerLoad = async ({ parent }) => {
 			})
 			.from(submissionClosureException)
 			.innerJoin(user, eq(submissionClosureException.userId, user.id))
-			.where(eq(submissionClosureException.seasonId, season.id))
+			.where(
+			currentUser.isAdmin
+				? eq(submissionClosureException.seasonId, season.id)
+				: and(
+						eq(submissionClosureException.seasonId, season.id),
+						inArray(submissionClosureException.pathway, assignedPathways)
+					)
+		)
 	]);
 
 	return {
