@@ -108,7 +108,15 @@
 								autocomplete="off"
 							/>
 							{#if selectedUserId}
-								<button type="button" class="clear-btn" onclick={clearUser}>×</button>
+								<button
+									type="button"
+									class="clear-btn"
+									onclick={clearUser}
+									aria-label="Clear selected user"
+									title="Clear selected user"
+								>
+									×
+								</button>
 							{/if}
 						</div>
 						{#if searchQuery.length >= 2 && !selectedUserId}
