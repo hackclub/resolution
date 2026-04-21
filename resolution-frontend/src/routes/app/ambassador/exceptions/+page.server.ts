@@ -163,6 +163,18 @@ export const actions: Actions = {
 			return fail(404, { error: 'Exception not found' });
 		}
 
+		if (!locals.user.isAdmin) {
+			const assignment = await db.query.ambassadorPathway.findFirst({
+				where: and(
+					eq(ambassadorPathway.userId, locals.user.id),
+					eq(ambassadorPathway.pathway, exception.pathway)
+				)
+			});
+			if (!assignment) {
+				return fail(403, { error: 'You are not assigned to this pathway' });
+			}
+		}
+
 		await db
 			.update(submissionClosureException)
 			.set({ isActive: !exception.isActive })
@@ -189,6 +201,18 @@ export const actions: Actions = {
 
 		if (!exception) {
 			return fail(404, { error: 'Exception not found' });
+		}
+
+		if (!locals.user.isAdmin) {
+			const assignment = await db.query.ambassadorPathway.findFirst({
+				where: and(
+					eq(ambassadorPathway.userId, locals.user.id),
+					eq(ambassadorPathway.pathway, exception.pathway)
+				)
+			});
+			if (!assignment) {
+				return fail(403, { error: 'You are not assigned to this pathway' });
+			}
 		}
 
 		await db.delete(submissionClosureException).where(eq(submissionClosureException.id, exceptionId));
