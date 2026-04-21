@@ -216,8 +216,8 @@
 								<div class="exception-info">
 									<div class="exception-user">
 										<strong>
-											{exception.userName || ''}
-											{exception.userLastName || ''}
+                                            {[exception.userName, exception.userLastName].filter(Boolean).join(' ')}  
+
 										</strong>
 										<span class="exception-email">{exception.userEmail}</span>
 									</div>
