@@ -244,7 +244,7 @@ export const submissionClosureExceptionRelations = relations(submissionClosureEx
   user: one(user, { fields: [submissionClosureException.userId], references: [user.id] }),
   createdBy: one(user, { fields: [submissionClosureException.createdBy], references: [user.id] }),
   season: one(programSeason, { fields: [submissionClosureException.seasonId], references: [programSeason.id]})
-}))
+}));
 
 // Ambassador pathway assignments - which pathways an ambassador can edit
 export const ambassadorPathway = pgTable('ambassador_pathway', {
