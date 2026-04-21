@@ -2,40 +2,40 @@
 	import type { PageData } from './$types';
 	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
 	import { enhance } from '$app/forms';
-	import { page } from '$app/stores';
 
 	import { PATHWAY_INFO } from '$lib/pathways';
 
 	let { data }: { data: PageData } = $props();
 
-	const pathwayInfo = PATHWAY_INFO;
-
-	let copiedId = $state<string | null>(null);
+	let searchQuery = $state('');
+	let selectedUserId = $state('');
 	let selectedPathway = $state('');
-	let linkLabel = $state('');
-	let linkSlug = $state('');
-	let expandedLinks = $state<Set<string>>(new Set());
+	let selectedWeek = $state('');
+	let reason = $state('');
+	let expiresAt = $state('');
 
-	function copyLink(code: string, linkId: string) {
-		navigator.clipboard.writeText(`${$page.url.origin}/ref/${code}`);
-		copiedId = linkId;
-		setTimeout(() => {
-			copiedId = null;
-		}, 2000);
+	const pathwayInfo = PATHWAY_INFO;
+	const weeks = $derived(Array.from({ length: data.season.totalWeeks }, (_, i) => i + 1));
+
+	const filteredUsers = $derived(
+		searchQuery.length < 2
+			? []
+			: data.enrolledUsers.filter(
+					(u) =>
+						(u.firstName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+						(u.lastName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+						u.email.toLowerCase().includes(searchQuery.toLowerCase())
+				)
+	);
+
+	function selectUser(userId: string, name: string) {
+		selectedUserId = userId;
+		searchQuery = name;
 	}
 
-	function toggleExpanded(linkId: string) {
-		const next = new Set(expandedLinks);
-		if (next.has(linkId)) {
-			next.delete(linkId);
-		} else {
-			next.add(linkId);
-		}
-		expandedLinks = next;
-	}
-
-	function getLinksByPathway(pathway: string) {
-		return data.referralLinks.filter((l) => l.pathway === pathway);
+	function clearUser() {
+		selectedUserId = '';
+		searchQuery = '';
 	}
 
 	function formatDate(date: Date | string) {
@@ -46,21 +46,17 @@
 		});
 	}
 
-	const pathwaysWithLinks = $derived(
-		data.assignments.filter((p) => getLinksByPathway(p).length > 0)
-	);
-
-	const pathwaysWithoutLinks = $derived(
-		data.assignments.filter((p) => getLinksByPathway(p).length === 0)
+	const canSubmit = $derived(
+		selectedUserId && selectedPathway && selectedWeek && reason && expiresAt
 	);
 </script>
 
 <svelte:head>
-	<title>Referral Links - Resolution</title>
+	<title>Submission Exceptions - Resolution</title>
 </svelte:head>
 
 <PlatformBackground>
-	<div class="referrals-container">
+	<div class="exceptions-container">
 		<a href="/app/ambassador" class="back-link">
 			<img
 				src="https://icons.hackclub.com/api/icons/8492a6/back"
@@ -72,218 +68,218 @@
 		</a>
 
 		<header>
-			<h1>Referral Links</h1>
-			<p class="subtitle">Create and manage referral links for your pathways</p>
+			<h1>Submission Exceptions</h1>
+			<p class="subtitle">Grant deadline extensions for {data.season.name}</p>
 		</header>
 
-		<!-- Create Link Form -->
+		<!-- Create Exception Form -->
 		<section class="card create-section">
-			<h2>Create Referral Link</h2>
-			<form method="POST" action="?/createLink" use:enhance class="create-form">
+			<h2>Create Exception</h2>
+			<form
+				method="POST"
+				action="?/createException"
+				use:enhance={() => {
+					return async ({ update }) => {
+						await update();
+						selectedUserId = '';
+						searchQuery = '';
+						selectedPathway = '';
+						selectedWeek = '';
+						reason = '';
+						expiresAt = '';
+					};
+				}}
+				class="create-form"
+			>
+				<input type="hidden" name="userId" value={selectedUserId} />
+
 				<div class="form-row">
+					<div class="form-group user-picker">
+						<label for="user-search">User</label>
+						<div class="search-wrapper">
+							<input
+								id="user-search"
+								type="text"
+								placeholder="Search by name or email..."
+								bind:value={searchQuery}
+								onfocus={() => {
+									if (selectedUserId) clearUser();
+								}}
+								autocomplete="off"
+							/>
+							{#if selectedUserId}
+								<button type="button" class="clear-btn" onclick={clearUser}>×</button>
+							{/if}
+						</div>
+						{#if searchQuery.length >= 2 && !selectedUserId}
+							<div class="search-results">
+								{#if filteredUsers.length === 0}
+									<div class="search-empty">No users found</div>
+								{:else}
+									{#each filteredUsers.slice(0, 8) as u}
+										<button
+											type="button"
+											class="search-result"
+											onclick={() =>
+												selectUser(
+													u.id,
+													[u.firstName, u.lastName].filter(Boolean).join(' ') ||
+														u.email
+												)}
+										>
+											<span class="result-name">
+												{u.firstName || ''}
+												{u.lastName || ''}
+											</span>
+											<span class="result-email">{u.email}</span>
+										</button>
+									{/each}
+								{/if}
+							</div>
+						{/if}
+					</div>
+
 					<div class="form-group">
 						<label for="pathway">Pathway</label>
 						<select id="pathway" name="pathway" bind:value={selectedPathway} required>
-							<option value="" disabled>Select a pathway</option>
+							<option value="" disabled>Select pathway</option>
 							{#each data.assignments as pathway}
 								{@const info = pathwayInfo[pathway]}
 								<option value={pathway}>{info.label}</option>
 							{/each}
 						</select>
 					</div>
+
 					<div class="form-group">
-						<label for="slug">Slug <span class="optional">(optional)</span></label>
+						<label for="weekNumber">Week</label>
+						<select id="weekNumber" name="weekNumber" bind:value={selectedWeek} required>
+							<option value="" disabled>Select week</option>
+							{#each weeks as week}
+								<option value={week}>Week {week}</option>
+							{/each}
+						</select>
+					</div>
+				</div>
+
+				<div class="form-row">
+					<div class="form-group" style="flex: 2">
+						<label for="reason">Reason</label>
 						<input
-							id="slug"
-							name="slug"
+							id="reason"
+							name="reason"
 							type="text"
-							placeholder="e.g. my-link"
-							pattern="[a-zA-Z0-9_\-]{'{'}3,32{'}'}"
-							bind:value={linkSlug}
+							placeholder="e.g. Traveling, medical absence..."
+							bind:value={reason}
+							required
 						/>
-						<span class="field-hint">/ref/{linkSlug || 'auto-generated'}</span>
 					</div>
 					<div class="form-group">
-						<label for="label">Label <span class="optional">(optional)</span></label>
+						<label for="expiresAt">Expires</label>
 						<input
-							id="label"
-							name="label"
-							type="text"
-							placeholder="e.g. Instagram Bio, Discord Server"
-							bind:value={linkLabel}
+							id="expiresAt"
+							name="expiresAt"
+							type="date"
+							bind:value={expiresAt}
+							required
 						/>
 					</div>
-					<button type="submit" class="btn btn-primary create-btn" disabled={!selectedPathway}>
+					<button
+						type="submit"
+						class="btn btn-primary create-btn"
+						disabled={!canSubmit}
+					>
 						<img
 							src="https://icons.hackclub.com/api/icons/ffffff/add"
 							alt=""
 							width="16"
 							height="16"
 						/>
-						Create Link
+						Create
 					</button>
 				</div>
 			</form>
 		</section>
 
-		<!-- Links by Pathway -->
-		{#if data.referralLinks.length === 0}
+		<!-- Existing Exceptions -->
+		{#if data.exceptions.length === 0}
 			<div class="empty-state">
-				<p>You haven't created any referral links yet.</p>
-				<p class="hint">Use the form above to create your first link.</p>
+				<p>No exceptions have been created yet.</p>
+				<p class="hint">Use the form above to grant a deadline extension.</p>
 			</div>
 		{:else}
-			{#each pathwaysWithLinks as pathway}
-				{@const info = pathwayInfo[pathway]}
-				{@const links = getLinksByPathway(pathway)}
-				<section class="card pathway-section">
-					<div class="pathway-header">
-						<img
-							src="https://icons.hackclub.com/api/icons/{info.color}/{info.icon}"
-							alt={info.label}
-							width="28"
-							height="28"
-						/>
-						<h2>{info.label}</h2>
-						<span class="link-count">{links.length} link{links.length !== 1 ? 's' : ''}</span>
-					</div>
-
-					<div class="links-list">
-						{#each links as link}
-							<div class="link-item" class:inactive={!link.isActive}>
-								<div class="link-top">
-									<div class="link-info">
-										<div class="link-url-row">
-											<code class="link-url"
-												>{$page.url.origin}/ref/{link.code}</code
-											>
-											<button
-												class="btn btn-small btn-copy"
-												onclick={() => copyLink(link.code, link.id)}
-											>
-												{#if copiedId === link.id}
-													<img
-														src="https://icons.hackclub.com/api/icons/33d6a6/checkmark"
-														alt=""
-														width="14"
-														height="14"
-													/>
-													Copied!
-												{:else}
-													<img
-														src="https://icons.hackclub.com/api/icons/338eda/copy"
-														alt=""
-														width="14"
-														height="14"
-													/>
-													Copy
-												{/if}
-											</button>
-										</div>
-										{#if link.label}
-											<span class="link-label">{link.label}</span>
-										{/if}
-										<div class="link-meta">
-											<span class="status-badge" class:active={link.isActive}>
-												{link.isActive ? 'Active' : 'Inactive'}
-											</span>
-											<span class="signup-count">
-												<img
-													src="https://icons.hackclub.com/api/icons/8492a6/person"
-													alt=""
-													width="14"
-													height="14"
-												/>
-												{link.signups.length} signup{link.signups.length !== 1
-													? 's'
-													: ''}
-											</span>
-											<span class="created-date">
-												Created {formatDate(link.createdAt)}
-											</span>
-										</div>
+			<section class="card">
+				<h2>Active Exceptions ({data.exceptions.length})</h2>
+				<div class="exceptions-list">
+					{#each data.exceptions as exception}
+						{@const info = pathwayInfo[exception.pathway]}
+						<div class="exception-item" class:inactive={!exception.isActive}>
+							<div class="exception-top">
+								<div class="exception-info">
+									<div class="exception-user">
+										<strong>
+											{exception.userName || ''}
+											{exception.userLastName || ''}
+										</strong>
+										<span class="exception-email">{exception.userEmail}</span>
 									</div>
-									<div class="link-actions">
-										<form method="POST" action="?/toggleLink" use:enhance>
-											<input type="hidden" name="linkId" value={link.id} />
-											<button
-												type="submit"
-												class="btn btn-small"
-												class:btn-active={link.isActive}
-												class:btn-inactive={!link.isActive}
-											>
-												{link.isActive ? 'Deactivate' : 'Activate'}
-											</button>
-										</form>
-										<form
-											method="POST"
-											action="?/deleteLink"
-											use:enhance
-											onsubmit={(e) => {
-												if (
-													!confirm(
-														'Delete this referral link? This cannot be undone.'
-													)
-												) {
-													e.preventDefault();
-												}
-											}}
-										>
-											<input type="hidden" name="linkId" value={link.id} />
-											<button type="submit" class="btn btn-small btn-danger">
-												<img
-													src="https://icons.hackclub.com/api/icons/ec3750/delete"
-													alt=""
-													width="14"
-													height="14"
-												/>
-											</button>
-										</form>
+									<div class="exception-meta">
+										<span class="pathway-badge" style="color: #{info.color}; border-color: #{info.color}">
+											{info.label}
+										</span>
+										<span>Week {exception.weekNumber}</span>
+										<span class="status-badge" class:active={exception.isActive}>
+											{exception.isActive ? 'Active' : 'Inactive'}
+										</span>
+										<span class="exception-date">
+											Expires {formatDate(exception.expiresAt)}
+										</span>
 									</div>
+									<div class="exception-reason">{exception.reason}</div>
 								</div>
-
-								{#if link.signups.length > 0}
-									<button
-										class="expand-btn"
-										onclick={() => toggleExpanded(link.id)}
+								<div class="exception-actions">
+									<form method="POST" action="?/toggleException" use:enhance>
+										<input type="hidden" name="exceptionId" value={exception.id} />
+										<button
+											type="submit"
+											class="btn btn-small"
+											class:btn-active={exception.isActive}
+											class:btn-inactive={!exception.isActive}
+										>
+											{exception.isActive ? 'Deactivate' : 'Activate'}
+										</button>
+									</form>
+									<form
+										method="POST"
+										action="?/deleteException"
+										use:enhance
+										onsubmit={(e) => {
+											if (!confirm('Delete this exception? This cannot be undone.')) {
+												e.preventDefault();
+											}
+										}}
 									>
-										<img
-											src="https://icons.hackclub.com/api/icons/8492a6/{expandedLinks.has(link.id) ? 'up-caret' : 'down-caret'}"
-											alt=""
-											width="14"
-											height="14"
-										/>
-										{expandedLinks.has(link.id) ? 'Hide' : 'Show'} signups
-									</button>
-
-									{#if expandedLinks.has(link.id)}
-										<div class="signups-list">
-											{#each link.signups as signup}
-												<div class="signup-row">
-													<span class="signup-name">
-														{signup.firstName || ''}
-														{signup.lastName || ''}
-													</span>
-													<span class="signup-email">{signup.email}</span>
-													<span class="signup-date"
-														>{formatDate(signup.createdAt)}</span
-													>
-												</div>
-											{/each}
-										</div>
-									{/if}
-								{/if}
+										<input type="hidden" name="exceptionId" value={exception.id} />
+										<button type="submit" class="btn btn-small btn-danger">
+											<img
+												src="https://icons.hackclub.com/api/icons/ec3750/delete"
+												alt=""
+												width="14"
+												height="14"
+											/>
+										</button>
+									</form>
+								</div>
 							</div>
-						{/each}
-					</div>
-				</section>
-			{/each}
+						</div>
+					{/each}
+				</div>
+			</section>
 		{/if}
 	</div>
 </PlatformBackground>
 
 <style>
-	.referrals-container {
+	.exceptions-container {
 		min-height: 100vh;
 		padding: 2rem;
 		color: #1a1a2e;
@@ -343,24 +339,22 @@
 		align-items: flex-end;
 	}
 
+	.form-row + .form-row {
+		margin-top: 0.75rem;
+	}
+
 	.form-group {
 		display: flex;
 		flex-direction: column;
 		gap: 0.375rem;
 		flex: 1;
 		position: relative;
-		padding-bottom: 1.25rem;
 	}
 
 	.form-group label {
 		font-size: 0.85rem;
 		font-weight: 600;
 		color: #1a1a2e;
-	}
-
-	.optional {
-		font-weight: 400;
-		color: #8492a6;
 	}
 
 	.form-group select,
@@ -380,13 +374,90 @@
 		border-color: #af98ff;
 	}
 
-	.field-hint {
+	/* User Picker */
+	.user-picker {
+		position: relative;
+	}
+
+	.search-wrapper {
+		position: relative;
+	}
+
+	.search-wrapper input {
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.clear-btn {
 		position: absolute;
-		bottom: 0;
-		left: 0;
-		font-size: 0.75rem;
+		right: 0.5rem;
+		top: 50%;
+		transform: translateY(-50%);
+		background: none;
+		border: none;
+		font-size: 1.1rem;
 		color: #8492a6;
-		font-family: monospace;
+		cursor: pointer;
+		padding: 0 0.25rem;
+		line-height: 1;
+	}
+
+	.clear-btn:hover {
+		color: #ec3750;
+	}
+
+	.search-results {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		right: 0;
+		background: white;
+		border: 1px solid #d0d0d0;
+		border-radius: 8px;
+		max-height: 200px;
+		overflow-y: auto;
+		z-index: 10;
+		margin-top: 2px;
+	}
+
+	.search-result {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+		width: 100%;
+		padding: 0.5rem 0.75rem;
+		background: none;
+		border: none;
+		border-bottom: 1px solid #f0f0f0;
+		cursor: pointer;
+		text-align: left;
+		font-family: 'Kodchasan', sans-serif;
+		font-size: 0.85rem;
+	}
+
+	.search-result:last-child {
+		border-bottom: none;
+	}
+
+	.search-result:hover {
+		background: #f0f4f8;
+	}
+
+	.result-name {
+		font-weight: 600;
+		color: #1a1a2e;
+	}
+
+	.result-email {
+		color: #8492a6;
+		font-size: 0.8rem;
+	}
+
+	.search-empty {
+		padding: 0.75rem;
+		text-align: center;
+		color: #8492a6;
+		font-size: 0.85rem;
 	}
 
 	/* Buttons */
@@ -406,7 +477,8 @@
 	}
 
 	.create-btn {
-		margin-bottom: 1.25rem;
+		align-self: flex-end;
+		margin-bottom: 0;
 	}
 
 	.btn:hover {
@@ -426,12 +498,6 @@
 	.btn-small {
 		padding: 0.35rem 0.75rem;
 		font-size: 0.8rem;
-	}
-
-	.btn-copy {
-		background: #f0f4f8;
-		color: #338eda;
-		border: 1px solid #d0d0d0;
 	}
 
 	.btn-active {
@@ -470,27 +536,15 @@
 		font-size: 0.875rem;
 	}
 
-	/* Pathway Sections */
-	.pathway-header {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		margin-bottom: 1.25rem;
-	}
-
-	.link-count {
-		color: #8492a6;
-		font-size: 0.85rem;
-		margin-left: auto;
-	}
-
-	.links-list {
+	/* Exceptions List */
+	.exceptions-list {
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+		margin-top: 1.25rem;
 	}
 
-	.link-item {
+	.exception-item {
 		background: white;
 		border: 2px solid #e0e0e0;
 		border-radius: 12px;
@@ -498,56 +552,55 @@
 		transition: border-color 0.15s;
 	}
 
-	.link-item:hover {
+	.exception-item:hover {
 		border-color: #af98ff;
 	}
 
-	.link-item.inactive {
+	.exception-item.inactive {
 		opacity: 0.65;
 	}
 
-	.link-top {
+	.exception-top {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
 		gap: 1rem;
 	}
 
-	.link-info {
+	.exception-info {
 		flex: 1;
 		min-width: 0;
 	}
 
-	.link-url-row {
+	.exception-user {
 		display: flex;
-		align-items: center;
+		align-items: baseline;
 		gap: 0.5rem;
 		margin-bottom: 0.375rem;
 	}
 
-	.link-url {
-		font-size: 0.85rem;
-		background: #f0f4f8;
-		padding: 0.25rem 0.5rem;
-		border-radius: 6px;
-		color: #338eda;
-		word-break: break-all;
-	}
-
-	.link-label {
-		display: inline-block;
-		font-size: 0.8rem;
+	.exception-email {
 		color: #8492a6;
-		margin-bottom: 0.375rem;
+		font-size: 0.8rem;
 	}
 
-	.link-meta {
+	.exception-meta {
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
 		flex-wrap: wrap;
 		font-size: 0.8rem;
 		color: #8492a6;
+		margin-bottom: 0.375rem;
+	}
+
+	.pathway-badge {
+		padding: 0.125rem 0.5rem;
+		border-radius: 10px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		border: 1px solid;
+		background: white;
 	}
 
 	.status-badge {
@@ -564,73 +617,17 @@
 		color: #33d6a6;
 	}
 
-	.signup-count {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
+	.exception-reason {
+		font-size: 0.85rem;
+		color: #1a1a2e;
+		font-style: italic;
 	}
 
-	.link-actions {
+	.exception-actions {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 		flex-shrink: 0;
-	}
-
-	/* Expand / Signups */
-	.expand-btn {
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-		background: none;
-		border: none;
-		color: #8492a6;
-		cursor: pointer;
-		font-size: 0.8rem;
-		font-family: 'Kodchasan', sans-serif;
-		padding: 0.5rem 0 0 0;
-	}
-
-	.expand-btn:hover {
-		color: #1a1a2e;
-	}
-
-	.signups-list {
-		margin-top: 0.75rem;
-		border-top: 1px solid #e0e0e0;
-		padding-top: 0.75rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.signup-row {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		font-size: 0.8rem;
-		padding: 0.375rem 0.5rem;
-		border-radius: 8px;
-		background: #f9f9fb;
-	}
-
-	.signup-name {
-		font-weight: 600;
-		color: #1a1a2e;
-		min-width: 120px;
-	}
-
-	.signup-email {
-		color: #8492a6;
-		flex: 1;
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.signup-date {
-		color: #8492a6;
-		white-space: nowrap;
 	}
 
 	@media (max-width: 768px) {
@@ -639,26 +636,21 @@
 			align-items: stretch;
 		}
 
-		.link-top {
+		.create-btn {
+			align-self: stretch;
+		}
+
+		.exception-top {
 			flex-direction: column;
 		}
 
-		.link-actions {
+		.exception-actions {
 			align-self: flex-start;
 		}
 
-		.link-url-row {
-			flex-wrap: wrap;
-		}
-
-		.signup-row {
+		.exception-user {
 			flex-direction: column;
-			align-items: flex-start;
-			gap: 0.25rem;
-		}
-
-		.signup-name {
-			min-width: unset;
+			gap: 0.125rem;
 		}
 	}
 </style>

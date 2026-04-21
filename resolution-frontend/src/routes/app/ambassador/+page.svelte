@@ -40,10 +40,16 @@
 					<h1>Ambassador Dashboard</h1>
 					<p class="subtitle">Manage your pathway content</p>
 				</div>
-				<a href="/app/ambassador/referrals" class="referrals-btn">
-					<img src="https://icons.hackclub.com/api/icons/a633d6/share" alt="Referrals" width="18" height="18" />
-					Referral Links
-				</a>
+				<div class="header-actions">
+					<a href="/app/ambassador/referrals" class="referrals-btn">
+						<img src="https://icons.hackclub.com/api/icons/a633d6/share" alt="Referrals" width="18" height="18" />
+						Referral Links
+					</a>
+					<a href="/app/ambassador/exceptions" class="exceptions-btn">
+						<img src="https://icons.hackclub.com/api/icons/ff8c37/clock" alt="Exceptions" width="18" height="18" />
+						Exceptions
+					</a>
+				</div>
 			</div>
 		</header>
 
@@ -155,6 +161,30 @@
 	}
 
 	.referrals-btn:hover {
+		background: rgba(255, 255, 255, 1);
+	}
+
+	.header-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.exceptions-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		background: rgba(255, 255, 255, 0.8);
+		border: 1px solid #ff8c37;
+		color: #ff8c37;
+		border-radius: 20px;
+		font-family: 'Kodchasan', sans-serif;
+		text-decoration: none;
+		white-space: nowrap;
+		font-size: 0.9rem;
+	}
+
+	.exceptions-btn:hover {
 		background: rgba(255, 255, 255, 1);
 	}
 

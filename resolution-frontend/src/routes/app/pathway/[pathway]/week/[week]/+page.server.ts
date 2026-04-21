@@ -4,6 +4,7 @@ import { userPathway, pathwayWeekContent } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { redirect, error } from '@sveltejs/kit';
 import { PATHWAY_IDS, type PathwayId } from '$lib/pathways';
+import { ExceptionService } from '$lib/server/services';
 
 const validPathways = PATHWAY_IDS;
 type Pathway = PathwayId;
@@ -41,11 +42,17 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 		throw error(404, 'This week is not yet available');
 	}
 
+	let exception: { expiresAt: Date } | null = null;
+	if (!content.isSubmissionsOpen) {
+		exception = await ExceptionService.getActiveException(user.id, pathwayId, weekNumber);
+	}
+
 	return {
 		pathwayId,
 		weekNumber,
 		title: content.title,
 		content: content.content,
-		isSubmissionsOpen: content.isSubmissionsOpen
+		isSubmissionsOpen: content.isSubmissionsOpen || !!exception,
+		exception: exception ? { expiresAt: exception.expiresAt.toISOString() } : null
 	};
 };

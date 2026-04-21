@@ -1,14 +1,9 @@
 import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
-import { ambassadorPathway, referralLink, referralSignup, user } from '$lib/server/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { ambassadorPathway, submissionClosureException, programEnrollment, programSeason, user } from '$lib/server/db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
-import { createId } from '@paralleldrive/cuid2';
 import { PATHWAY_IDS } from '$lib/pathways';
-
-function generateReferralCode(): string {
-	return createId().slice(0, 8);
-}
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { user: currentUser } = await parent();
@@ -22,69 +17,95 @@ export const load: PageServerLoad = async ({ parent }) => {
 		throw error(403, 'You are not an ambassador');
 	}
 
-	const links = await db
-		.select()
-		.from(referralLink)
-		.where(eq(referralLink.ambassadorId, currentUser.id));
+	const assignedPathways = assignments.map((a) => a.pathway);
 
-	const linksWithSignups = await Promise.all(
-		links.map(async (link) => {
-			const signups = await db
-				.select({
-					id: referralSignup.id,
-					createdAt: referralSignup.createdAt,
-					userId: user.id,
-					firstName: user.firstName,
-					lastName: user.lastName,
-					email: user.email
-				})
-				.from(referralSignup)
-				.innerJoin(user, eq(referralSignup.userId, user.id))
-				.where(eq(referralSignup.referralLinkId, link.id));
+	const season = await db.query.programSeason.findFirst({
+		where: eq(programSeason.isActive, true)
+	});
 
-			return {
-				...link,
-				signups
-			};
-		})
-	);
+	if (!season) {
+		throw error(500, 'No active season configured');
+	}
+
+	const [enrolledUsers, exceptions] = await Promise.all([
+		db
+			.select({
+				id: user.id,
+				firstName: user.firstName,
+				lastName: user.lastName,
+				email: user.email
+			})
+			.from(programEnrollment)
+			.innerJoin(user, eq(programEnrollment.userId, user.id))
+			.where(
+				and(
+					eq(programEnrollment.seasonId, season.id),
+					eq(programEnrollment.status, 'ACTIVE')
+				)
+			),
+
+		db
+			.select({
+				id: submissionClosureException.id,
+				userId: submissionClosureException.userId,
+				pathway: submissionClosureException.pathway,
+				weekNumber: submissionClosureException.weekNumber,
+				reason: submissionClosureException.reason,
+				isActive: submissionClosureException.isActive,
+				expiresAt: submissionClosureException.expiresAt,
+				createdAt: submissionClosureException.createdAt,
+				userName: user.firstName,
+				userLastName: user.lastName,
+				userEmail: user.email
+			})
+			.from(submissionClosureException)
+			.innerJoin(user, eq(submissionClosureException.userId, user.id))
+			.where(eq(submissionClosureException.seasonId, season.id))
+	]);
 
 	return {
-		assignments: assignments.map((a) => a.pathway),
-		referralLinks: linksWithSignups
+		assignments: assignedPathways,
+		season: {
+			id: season.id,
+			name: season.name,
+			totalWeeks: season.totalWeeks
+		},
+		enrolledUsers,
+		exceptions
 	};
 };
 
 export const actions: Actions = {
-	createLink: async ({ request, locals }) => {
+	createException: async ({ request, locals }) => {
 		if (!locals.user || !locals.session) {
 			return fail(401, { error: 'Unauthorized' });
 		}
 
 		const formData = await request.formData();
+		const userId = formData.get('userId') as string;
 		const pathway = formData.get('pathway') as string;
-		const label = formData.get('label') as string | null;
-		const customSlug = (formData.get('slug') as string | null)?.trim() || null;
+		const weekNumber = parseInt(formData.get('weekNumber') as string, 10);
+		const reason = formData.get('reason') as string;
+		const expiresAt = formData.get('expiresAt') as string;
 
-		const validPathways = PATHWAY_IDS;
-		if (!pathway || !validPathways.includes(pathway)) {
+		if (!userId || !pathway || !weekNumber || !reason || !expiresAt) {
+			return fail(400, { error: 'All fields are required' });
+		}
+
+		if (!PATHWAY_IDS.includes(pathway)) {
 			return fail(400, { error: 'Invalid pathway' });
 		}
 
-		let code: string;
-		if (customSlug) {
-			if (!/^[a-zA-Z0-9_-]{3,32}$/.test(customSlug)) {
-				return fail(400, { error: 'Slug must be 3-32 characters, letters, numbers, hyphens, or underscores only' });
-			}
-			const existing = await db.query.referralLink.findFirst({
-				where: eq(referralLink.code, customSlug)
-			});
-			if (existing) {
-				return fail(400, { error: 'That slug is already taken' });
-			}
-			code = customSlug;
-		} else {
-			code = generateReferralCode();
+		const season = await db.query.programSeason.findFirst({
+			where: eq(programSeason.isActive, true)
+		});
+
+		if (!season) {
+			return fail(500, { error: 'No active season' });
+		}
+
+		if (weekNumber < 1 || weekNumber > season.totalWeeks) {
+			return fail(400, { error: 'Invalid week number' });
 		}
 
 		const assignment = await db.query.ambassadorPathway.findFirst({
@@ -98,65 +119,72 @@ export const actions: Actions = {
 			return fail(403, { error: 'You are not assigned to this pathway' });
 		}
 
-		await db.insert(referralLink).values({
-			ambassadorId: locals.user.id,
-			pathway: pathway as any,
-			code,
-			label: label || null
-		});
+		try {
+			await db.insert(submissionClosureException).values({
+				userId,
+				seasonId: season.id,
+				pathway: pathway as any,
+				weekNumber,
+				reason,
+				expiresAt: new Date(expiresAt),
+				createdBy: locals.user.id
+			});
+		} catch {
+			return fail(400, { error: 'An exception already exists for this user, pathway, and week' });
+		}
 
 		return { success: true };
 	},
 
-	toggleLink: async ({ request, locals }) => {
+	toggleException: async ({ request, locals }) => {
 		if (!locals.user || !locals.session) {
 			return fail(401, { error: 'Unauthorized' });
 		}
 
 		const formData = await request.formData();
-		const linkId = formData.get('linkId') as string;
+		const exceptionId = formData.get('exceptionId') as string;
 
-		if (!linkId) {
-			return fail(400, { error: 'Missing link ID' });
+		if (!exceptionId) {
+			return fail(400, { error: 'Missing exception ID' });
 		}
 
-		const link = await db.query.referralLink.findFirst({
-			where: and(eq(referralLink.id, linkId), eq(referralLink.ambassadorId, locals.user.id))
+		const exception = await db.query.submissionClosureException.findFirst({
+			where: eq(submissionClosureException.id, exceptionId)
 		});
 
-		if (!link) {
-			return fail(404, { error: 'Link not found' });
+		if (!exception) {
+			return fail(404, { error: 'Exception not found' });
 		}
 
 		await db
-			.update(referralLink)
-			.set({ isActive: !link.isActive })
-			.where(eq(referralLink.id, linkId));
+			.update(submissionClosureException)
+			.set({ isActive: !exception.isActive })
+			.where(eq(submissionClosureException.id, exceptionId));
 
 		return { success: true };
 	},
 
-	deleteLink: async ({ request, locals }) => {
+	deleteException: async ({ request, locals }) => {
 		if (!locals.user || !locals.session) {
 			return fail(401, { error: 'Unauthorized' });
 		}
 
 		const formData = await request.formData();
-		const linkId = formData.get('linkId') as string;
+		const exceptionId = formData.get('exceptionId') as string;
 
-		if (!linkId) {
-			return fail(400, { error: 'Missing link ID' });
+		if (!exceptionId) {
+			return fail(400, { error: 'Missing exception ID' });
 		}
 
-		const link = await db.query.referralLink.findFirst({
-			where: and(eq(referralLink.id, linkId), eq(referralLink.ambassadorId, locals.user.id))
+		const exception = await db.query.submissionClosureException.findFirst({
+			where: eq(submissionClosureException.id, exceptionId)
 		});
 
-		if (!link) {
-			return fail(404, { error: 'Link not found' });
+		if (!exception) {
+			return fail(404, { error: 'Exception not found' });
 		}
 
-		await db.delete(referralLink).where(eq(referralLink.id, linkId));
+		await db.delete(submissionClosureException).where(eq(submissionClosureException.id, exceptionId));
 
 		return { success: true };
 	}

@@ -9,6 +9,7 @@ import { db } from '$lib/server/db';
 import { userPathway, pathwayWeekContent } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { type PathwayId } from '$lib/pathways';
+import { ExceptionService } from '$lib/server/services';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB (Airtable upload limit)
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
@@ -76,7 +77,10 @@ export const POST: RequestHandler = async (event) => {
 		}
 
 		if (!weekContent.isSubmissionsOpen) {
-			return json({ error: 'Submissions have been closed for this week' }, { status: 403 });
+			const exception = await ExceptionService.getActiveException(user.id, parsed.pathway as PathwayId, parsed.week);
+			if (!exception) {
+				return json({ error: 'Submissions have been closed for this week' }, { status: 403 });
+			}
 		}
 
 		const base = new Airtable({ apiKey: env.AIRTABLE_API_TOKEN }).base(env.AIRTABLE_BASE_ID);
