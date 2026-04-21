@@ -179,7 +179,8 @@ export const userRelations = relations(user, ({ many }) => ({
   payouts: many(ambassadorPayout),
   referralLinks: many(referralLink),
   reviewerAssignments: many(reviewerPathway),
-  exceptions: many(submissionClosureException)
+  exceptions: many(submissionClosureException, { relationName: 'exceptionUser' }),
+  createdExceptions: many(submissionClosureException, { relationName: 'exceptionCreator' })
   }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -241,8 +242,8 @@ export const userPathwayRelations = relations(userPathway, ({ one }) => ({
 }));
 
 export const submissionClosureExceptionRelations = relations(submissionClosureException, ({ one }) => ({
-  user: one(user, { fields: [submissionClosureException.userId], references: [user.id] }),
-  createdBy: one(user, { fields: [submissionClosureException.createdBy], references: [user.id] }),
+  user: one(user, { fields: [submissionClosureException.userId], references: [user.id], relationName: 'exceptionUser' }),
+  creator: one(user, { fields: [submissionClosureException.createdBy], references: [user.id], relationName: 'exceptionCreator' }),
   season: one(programSeason, { fields: [submissionClosureException.seasonId], references: [programSeason.id]})
 }));
 
