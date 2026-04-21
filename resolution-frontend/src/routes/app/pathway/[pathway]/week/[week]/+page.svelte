@@ -20,7 +20,7 @@
 				{#if data.exception}
 					<div class="exception-notice">
 						<img src="https://icons.hackclub.com/api/icons/ff8c37/clock" alt="" width="18" height="18" />
-						<span>You have a deadline extension. Submit by <strong>{new Date(data.exception.expiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong></span>
+						<span>You have a deadline extension. Submit by <strong>{new Date(data.exception.expiresAt + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong></span>
 					</div>
 				{/if}
 				<p>Finished your project for this week? Submit it to earn rewards!</p>

@@ -133,7 +133,7 @@ export const actions: Actions = {
 				pathway: pathway as any,
 				weekNumber,
 				reason,
-				expiresAt: new Date(expiresAt),
+				expiresAt,
 				createdBy: locals.user.id
 			});
 		} catch {

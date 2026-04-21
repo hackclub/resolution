@@ -42,7 +42,7 @@ describe('ExceptionService.getActiveException', () => {
 	});
 
 	it('returns exception when a valid one exists', async () => {
-		const exception = { id: 'exc-1', expiresAt: new Date('2026-06-01') };
+		const exception = { id: 'exc-1', expiresAt: '2026-06-01' };
 		mockFindFirstSeason.mockResolvedValue({ id: 'season-1', isActive: true });
 		mockLimit.mockResolvedValue([exception]);
 

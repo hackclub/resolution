@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { submissionClosureException, programSeason } from '../db/schema';
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and, gte, sql } from 'drizzle-orm';
 import type { PathwayId } from '$lib/pathways';
 
 export const ExceptionService = {
@@ -32,7 +32,7 @@ export const ExceptionService = {
 					eq(submissionClosureException.pathway, pathway),
 					eq(submissionClosureException.weekNumber, weekNumber),
 					eq(submissionClosureException.isActive, true),
-					gt(submissionClosureException.expiresAt, new Date())
+					gte(submissionClosureException.expiresAt, sql`CURRENT_DATE`)
 				)
 			)
 			.limit(1);

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, index, date } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
@@ -147,7 +147,7 @@ export const submissionClosureException = pgTable('submission_closure_exception'
   weekNumber: integer('week_number').notNull(),
   reason: text('reason').notNull(),
   isActive: boolean('is_active').notNull().default(true),
-  expiresAt: timestamp('expires_at', { mode: 'date' }).notNull(),
+  expiresAt: date('expires_at').notNull(), // we only care abt date + want to avoid timezone issues, date returns str vs Date obj
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   createdBy: text('created_by').notNull().references(() => user.id, { onDelete: 'cascade' })
 }, (table) => [

@@ -42,7 +42,7 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 		throw error(404, 'This week is not yet available');
 	}
 
-	let exception: { expiresAt: Date } | null = null;
+	let exception: { expiresAt: string } | null = null;
 	if (!content.isSubmissionsOpen) {
 		exception = await ExceptionService.getActiveException(user.id, pathwayId, weekNumber);
 	}
@@ -53,6 +53,6 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 		title: content.title,
 		content: content.content,
 		isSubmissionsOpen: content.isSubmissionsOpen || !!exception,
-		exception: exception ? { expiresAt: exception.expiresAt.toISOString() } : null
+		exception
 	};
 };
