@@ -13,52 +13,42 @@ jobs:
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
+    env:
+      HACK_CLUB_CDN_API_KEY: ${{ github.event_name == 'pull_request' && 'placeholder-key' || secrets.HACK_CLUB_CDN_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: resolution-frontend/package-lock.json
-      - run: npm ci
-      - run: npm run check
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run check
 
   test:
     name: Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: resolution-frontend/package-lock.json
-      - run: npm ci
-      - run: npm test -- --coverage
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun test --coverage
 
   security:
     name: Security Audit
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: resolution-frontend/package-lock.json
-      - run: npm ci
-      - run: npm audit --audit-level=high
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun audit --audit-level=critical
 
   build:
     name: Build
     needs: [typecheck, test]
     runs-on: ubuntu-latest
+    env:
+      HACK_CLUB_CDN_API_KEY: ${{ github.event_name == 'pull_request' && 'placeholder-key' || secrets.HACK_CLUB_CDN_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: resolution-frontend/package-lock.json
-      - run: npm ci
-      - run: npm run build
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      

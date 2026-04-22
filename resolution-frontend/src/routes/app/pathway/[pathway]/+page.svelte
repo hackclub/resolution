@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
 	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
 
@@ -15,6 +16,45 @@
 
 	let pathway = $derived(pathwayInfo[data.pathwayId]);
 	const weeks = Array.from({ length: 8 }, (_, i) => i + 1);
+	let loadedImages = $state(new Set<string>());
+
+	function preloadPrizeImages() {
+		const pendingImages: HTMLImageElement[] = [];
+		const prizeUrls = new Set(
+			weeks.map((week) => getPrizeImageUrl(week)).filter((url) => url.length > 0)
+		);
+
+		for (const url of prizeUrls) {
+			const img = new Image();
+			pendingImages.push(img);
+
+			const cleanupImage = () => {
+				img.onload = null;
+				img.onerror = null;
+				const index = pendingImages.indexOf(img);
+				if (index !== -1) pendingImages.splice(index, 1);
+			};
+
+			img.onload = () => {
+				loadedImages = new Set([...loadedImages, url]);
+				cleanupImage();
+			};
+			img.onerror = cleanupImage;
+			img.src = url;
+		}
+
+		return () => {
+			for (const img of pendingImages) {
+				img.onload = null;
+				img.onerror = null;
+				img.src = '';
+			}
+		};
+	}
+
+	onMount(() => {
+		return preloadPrizeImages();
+	});
 
 	function isWeekPublished(week: number): boolean {
 		return data.publishedWeeks[week]?.isPublished === true;
@@ -22,6 +62,10 @@
 
 	function getWeekTitle(week: number): string {
 		return data.publishedWeeks[week]?.title || '';
+	}
+
+	function getPrizeImageUrl(week: number): string {
+		return data.publishedWeeks[week]?.prizeImageUrl || '';
 	}
 </script>
 
@@ -50,8 +94,12 @@
 			{#each weeks as week}
 				{@const published = isWeekPublished(week)}
 				{@const title = getWeekTitle(week)}
+				{@const prizeImageUrl = getPrizeImageUrl(week)}
 				{#if published}
 					<a href="/app/pathway/{data.pathwayId.toLowerCase()}/week/{week}" class="week-card available">
+						{#if prizeImageUrl && loadedImages.has(prizeImageUrl)}
+							<img src={prizeImageUrl} alt="" aria-hidden="true" class="prize-image" />
+						{/if}
 						<img src="https://icons.hackclub.com/api/icons/{pathway.color}/checkmark" alt="Available" class="status-icon" />
 						<span class="week-number">Week {week}</span>
 						{#if title}
@@ -60,6 +108,9 @@
 					</a>
 				{:else}
 					<div class="week-card locked">
+						{#if prizeImageUrl && loadedImages.has(prizeImageUrl)}
+							<img src={prizeImageUrl} alt="" aria-hidden="true" class="prize-image locked" />
+						{/if}
 						<img src="https://icons.hackclub.com/api/icons/8492a6/private" alt="Locked" class="lock-icon" />
 						<span class="week-number">Week {week}</span>
 					</div>
@@ -130,6 +181,8 @@
 	}
 
 	.week-card {
+		position: relative;
+		overflow: visible;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -143,7 +196,8 @@
 	}
 
 	.week-card.locked {
-		opacity: 0.6;
+		border-color: #b5bfcc;
+		background: rgba(255, 255, 255, 0.7);
 	}
 
 	.week-card.available {
@@ -156,6 +210,24 @@
 	.week-card.available:hover {
 		transform: translateY(-2px);
 		border-color: #af98ff;
+	}
+
+	.prize-image {
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: 100px;
+		height: 100px;
+		object-fit: cover;
+		pointer-events: none;
+		transform: translate(22%, -40%) scale(1);
+		transition: transform 0.15s ease, opacity 0.15s ease;
+		z-index: 2;
+	}
+
+
+	.prize-image.locked {
+		opacity: 0.5;
 	}
 
 	.lock-icon,

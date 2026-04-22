@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { enhance } from '$app/forms';
+	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
+	import { deserialize, enhance } from '$app/forms';
 	import { onMount } from 'svelte';
 	import SvelteMarkdown from 'svelte-marked';
 
@@ -10,18 +11,40 @@
 
 	const pathwayInfo = PATHWAY_INFO;
 
-	// svelte-ignore state_referenced_locally
 	let title = $state(data.content?.title || '');
-	// svelte-ignore state_referenced_locally
 	let content = $state(data.content?.content || '');
-	// svelte-ignore state_referenced_locally
+	let prizeImageUrl = $state(data.content?.prizeImageUrl || '');
 	let isPublished = $state(data.content?.isPublished || false);
+	let isSubmissionsOpen = $state(data.content?.isSubmissionsOpen ?? true);
 	let editorContainer = $state<HTMLDivElement | null>(null);
 	let monacoEditor: any = null;
 	let saving = $state(false);
 	let showPreview = $state(false);
+	let uploadError = $state('');
+	let uploading = $state(false);
+	let isDragActive = $state(false);
+	let prizeFileInput = $state<HTMLInputElement | null>(null);
 
 	const pathway = $derived(pathwayInfo[data.pathwayId]);
+	let loadedPathwayId = data.pathwayId;
+	let loadedWeekNumber = data.weekNumber;
+
+	$effect(() => {
+		if (data.pathwayId === loadedPathwayId && data.weekNumber === loadedWeekNumber) {
+			return;
+		}
+
+		loadedPathwayId = data.pathwayId;
+		loadedWeekNumber = data.weekNumber;
+
+		title = data.content?.title || '';
+		content = data.content?.content || '';
+		prizeImageUrl = data.content?.prizeImageUrl || '';
+		isPublished = data.content?.isPublished || false;
+		isSubmissionsOpen = data.content?.isSubmissionsOpen ?? true;
+
+		monacoEditor?.setValue(content);
+	});
 
 
 
@@ -56,6 +79,84 @@
 			editor?.dispose();
 		};
 	});
+
+	async function uploadPrizeFile(file: File) {
+		uploadError = '';
+
+		if (!file.type.startsWith('image/')) {
+			uploadError = 'Please upload an image file.';
+			return;
+		}
+
+		uploading = true;
+
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+
+			const response = await fetch('?/uploadPrizeImage', {
+				method: 'POST',
+				body: formData
+			});
+			const result = deserialize(await response.text());
+
+			if (result.type !== 'success') {
+				const resultData =
+					'data' in result && result.data && typeof result.data === 'object'
+						? (result.data as Record<string, unknown>)
+						: null;
+				uploadError =
+					typeof resultData?.error === 'string'
+						? resultData.error
+						: 'Failed to upload image.';
+				return;
+			}
+
+			const successData =
+				result.data && typeof result.data === 'object'
+					? (result.data as Record<string, unknown>)
+					: null;
+			const uploadedUrl = successData?.url;
+			if (!uploadedUrl || typeof uploadedUrl !== 'string') {
+				uploadError = 'Upload succeeded but no URL was returned.';
+				return;
+			}
+
+			prizeImageUrl = uploadedUrl;
+		} catch {
+			uploadError = 'Network error while uploading image.';
+		} finally {
+			uploading = false;
+		}
+	}
+
+	async function handleDrop(event: DragEvent) {
+		event.preventDefault();
+		isDragActive = false;
+
+		const file = event.dataTransfer?.files?.[0];
+		if (!file) return;
+
+		await uploadPrizeFile(file);
+	}
+
+	async function handleFileInputChange(event: Event) {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+
+		await uploadPrizeFile(file);
+		input.value = '';
+	}
+
+	function handleDropzoneKeydown(event: KeyboardEvent) {
+		if (event.key !== 'Enter' && event.key !== ' ') return;
+
+		event.preventDefault();
+		if (!uploading) {
+			prizeFileInput?.click();
+		}
+	}
 </script>
 
 <svelte:head>
@@ -74,8 +175,29 @@
 					<span class="status-badge" class:published={isPublished}>
 						{isPublished ? 'Published' : 'Draft'}
 					</span>
+					<span class="status-badge submissions" class:closed={!isSubmissionsOpen}>
+						{isSubmissionsOpen ? 'Submissions Open' : 'Submissions Closed'}
+					</span>
 				</div>
 				<div class="header-actions">
+					<form method="POST" action="?/toggleSubmissions" use:enhance={() => {
+						return async ({ result }) => {
+							if (result.type === 'success') {
+								const resultData =
+									result.data && typeof result.data === 'object'
+										? (result.data as Record<string, unknown>)
+										: null;
+
+								if (typeof resultData?.isSubmissionsOpen === 'boolean') {
+									isSubmissionsOpen = resultData.isSubmissionsOpen;
+								}
+							}
+						};
+					}}>
+						<button type="submit" class="submission-btn" class:closed={!isSubmissionsOpen}>
+							{isSubmissionsOpen ? 'Close Submissions' : 'Open Submissions'}
+						</button>
+					</form>
 					<button type="button" class="preview-btn" onclick={() => showPreview = !showPreview}>
 						{showPreview ? 'Edit' : 'Preview'}
 					</button>
@@ -105,6 +227,67 @@
 				<label for="title">Title</label>
 				<input type="text" id="title" name="title" bind:value={title} placeholder="Enter week title..." />
 			</div>
+
+			<div class="title-row">
+				<label for="prizeImageUrl">Prize Image (1:1 aspect ratio)</label>
+				<div
+					class="dropzone"
+					class:drag-active={isDragActive}
+					role="button"
+					tabindex="0"
+					aria-label="Upload prize image"
+					onkeydown={handleDropzoneKeydown}
+					ondragover={(event) => {
+						event.preventDefault();
+						isDragActive = true;
+					}}
+					ondragleave={() => {
+						isDragActive = false;
+					}}
+					ondrop={handleDrop}
+				>
+					<input
+						id="prize-file"
+						type="file"
+						accept="image/*"
+						onchange={handleFileInputChange}
+						disabled={uploading}
+						bind:this={prizeFileInput}
+					/>
+					<div class="dropzone-content">
+						{#if prizeImageUrl}
+							<img src={prizeImageUrl} alt="Prize preview" class="dropzone-preview" />
+						{/if}
+						<p>
+							{uploading
+								? 'Uploading...'
+								: prizeImageUrl
+									? 'Uploaded image preview'
+									: 'Drop image here or click to upload'}
+						</p>
+						<span>{prizeImageUrl ? 'Drop another image to replace it.' : 'PNG, JPG, WEBP, GIF up to 10MB'}</span>
+						{#if prizeImageUrl}
+							<button
+								type="button"
+								class="clear-upload-btn"
+								onclick={(event) => {
+									event.stopPropagation();
+									prizeImageUrl = '';
+									uploadError = '';
+								}}
+							>
+								Remove image
+							</button>
+						{/if}
+					</div>
+				</div>
+
+				{#if uploadError}
+					<p class="upload-error">{uploadError}</p>
+				{/if}
+			</div>
+
+			<input type="hidden" name="prizeImageUrl" value={prizeImageUrl} />
 
 			<input type="hidden" name="content" value={content} />
 
@@ -189,6 +372,14 @@
 		background: #33d6a6;
 	}
 
+	.status-badge.submissions {
+		background: #33d6a6;
+	}
+
+	.status-badge.submissions.closed {
+		background: #8492a6;
+	}
+
 	.header-actions {
 		display: flex;
 		gap: 0.75rem;
@@ -228,7 +419,27 @@
 		opacity: 0.9;
 	}
 
-	form {
+	.submission-btn {
+		padding: 0.5rem 1rem;
+		background: #ec3750;
+		border: none;
+		color: white;
+		border-radius: 8px;
+		cursor: pointer;
+		font-family: inherit;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.submission-btn.closed {
+		background: #33d6a6;
+	}
+
+	.submission-btn:hover {
+		opacity: 0.9;
+	}
+
+	.editor-container > form {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
@@ -254,6 +465,84 @@
 		border-radius: 8px;
 		font-family: inherit;
 		background: white;
+	}
+
+	.dropzone {
+		position: relative;
+		border: 2px dashed #af98ff;
+		border-radius: 10px;
+		padding: 1rem;
+		background: rgba(255, 255, 255, 0.9);
+		cursor: pointer;
+	}
+
+	.dropzone.drag-active {
+		border-color: #338eda;
+		background: #f5f9ff;
+	}
+
+	.dropzone input[type='file'] {
+		position: absolute;
+		inset: 0;
+		opacity: 0;
+		cursor: pointer;
+	}
+
+	.dropzone-content {
+		position: relative;
+		z-index: 1;
+		pointer-events: none;
+		text-align: center;
+	}
+
+	.dropzone-preview {
+		display: block;
+		width: min(180px, 100%);
+		height: min(180px, 100%);
+		aspect-ratio: 1 / 1;
+		object-fit: cover;
+		border-radius: 14px;
+		border: 1px solid #d5dbe3;
+		margin: 0 auto 0.75rem;
+		box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+	}
+
+	.dropzone-content p {
+		margin: 0;
+		font-weight: 600;
+		color: #1a1a2e;
+	}
+
+	.dropzone-content span {
+		display: block;
+		margin-top: 0.25rem;
+		font-size: 0.825rem;
+		color: #8492a6;
+	}
+
+	.upload-error {
+		margin: 0.5rem 0 0;
+		font-size: 0.875rem;
+		color: #ec3750;
+	}
+
+	.clear-upload-btn {
+		pointer-events: auto;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.5rem 0.75rem;
+		margin-top: 0.75rem;
+		border: 1px solid #d5dbe3;
+		border-radius: 8px;
+		background: #fff;
+		cursor: pointer;
+		font-family: inherit;
+		font-size: 0.875rem;
+	}
+
+	.clear-upload-btn:hover {
+		background: #f8f9fa;
 	}
 
 	.editor-wrapper {

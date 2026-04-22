@@ -8,7 +8,8 @@
 - `npx drizzle-kit push` - Push schema changes to database
 
 ## Architecture
-- **Framework**: SvelteKit 2 with Svelte 5, TypeScript, adapter-node (for Coolify deployment)
+
+- **Framework**: SvelteKit 2 with Svelte 5, TypeScript, adapter-auto (for Vercel deployment)
 - **Database**: PostgreSQL via Drizzle ORM (`src/lib/server/db/schema.ts`)
 - **Auth**: Lucia authentication with Hack Club OAuth (`$lib/server/auth/`)
 - **Routes**: `(onboarding)/`, `app/`, `auth/`, `api/` - SvelteKit file-based routing

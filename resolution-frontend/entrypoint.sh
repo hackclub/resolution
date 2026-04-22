@@ -2,7 +2,7 @@
 set -e
 
 echo "Running database migrations..."
-npx drizzle-kit migrate
+bunx drizzle-kit migrate
 echo "Migrations complete."
 
-exec node build
+exec bun build/index.js

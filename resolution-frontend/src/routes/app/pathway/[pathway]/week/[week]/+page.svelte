@@ -15,10 +15,23 @@
 		<div class="ship-section">
 			<div class="ship-divider"></div>
 			<h2>Ready to ship?</h2>
-			<p>Finished your project for this week? Submit it to earn rewards!</p>
-			<a href="/app/pathway/{data.pathwayId.toLowerCase()}/week/{data.weekNumber}/ship" class="ship-btn">
-				Ship Project
-			</a>
+			
+			{#if data.isSubmissionsOpen}
+				<p>Finished your project for this week? Submit it to earn rewards!</p>
+				<a href="/app/pathway/{data.pathwayId.toLowerCase()}/week/{data.weekNumber}/ship" class="ship-btn">
+					Ship Project
+				</a>
+			{:else}
+				<p>Submissions have been closed for this week</p>
+				<button
+					type="button"
+					class="ship-btn ship-btn-disabled"
+					title="Submissions have been closed for this week"
+					disabled
+				>
+					Ship Project
+				</button>
+			{/if}
 		</div>
 	{/snippet}
 </WeekLayout>
@@ -60,5 +73,15 @@
 
 	.ship-btn:hover {
 		background: #2bc299;
+	}
+
+	.ship-btn-disabled {
+		background: #b5bfcc;
+		color: #f8f9fa;
+		cursor: not-allowed;
+	}
+
+	.ship-btn-disabled:hover {
+		background: #b5bfcc;
 	}
 </style>

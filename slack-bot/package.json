@@ -1,0 +1,14 @@
+{
+  "name": "resolution-slack-bot",
+  "version": "1.0.0",
+  "description": "Slack bot that DMs users when their Resolution project is rejected on Airtable",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@slack/web-api": "^7.0.0",
+    "airtable": "^0.12.2",
+    "dotenv": "^16.4.5"
+  }
+}

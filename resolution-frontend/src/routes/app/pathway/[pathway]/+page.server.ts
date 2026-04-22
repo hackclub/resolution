@@ -35,6 +35,7 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 		.select({
 			weekNumber: pathwayWeekContent.weekNumber,
 			title: pathwayWeekContent.title,
+			prizeImageUrl: pathwayWeekContent.prizeImageUrl,
 			isPublished: pathwayWeekContent.isPublished
 		})
 		.from(pathwayWeekContent)
@@ -43,10 +44,11 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 	const publishedWeeks = weekContents.reduce((acc, w) => {
 		acc[w.weekNumber] = {
 			title: w.title,
+			prizeImageUrl: w.prizeImageUrl,
 			isPublished: w.isPublished
 		};
 		return acc;
-	}, {} as Record<number, { title: string; isPublished: boolean }>);
+	}, {} as Record<number, { title: string; prizeImageUrl: string | null; isPublished: boolean }>);
 
 	return {
 		pathwayId,

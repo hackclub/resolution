@@ -192,6 +192,10 @@
 						</div>
 
 						<div class="card-meta">
+							<span class="email-label">
+								<img src="https://icons.hackclub.com/api/icons/8492a6/email" alt="Email" width="16" height="16" />
+								{submission.email}
+							</span>
 							<span class="week-label">
 								<img src="https://icons.hackclub.com/api/icons/8492a6/event-code" alt="Week" width="16" height="16" />
 								Week {submission.week}
