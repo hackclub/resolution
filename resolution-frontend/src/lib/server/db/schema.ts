@@ -346,6 +346,14 @@ export const warehouseOrder = pgTable('warehouse_order', {
 	estimatedTotalWidthIn: real('estimated_total_width_in'),
 	estimatedTotalHeightIn: real('estimated_total_height_in'),
 	estimatedTotalWeightGrams: real('estimated_total_weight_grams'),
+	// Packaging chosen by selectPackaging(). Drives both the rate quote and
+	// the actual carrier call at label time, so the quote matches reality.
+	packagingCategory: text('packaging_category'), // 'lettermail' | 'bubble_mailer' | 'box'
+	packagingLabel: text('packaging_label'),
+	packagingLengthIn: real('packaging_length_in'),
+	packagingWidthIn: real('packaging_width_in'),
+	packagingHeightIn: real('packaging_height_in'),
+	packagingSubjectToChange: boolean('packaging_subject_to_change').notNull().default(false),
 	trackingNumber: text('tracking_number'),
 	labelUrl: text('label_url'),
 	// Nullable because DRAFT orders don't have a shipping method yet; set when label is created

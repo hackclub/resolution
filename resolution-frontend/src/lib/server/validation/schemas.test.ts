@@ -111,40 +111,32 @@ describe('enrollSeasonSchema', () => {
 });
 
 describe('shippingRateSchema', () => {
-	const validBox = {
+	const validInput = {
 		country: 'US',
 		street: '123 Main St',
 		city: 'Springfield',
 		province: 'IL',
 		postalCode: '62701',
-		weight: 2.5,
-		packageType: 'box' as const,
-		length: 10,
-		width: 5,
-		height: 3
+		items: [
+			{
+				name: 'T-shirt',
+				sku: 'TS-1',
+				costCents: 1500,
+				quantity: 1,
+				lengthIn: 9,
+				widthIn: 6,
+				heightIn: 0.3,
+				weightGrams: 180
+			}
+		]
 	};
 
-	const validEnvelope = {
-		country: 'US',
-		street: '123 Main St',
-		city: 'Springfield',
-		province: 'IL',
-		weight: 0.5,
-		packageType: 'envelope' as const,
-		length: 10,
-		width: 5
-	};
-
-	it('accepts valid box input', () => {
-		expect(shippingRateSchema.safeParse(validBox).success).toBe(true);
-	});
-
-	it('accepts valid envelope input', () => {
-		expect(shippingRateSchema.safeParse(validEnvelope).success).toBe(true);
+	it('accepts valid input', () => {
+		expect(shippingRateSchema.safeParse(validInput).success).toBe(true);
 	});
 
 	it('uppercases country code', () => {
-		const result = shippingRateSchema.safeParse({ ...validBox, country: 'us' });
+		const result = shippingRateSchema.safeParse({ ...validInput, country: 'us' });
 		expect(result.success).toBe(true);
 		if (result.success) {
 			expect(result.data.country).toBe('US');
@@ -152,25 +144,24 @@ describe('shippingRateSchema', () => {
 	});
 
 	it('rejects country code not exactly 2 chars', () => {
-		expect(shippingRateSchema.safeParse({ ...validBox, country: 'USA' }).success).toBe(false);
+		expect(shippingRateSchema.safeParse({ ...validInput, country: 'USA' }).success).toBe(false);
 	});
 
-	it('rejects non-positive weight', () => {
-		expect(shippingRateSchema.safeParse({ ...validBox, weight: 0 }).success).toBe(false);
-		expect(shippingRateSchema.safeParse({ ...validBox, weight: -1 }).success).toBe(false);
+	it('rejects empty items array', () => {
+		expect(shippingRateSchema.safeParse({ ...validInput, items: [] }).success).toBe(false);
 	});
 
-	it('rejects box without height', () => {
-		const { height, ...noHeight } = validBox;
-		expect(shippingRateSchema.safeParse(noHeight).success).toBe(false);
+	it('rejects items with non-positive dimensions', () => {
+		const bad = { ...validInput, items: [{ ...validInput.items[0], lengthIn: 0 }] };
+		expect(shippingRateSchema.safeParse(bad).success).toBe(false);
 	});
 
 	it('rejects empty street', () => {
-		expect(shippingRateSchema.safeParse({ ...validBox, street: '' }).success).toBe(false);
+		expect(shippingRateSchema.safeParse({ ...validInput, street: '' }).success).toBe(false);
 	});
 
 	it('allows optional postalCode', () => {
-		const { postalCode, ...noPostal } = validBox;
+		const { postalCode, ...noPostal } = validInput;
 		expect(shippingRateSchema.safeParse(noPostal).success).toBe(true);
 	});
 });

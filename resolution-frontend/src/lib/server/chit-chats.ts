@@ -259,9 +259,11 @@ export async function fetchChitChatsRates(params: {
 	const rates = shipment.rates || [];
 
 	const cadToUsd = await getCadToUsdRate();
+	const handlingFeeCad = 1.0;
 
 	const rateOptions: RateOption[] = rates.map((rate: any) => {
 		const transitMatch = (rate.delivery_time_description || '').match(/(\d+)/);
+		const totalCad = parseFloat(rate.payment_amount || '0') + handlingFeeCad;
 		return {
 			serviceName: rate.postage_description || rate.postage_type,
 			serviceCode: `CHITCHATS.${rate.postage_type}`,
@@ -270,7 +272,7 @@ export async function fetchChitChatsRates(params: {
 				gst: parseFloat(rate.federal_tax || '0') * cadToUsd,
 				pst: parseFloat(rate.provincial_tax || '0') * cadToUsd,
 				hst: 0,
-				total: parseFloat(rate.payment_amount || '0') * cadToUsd
+				total: Math.round(totalCad * cadToUsd * 100) / 100
 			},
 			deliveryDate: 'N/A',
 			transitDays: transitMatch ? transitMatch[0] : 'N/A',

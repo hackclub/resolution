@@ -65,6 +65,12 @@ export const actions: Actions = {
 		const estimatedShippingCents = formData.get('estimatedShippingCents') as string;
 		const estimatedServiceName = formData.get('estimatedServiceName') as string;
 		const estimatedServiceCode = formData.get('estimatedServiceCode') as string;
+		const packagingCategory = formData.get('packagingCategory') as string | null;
+		const packagingLabel = formData.get('packagingLabel') as string | null;
+		const packagingLengthInRaw = formData.get('packagingLengthIn') as string | null;
+		const packagingWidthInRaw = formData.get('packagingWidthIn') as string | null;
+		const packagingHeightInRaw = formData.get('packagingHeightIn') as string | null;
+		const packagingSubjectToChange = formData.get('packagingSubjectToChange') === '1';
 
 		const orderItemSchema = z.object({
 			warehouseItemId: z.string().min(1),
@@ -132,7 +138,13 @@ export const actions: Actions = {
 					status: 'APPROVED',
 					estimatedShippingCents: estimatedShippingCents ? parseInt(estimatedShippingCents) : null,
 					estimatedServiceName: estimatedServiceName || null,
-					estimatedServiceCode: estimatedServiceCode || null
+					estimatedServiceCode: estimatedServiceCode || null,
+					packagingCategory: packagingCategory || null,
+					packagingLabel: packagingLabel || null,
+					packagingLengthIn: packagingLengthInRaw ? parseFloat(packagingLengthInRaw) : null,
+					packagingWidthIn: packagingWidthInRaw ? parseFloat(packagingWidthInRaw) : null,
+					packagingHeightIn: packagingHeightInRaw ? parseFloat(packagingHeightInRaw) : null,
+					packagingSubjectToChange
 				}).returning({ id: warehouseOrder.id });
 
 				await Promise.all(

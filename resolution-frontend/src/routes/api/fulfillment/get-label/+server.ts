@@ -10,7 +10,11 @@ import { createChitChatsShipment } from '$lib/server/chit-chats';
 import { arrayBufferToBase64 } from '$lib/server/utils';
 
 function buildPackingSlipBase64(order: any): string {
-	const lines: string[] = [
+	const packageLine = order.packagingLabel
+		? `PACKAGE: ${order.packagingLabel}${order.packagingSubjectToChange ? ' (SUBJECT TO CHANGE — verify fit before sealing)' : ''}`
+		: undefined;
+
+	const lines: (string | undefined)[] = [
 		`PACKING SLIP`,
 		`Order #${order.fulfillmentId}`,
 		`Date: ${new Date().toLocaleDateString('en-US')}`,
@@ -22,6 +26,8 @@ function buildPackingSlipBase64(order: any): string {
 		`${order.city}, ${order.stateProvince} ${order.postalCode || ''}`,
 		`${order.country}`,
 		``,
+		packageLine,
+		packageLine ? `` : undefined,
 		`CONTENTS:`,
 		`${'Item'.padEnd(35)} ${'Size'.padEnd(10)} ${'Qty'.padEnd(5)}`,
 		`${'─'.repeat(50)}`,
@@ -38,7 +44,7 @@ function buildPackingSlipBase64(order: any): string {
 		lines.push(``);
 		lines.push(`NOTES: ${order.notes}`);
 	}
-	const text = lines.filter(l => l !== undefined).join('\n');
+	const text = lines.filter((l): l is string => l !== undefined).join('\n');
 	return btoa(unescape(encodeURIComponent(text)));
 }
 
@@ -128,21 +134,28 @@ export const POST: RequestHandler = async (event) => {
 		throw error(409, 'Order has already been shipped or is not in APPROVED status');
 	}
 
-	// Calculate package totals from items
-	const MAX_HEIGHT_IN = 48; // Cap at 48 inches to prevent unrealistic box dimensions
+	// Total weight always comes from items. Dimensions come from the packaging
+	// record chosen at estimate time so the carrier request matches the quote.
+	// Fall back to item-derived dims for legacy orders without packaging info.
+	const MAX_HEIGHT_IN = 48;
 	let totalWeight = 0;
 	let maxLength = 0;
 	let maxWidth = 0;
-	let totalHeight = 0;
+	let aggregatedHeight = 0;
 
 	for (const oi of order.items) {
 		const item = oi.warehouseItem;
 		totalWeight += item.weightGrams * oi.quantity;
 		maxLength = Math.max(maxLength, item.lengthIn);
 		maxWidth = Math.max(maxWidth, item.widthIn);
-		totalHeight += item.heightIn * oi.quantity;
+		aggregatedHeight += item.heightIn * oi.quantity;
 	}
-	totalHeight = Math.min(totalHeight, MAX_HEIGHT_IN);
+	aggregatedHeight = Math.min(aggregatedHeight, MAX_HEIGHT_IN);
+
+	const hasPackaging = order.packagingLengthIn != null && order.packagingWidthIn != null && order.packagingHeightIn != null;
+	const shipLength = hasPackaging ? order.packagingLengthIn! : maxLength;
+	const shipWidth = hasPackaging ? order.packagingWidthIn! : maxWidth;
+	const shipHeight = hasPackaging ? order.packagingHeightIn! : aggregatedHeight;
 
 	const packingSlipBase64 = buildPackingSlipBase64(order);
 
@@ -162,9 +175,9 @@ export const POST: RequestHandler = async (event) => {
 			const result = await createChitChatsShipment({
 				order,
 				weightGrams: totalWeight,
-				lengthIn: maxLength,
-				widthIn: maxWidth,
-				heightIn: totalHeight
+				lengthIn: shipLength,
+				widthIn: shipWidth,
+				heightIn: shipHeight
 			});
 			trackingNumber = result.trackingNumber;
 			labelUrl = result.labelBase64;
@@ -252,9 +265,9 @@ export const POST: RequestHandler = async (event) => {
 		shippingMethod = 'canada_post';
 
 		const weightKg = totalWeight * GRAMS_TO_KG;
-		const lengthCm = inchesToCm(maxLength);
-		const widthCm = inchesToCm(maxWidth);
-		const heightCm = inchesToCm(totalHeight);
+		const lengthCm = inchesToCm(shipLength);
+		const widthCm = inchesToCm(shipWidth);
+		const heightCm = inchesToCm(shipHeight);
 		let serviceCode = order.estimatedServiceName
 			? getServiceCode(order.estimatedServiceName)
 			: order.country === 'CA' ? 'DOM.RP'
@@ -296,9 +309,9 @@ export const POST: RequestHandler = async (event) => {
 				const result = await createChitChatsShipment({
 					order,
 					weightGrams: totalWeight,
-					lengthIn: maxLength,
-					widthIn: maxWidth,
-					heightIn: totalHeight
+					lengthIn: shipLength,
+					widthIn: shipWidth,
+					heightIn: shipHeight
 				});
 				trackingNumber = result.trackingNumber;
 				labelUrl = result.labelBase64;

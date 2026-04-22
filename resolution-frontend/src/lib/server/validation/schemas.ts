@@ -36,23 +36,16 @@ export const workshopIdSchema = z.object({
 	workshopId: z.string().min(1, 'Workshop ID is required')
 });
 
-const envelopeSchema = z.object({
-	packageType: z.literal('envelope'),
-	length: z.number().positive('Length must be positive'),
-	width: z.number().positive('Width must be positive')
-});
-
-const flatSchema = z.object({
-	packageType: z.literal('flat'),
-	length: z.number().positive('Length must be positive'),
-	width: z.number().positive('Width must be positive')
-});
-
-const boxSchema = z.object({
-	packageType: z.literal('box'),
-	length: z.number().positive('Length must be positive'),
-	width: z.number().positive('Width must be positive'),
-	height: z.number().positive('Height must be positive')
+const packagingItemSchema = z.object({
+	name: z.string(),
+	sku: z.string().optional(),
+	hsCode: z.string().optional(),
+	costCents: z.number(),
+	quantity: z.number().int().positive(),
+	lengthIn: z.number().positive('lengthIn must be positive'),
+	widthIn: z.number().positive('widthIn must be positive'),
+	heightIn: z.number().positive('heightIn must be positive'),
+	weightGrams: z.number().positive('weightGrams must be positive')
 });
 
 export const shippingRateSchema = z.object({
@@ -61,15 +54,8 @@ export const shippingRateSchema = z.object({
 	city: z.string().min(1, 'City is required'),
 	province: z.string().min(1, 'Province/State is required'),
 	postalCode: z.string().optional(),
-	weight: z.number().positive('Weight must be positive'),
-	items: z.array(z.object({
-		name: z.string(),
-		sku: z.string().optional(),
-		hsCode: z.string().optional(),
-		costCents: z.number(),
-		quantity: z.number().int().positive()
-	})).optional()
-}).and(z.discriminatedUnion('packageType', [envelopeSchema, flatSchema, boxSchema]));
+	items: z.array(packagingItemSchema).min(1, 'At least one item is required')
+});
 
 export type ShippingRateInput = z.infer<typeof shippingRateSchema>;
 

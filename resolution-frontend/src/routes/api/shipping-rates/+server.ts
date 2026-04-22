@@ -9,6 +9,7 @@ import { eq } from 'drizzle-orm';
 import { GRAMS_TO_KG, inchesToCm, fetchRates, getLetterMailOptions, calculateZonosDuties } from '$lib/server/canada-post';
 import { getCadToUsdRate } from '$lib/server/exchange-rate';
 import { fetchChitChatsRates } from '$lib/server/chit-chats';
+import { selectPackaging } from '$lib/server/packaging';
 
 export const POST: RequestHandler = async (event) => {
 	const { user } = requireAuth(event);
@@ -32,37 +33,22 @@ export const POST: RequestHandler = async (event) => {
 		throw error(500, 'Canada Post API not configured');
 	}
 
-	const weightKg = data.weight * GRAMS_TO_KG;
+	const packaging = selectPackaging(
+		data.items.map((it) => ({
+			lengthIn: it.lengthIn,
+			widthIn: it.widthIn,
+			heightIn: it.heightIn,
+			weightGrams: it.weightGrams,
+			quantity: it.quantity
+		}))
+	);
 
-	// For flats/envelopes, snap to available envelope sizes (4x6in or 6x9in).
-	// If too large for 6x9, treat as a bubble packet with 0.5in thickness.
-	let effectiveLength = data.length;
-	let effectiveWidth = data.width;
-	let effectivePackageType = data.packageType;
-	if (data.packageType === 'flat' || data.packageType === 'envelope') {
-		const l = Math.max(data.length, data.width);
-		const w = Math.min(data.length, data.width);
-		if (l <= 6 && w <= 4) {
-			effectiveLength = 6;
-			effectiveWidth = 4;
-		} else if (l <= 9 && w <= 6) {
-			effectiveLength = 9;
-			effectiveWidth = 6;
-		} else {
-			// Too large for available envelopes — treat as bubble packet
-			effectiveLength = l;
-			effectiveWidth = w;
-			effectivePackageType = 'box';
-		}
-	}
+	const weightKg = packaging.weightGrams * GRAMS_TO_KG;
+	const lengthCm = inchesToCm(packaging.lengthIn);
+	const widthCm = inchesToCm(packaging.widthIn);
+	const heightCm = inchesToCm(packaging.heightIn);
 
-	const lengthCm = inchesToCm(effectiveLength);
-	const widthCm = inchesToCm(effectiveWidth);
-	const heightCm = effectivePackageType === 'box'
-		? inchesToCm(data.packageType === 'box' ? data.height : 0.5)
-		: 0.5;
-
-	const lettermailOptions = getLetterMailOptions(data.weight, lengthCm, widthCm, heightCm, data.country);
+	const lettermailOptions = getLetterMailOptions(packaging.weightGrams, lengthCm, widthCm, heightCm, data.country);
 
 	let parcelRates: Array<{
 		serviceName: string;
@@ -88,7 +74,6 @@ export const POST: RequestHandler = async (event) => {
 	}> = [];
 	try {
 		if (env.CHITCHATS_ACCESS_TOKEN && env.CHITCHATS_CLIENT_ID) {
-			// Chit Chats requires a temporary shipment to return rates — use actual address data
 			chitChatsRates = await fetchChitChatsRates({
 				country: data.country,
 				postalCode: data.postalCode,
@@ -96,10 +81,10 @@ export const POST: RequestHandler = async (event) => {
 				name: 'Rate Quote',
 				address1: data.street,
 				city: data.city,
-				weightGrams: data.weight,
-				lengthIn: effectiveLength,
-				widthIn: effectiveWidth,
-				heightIn: data.packageType === 'box' ? data.height : 0.5,
+				weightGrams: packaging.weightGrams,
+				lengthIn: packaging.lengthIn,
+				widthIn: packaging.widthIn,
+				heightIn: packaging.heightIn,
 				valueCad: 1.00
 			});
 		}
@@ -110,13 +95,13 @@ export const POST: RequestHandler = async (event) => {
 	const allRates = [...lettermailOptions, ...parcelRates, ...chitChatsRates];
 
 	let zonosDuties = null;
-	if (data.country === 'US' && data.items && data.items.length > 0) {
+	if (data.country === 'US' && data.items.length > 0) {
 		const cheapestRate = allRates.reduce((min, r) => r.priceDetails.total < min ? r.priceDetails.total : min, Infinity);
 		const cadToUsd = await getCadToUsdRate();
 		const shippingCostCad = cheapestRate !== Infinity ? cheapestRate / cadToUsd : 0;
 
 		zonosDuties = await calculateZonosDuties({
-			items: data.items.map((item: any) => ({
+			items: data.items.map((item) => ({
 				hsCode: item.hsCode || '',
 				valueCadCents: item.costCents || 0,
 				quantity: item.quantity || 1,
@@ -135,6 +120,7 @@ export const POST: RequestHandler = async (event) => {
 
 	return json({
 		rates: allRates,
+		packaging,
 		origin: env.CP_ORIGIN_POSTAL_CODE,
 		destination: {
 			country: data.country,

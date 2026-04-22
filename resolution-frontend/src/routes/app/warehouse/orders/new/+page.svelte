@@ -169,11 +169,22 @@
 		note?: string;
 	}
 
+	interface Packaging {
+		category: 'lettermail' | 'bubble_mailer' | 'box';
+		lengthIn: number;
+		widthIn: number;
+		heightIn: number;
+		weightGrams: number;
+		label: string;
+		subjectToChange?: boolean;
+	}
+
 	let estimateLoading = $state(false);
 	let estimateError = $state('');
 	let estimatedRates = $state<ShippingRate[]>([]);
 	let hasEstimated = $state(false);
 	let selectedRate = $state<ShippingRate | null>(null);
+	let packaging = $state<Packaging | null>(null);
 
 	function addItem(item: ItemType) {
 		if (!itemQuantities[item.id] || itemQuantities[item.id] === 0) {
@@ -182,49 +193,34 @@
 		searchQuery = '';
 	}
 
-	function computePackageTotals() {
-		const items = addedItems();
-		let totalWeight = 0;
-		let maxLength = 0;
-		let maxWidth = 0;
-		let totalHeight = 0;
-		let hasBox = false;
-
-		for (const item of items) {
-			const qty = itemQuantities[item.id] || 0;
-			totalWeight += item.weightGrams * qty;
-			maxLength = Math.max(maxLength, item.lengthIn);
-			maxWidth = Math.max(maxWidth, item.widthIn);
-			totalHeight += item.heightIn * qty;
-			if (item.packageType === 'box') hasBox = true;
-		}
-
-		const packageType = hasBox || totalHeight > 0.5 ? 'box' : 'flat';
-		return { weight: totalWeight, length: maxLength, width: maxWidth, height: totalHeight, packageType };
-	}
-
 	async function estimateShipping() {
 		estimateLoading = true;
 		estimateError = '';
 		estimatedRates = [];
 		selectedRate = null;
+		packaging = null;
 
 		try {
-			const pkg = computePackageTotals();
-			const body: Record<string, unknown> = {
+			const items = addedItems().map((item) => ({
+				name: item.name,
+				sku: item.sku,
+				hsCode: item.hsCode,
+				costCents: item.costCents,
+				quantity: itemQuantities[item.id] || 0,
+				lengthIn: item.lengthIn,
+				widthIn: item.widthIn,
+				heightIn: item.heightIn,
+				weightGrams: item.weightGrams
+			}));
+
+			const body = {
 				country,
 				street: addressLine1,
 				city,
 				province: stateProvince,
 				postalCode: postalCode || undefined,
-				weight: pkg.weight,
-				packageType: pkg.packageType,
-				length: pkg.length,
-				width: pkg.width
+				items
 			};
-			if (pkg.packageType === 'box') {
-				body.height = pkg.height;
-			}
 
 			const res = await fetch('/api/shipping-rates', {
 				method: 'POST',
@@ -240,6 +236,7 @@
 
 			const result = await res.json();
 			estimatedRates = (result.rates || []).sort((a: ShippingRate, b: ShippingRate) => a.priceDetails.total - b.priceDetails.total);
+			packaging = result.packaging || null;
 			hasEstimated = true;
 		} catch {
 			estimateError = 'Failed to connect to shipping API.';
@@ -515,6 +512,14 @@
 				<p class="estimate-error">{estimateError}</p>
 				<button type="button" class="nav-btn" onclick={estimateShipping} style="margin-top: 0.75rem;">Retry</button>
 			{:else if hasEstimated && estimatedRates.length > 0}
+				{#if packaging}
+					<div class="packaging-note">
+						<strong>Ship as:</strong> {packaging.label}
+						{#if packaging.subjectToChange}
+							<div class="packaging-warn">⚠ Items may not fit any standard box — SUBJECT TO CHANGE. Warehouse staff will verify before shipping.</div>
+						{/if}
+					</div>
+				{/if}
 				<div class="rates-list">
 					{#each estimatedRates as rate}
 						<button
@@ -631,6 +636,9 @@
 					<h4 class="summary-label">Shipping</h4>
 					<p>{selectedRate.serviceName} — <strong>${selectedRate.priceDetails.total.toFixed(2)}</strong></p>
 					<p class="hint">Transit: {selectedRate.transitDays} days</p>
+					{#if packaging}
+						<p class="hint">Package: {packaging.label}{packaging.subjectToChange ? ' (SUBJECT TO CHANGE)' : ''}</p>
+					{/if}
 				</div>
 			{/if}
 
@@ -684,6 +692,14 @@
 			<input type="hidden" name="estimatedShippingCents" value={Math.round(selectedRate.priceDetails.total * 100)} />
 			<input type="hidden" name="estimatedServiceName" value={selectedRate.serviceName} />
 			<input type="hidden" name="estimatedServiceCode" value={selectedRate.serviceCode} />
+		{/if}
+		{#if packaging}
+			<input type="hidden" name="packagingCategory" value={packaging.category} />
+			<input type="hidden" name="packagingLabel" value={packaging.label} />
+			<input type="hidden" name="packagingLengthIn" value={packaging.lengthIn} />
+			<input type="hidden" name="packagingWidthIn" value={packaging.widthIn} />
+			<input type="hidden" name="packagingHeightIn" value={packaging.heightIn} />
+			<input type="hidden" name="packagingSubjectToChange" value={packaging.subjectToChange ? '1' : '0'} />
 		{/if}
 	{/if}
 
@@ -1180,6 +1196,21 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
+	}
+
+	.packaging-note {
+		background: #f3f4f6;
+		border: 1px solid #d1d5db;
+		border-radius: 8px;
+		padding: 0.6rem 0.85rem;
+		margin-bottom: 0.75rem;
+		font-size: 0.875rem;
+	}
+
+	.packaging-warn {
+		color: #b45309;
+		font-weight: 600;
+		margin-top: 0.35rem;
 	}
 
 	.rate-card {
