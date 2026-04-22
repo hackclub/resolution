@@ -9,6 +9,7 @@ import {
 import { eq, asc, desc } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
+import { guardAdminOrAmbassador } from '$lib/server/auth/guard';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { user } = await parent();
@@ -52,21 +53,9 @@ export const load: PageServerLoad = async ({ parent }) => {
 
 export const actions: Actions = {
 	createTemplate: async ({ request, locals }) => {
-		const user = locals.user;
-		if (!user) {
-			return fail(401, { error: 'Not logged in' });
-		}
-
-		if (!user.isAdmin) {
-			const ambassadorCheck = await db
-				.select({ userId: ambassadorPathway.userId })
-				.from(ambassadorPathway)
-				.where(eq(ambassadorPathway.userId, user.id))
-				.limit(1);
-			if (ambassadorCheck.length === 0) {
-				return fail(403, { error: 'Access denied - admin or ambassador only' });
-			}
-		}
+		const guard = await guardAdminOrAmbassador(locals);
+		if ('failResult' in guard) return guard.failResult;
+		const { user } = guard;
 
 		const formData = await request.formData();
 		const name = formData.get('name') as string;
@@ -125,21 +114,9 @@ export const actions: Actions = {
 	},
 
 	deleteTemplate: async ({ request, locals }) => {
-		const user = locals.user;
-		if (!user) {
-			return fail(401, { error: 'Not logged in' });
-		}
-
-		if (!user.isAdmin) {
-			const ambassadorCheck = await db
-				.select({ userId: ambassadorPathway.userId })
-				.from(ambassadorPathway)
-				.where(eq(ambassadorPathway.userId, user.id))
-				.limit(1);
-			if (ambassadorCheck.length === 0) {
-				return fail(403, { error: 'Access denied - admin or ambassador only' });
-			}
-		}
+		const guard = await guardAdminOrAmbassador(locals);
+		if ('failResult' in guard) return guard.failResult;
+		const { user } = guard;
 
 		const formData = await request.formData();
 		const templateId = formData.get('templateId') as string;

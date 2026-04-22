@@ -19,15 +19,64 @@
     {
       "idx": 2,
       "version": "7",
-      "when": 1772206185519,
-      "tag": "0002_add_package_type_and_orders",
+      "when": 1772636037511,
+      "tag": "0002_luxuriant_maria_hill",
       "breakpoints": true
     },
     {
       "idx": 3,
       "version": "7",
-      "when": 1772790000000,
-      "tag": "0003_add_templates_and_batches",
+      "when": 1775185421664,
+      "tag": "0003_misty_week_prize_image",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776130671597,
+      "tag": "0004_left_pretty_boy",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776500000000,
+      "tag": "0005_add_package_type_and_orders",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776600000000,
+      "tag": "0006_add_templates_and_batches",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1776700000000,
+      "tag": "0007_add_label_tracking_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776800000000,
+      "tag": "0008_add_hs_code",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1776900000000,
+      "tag": "0009_add_packaging_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1777000000000,
+      "tag": "0010_warehouse_indexes_and_tags",
       "breakpoints": true
     }
   ]

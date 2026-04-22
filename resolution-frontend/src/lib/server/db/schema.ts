@@ -8,7 +8,7 @@ export const enrollmentStatusEnum = pgEnum('enrollment_status', ['ACTIVE', 'DROP
 export const pathwayEnum = pgEnum('pathway', ['PYTHON', 'RUST', 'GAME_DEV', 'HARDWARE', 'DESIGN', 'GENERAL_CODING']);
 export const difficultyEnum = pgEnum('difficulty', ['BEGINNER', 'INTERMEDIATE', 'ADVANCED']);
 export const shipStatusEnum = pgEnum('ship_status', ['PLANNED', 'IN_PROGRESS', 'SHIPPED', 'MISSED']);
-export const payoutStatusEnum = pgEnum('payout_status', ['DRAFT', 'PENDING', 'PAID', 'CANCELLED']);
+export const payoutStatusEnum = pgEnum('payout_status', ['DRAFT', 'PENDING', 'PAID', 'CANCELED']);
 export const warehouseOrderStatusEnum = pgEnum('warehouse_order_status', ['DRAFT', 'ESTIMATED', 'APPROVED', 'SHIPPED', 'CANCELLED']);
 export const warehouseBatchStatusEnum = pgEnum('warehouse_batch_status', ['AWAITING_MAPPING', 'MAPPED', 'PROCESSED']);
 
@@ -242,6 +242,8 @@ export const pathwayWeekContent = pgTable('pathway_week_content', {
 	title: text('title').notNull().default(''),
 	content: text('content').notNull().default(''),
 	isPublished: boolean('is_published').notNull().default(false),
+	isSubmissionsOpen: boolean('is_submissions_open').notNull().default(true),
+	prizeImageUrl: text('prize_image_url'),
 	lastEditedBy: text('last_edited_by').references(() => user.id),
 	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
@@ -306,7 +308,9 @@ export const warehouseItem = pgTable('warehouse_item', {
 	categoryId: text('category_id').references(() => warehouseCategory.id, { onDelete: 'set null' }),
 	name: text('name').notNull(),
 	sku: text('sku').notNull().unique(),
+	// Comma-separated list of available sizes (e.g. "S,M,L,XL"). Null if the item has no size variants.
 	sizing: text('sizing'),
+	// 'box' = needs rigid dimensions for rate quote, 'flat' = bubble/envelope. Drives packaging selection.
 	packageType: text('package_type').notNull().default('box'),
 	lengthIn: real('length_in').notNull(),
 	widthIn: real('width_in').notNull(),
@@ -358,6 +362,10 @@ export const warehouseOrder = pgTable('warehouse_order', {
 	labelUrl: text('label_url'),
 	// Nullable because DRAFT orders don't have a shipping method yet; set when label is created
 	shippingMethod: text('shipping_method'), // 'canada_post', 'lettermail', or 'chitchats'
+	// HCB billing: 'NOT_APPLICABLE' for admin orders, 'PENDING' before transfer, 'CHARGED' on success,
+	// 'FAILED' when the HCB call raised. FAILED rows need manual reconciliation.
+	billingStatus: text('billing_status').notNull().default('PENDING'),
+	billingFailureReason: text('billing_failure_reason'),
 	notes: text('notes'),
 	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
@@ -369,7 +377,9 @@ export const warehouseOrderItem = pgTable('warehouse_order_item', {
 	orderId: text('order_id').notNull().references(() => warehouseOrder.id, { onDelete: 'cascade' }),
 	warehouseItemId: text('warehouse_item_id').notNull().references(() => warehouseItem.id, { onDelete: 'restrict' }),
 	quantity: integer('quantity').notNull().default(1),
-	// Selected size variant (e.g. 'S', 'M', 'L') when the warehouse item has sizing options
+	// Which size variant the participant picked from warehouseItem.sizing (e.g. 'M' for a shirt).
+	// Nullable: items without sizing variants don't populate this. Frontend must pass a choice if
+	// the parent warehouseItem has a non-null `sizing` string; see warehouse/orders/new validation.
 	sizingChoice: text('sizing_choice')
 }, (table) => [
 	index('warehouse_order_item_order_id_idx').on(table.orderId),
@@ -401,8 +411,12 @@ export const warehouseOrderTagRelations = relations(warehouseOrderTag, ({ one })
 	order: one(warehouseOrder, { fields: [warehouseOrderTag.orderId], references: [warehouseOrder.id] })
 }));
 
-// Order templates — reusable item lists for quickly creating warehouse orders (e.g. "Sticker Pack")
-// isPublic controls whether other ambassadors can see and use this template
+// Order templates: a named bundle of warehouse items + quantities that an ambassador can
+// reuse across orders (e.g. "Starter Sticker Pack" = 3 stickers + 1 pin). Two modes:
+//   - private (isPublic=false): only the creator sees / uses it
+//   - public  (isPublic=true):  every ambassador can pick it
+// Templates are separate from orders: an ambassador picks a template, then the `createBatch`
+// flow expands it across a CSV of recipients.
 export const warehouseOrderTemplate = pgTable('warehouse_order_template', {
 	id: text('id').primaryKey().$defaultFn(() => createId()),
 	createdById: text('created_by_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
@@ -429,7 +443,10 @@ export const warehouseOrderTemplateItemRelations = relations(warehouseOrderTempl
 	warehouseItem: one(warehouseItem, { fields: [warehouseOrderTemplateItem.warehouseItemId], references: [warehouseItem.id] })
 }));
 
-// Batches
+// Batches: one uploaded CSV + one template = N warehouse_order rows when processed.
+// csvData is the raw CSV text (size-limited to 5MB in the createBatch action; we intentionally
+// keep the original bytes rather than pre-parsed JSON so we can remap columns later).
+// fieldMapping is JSON: { firstName: "First Name", ... } — produced by the mapFields action.
 export const warehouseBatch = pgTable('warehouse_batch', {
 	id: text('id').primaryKey().$defaultFn(() => createId()),
 	createdById: text('created_by_id').notNull().references(() => user.id, { onDelete: 'cascade' }),

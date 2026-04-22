@@ -9,6 +9,22 @@ import { GRAMS_TO_KG, inchesToCm, isLettermail, getServiceCode, createShipment }
 import { createChitChatsShipment } from '$lib/server/chit-chats';
 import { arrayBufferToBase64 } from '$lib/server/utils';
 
+// Only these carriers legitimately host our label PDFs. Anything else means the label URL
+// in the DB was tampered with or misgenerated — refuse to fetch to avoid SSRF.
+const LABEL_HOST_ALLOWLIST = new Set([
+	'soa-gw.canadapost.ca',
+	'ct.soa-gw.canadapost.ca',
+	'chitchats.com',
+	'www.chitchats.com',
+	'mail.hackclub.com'
+]);
+
+function isAllowedLabelHost(url: URL): boolean {
+	if (LABEL_HOST_ALLOWLIST.has(url.hostname)) return true;
+	// Allow subdomains of canadapost.ca and chitchats.com (e.g. s3 buckets they redirect to)
+	return url.hostname.endsWith('.canadapost.ca') || url.hostname.endsWith('.chitchats.com');
+}
+
 function buildPackingSlipBase64(order: any): string {
 	const packageLine = order.packagingLabel
 		? `PACKAGE: ${order.packagingLabel}${order.packagingSubjectToChange ? ' (SUBJECT TO CHANGE — verify fit before sealing)' : ''}`
@@ -95,14 +111,17 @@ export const POST: RequestHandler = async (event) => {
 	if (order.labelUrl) {
 		let labelUrl = order.labelUrl;
 		if (!labelUrl.startsWith('data:')) {
+			let parsedUrl: URL;
 			try {
-				const parsed = new URL(labelUrl);
-				if (!['http:', 'https:'].includes(parsed.protocol)) {
-					throw error(400, 'Invalid label URL protocol');
-				}
-			} catch (e: any) {
-				if (e?.status) throw e;
+				parsedUrl = new URL(labelUrl);
+			} catch {
 				throw error(400, 'Invalid label URL');
+			}
+			if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+				throw error(400, 'Invalid label URL protocol');
+			}
+			if (!isAllowedLabelHost(parsedUrl)) {
+				throw error(400, `Label host not allowed: ${parsedUrl.hostname}`);
 			}
 			const labelRes = await fetch(labelUrl);
 			console.log('Label fetch status:', labelRes.status, labelRes.statusText);
@@ -235,16 +254,20 @@ export const POST: RequestHandler = async (event) => {
 		trackingNumber = theseusData.id || null;
 		const rawLabelUrl = theseusData.label_url || null;
 
-		// Fetch the label PDF and convert to base64 data URL so the frontend can print it via qz-tray
 		if (rawLabelUrl) {
 			try {
-				const labelRes = await fetch(rawLabelUrl);
-				if (labelRes.ok) {
-					const labelBuffer = await labelRes.arrayBuffer();
-					const labelBase64 = arrayBufferToBase64(labelBuffer);
-					labelUrl = `data:application/pdf;base64,${labelBase64}`;
+				const parsedUrl = new URL(rawLabelUrl);
+				if (!['http:', 'https:'].includes(parsedUrl.protocol) || !isAllowedLabelHost(parsedUrl)) {
+					console.warn('Theseus returned disallowed label URL host:', parsedUrl.hostname);
+					labelUrl = null;
 				} else {
-					labelUrl = rawLabelUrl;
+					const labelRes = await fetch(rawLabelUrl);
+					if (labelRes.ok) {
+						const labelBuffer = await labelRes.arrayBuffer();
+						labelUrl = `data:application/pdf;base64,${arrayBufferToBase64(labelBuffer)}`;
+					} else {
+						labelUrl = rawLabelUrl;
+					}
 				}
 			} catch {
 				labelUrl = rawLabelUrl;

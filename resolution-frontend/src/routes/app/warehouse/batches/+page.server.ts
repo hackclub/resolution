@@ -5,6 +5,7 @@ import { eq, and, gte, desc, asc, sql, inArray } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import { fetchCheapestRate } from '$lib/server/canada-post';
 import { resolveCountryCode, resolveStateCode } from '$lib/server/countries';
+import { guardAdminOrAmbassador } from '$lib/server/auth/guard';
 import Papa from 'papaparse';
 
 function parseCsv(raw: string): string[][] {
@@ -12,19 +13,18 @@ function parseCsv(raw: string): string[][] {
 	return result.data;
 }
 
-export const load: PageServerLoad = async ({ parent }) => {
-	const { user } = await parent();
+export const load: PageServerLoad = async (event) => {
+	const { user } = await event.parent();
 
-	const ambassadorCheck = await db
-		.select({ userId: ambassadorPathway.userId })
-		.from(ambassadorPathway)
-		.where(eq(ambassadorPathway.userId, user.id))
-		.limit(1);
-
-	const isAmbassador = ambassadorCheck.length > 0;
-
-	if (!user.isAdmin && !isAmbassador) {
-		throw error(403, 'Access denied');
+	if (!user.isAdmin) {
+		const rows = await db
+			.select({ userId: ambassadorPathway.userId })
+			.from(ambassadorPathway)
+			.where(eq(ambassadorPathway.userId, user.id))
+			.limit(1);
+		if (rows.length === 0) {
+			throw error(403, 'Access denied');
+		}
 	}
 
 	const batches = await db.query.warehouseBatch.findMany({
@@ -70,8 +70,9 @@ export const load: PageServerLoad = async ({ parent }) => {
 
 export const actions: Actions = {
 	createBatch: async ({ request, locals }) => {
-		const user = locals.user;
-		if (!user) return fail(401, { error: 'Not logged in' });
+		const guard = await guardAdminOrAmbassador(locals);
+		if ('failResult' in guard) return guard.failResult;
+		const { user } = guard;
 
 		const formData = await request.formData();
 		const title = formData.get('title') as string;
@@ -114,8 +115,9 @@ export const actions: Actions = {
 	},
 
 	mapFields: async ({ request, locals }) => {
-		const user = locals.user;
-		if (!user) return fail(401, { error: 'Not logged in' });
+		const guard = await guardAdminOrAmbassador(locals);
+		if ('failResult' in guard) return guard.failResult;
+		const { user } = guard;
 
 		const formData = await request.formData();
 		const batchId = formData.get('batchId') as string;
@@ -141,8 +143,9 @@ export const actions: Actions = {
 	},
 
 	processBatch: async ({ request, locals }) => {
-		const user = locals.user;
-		if (!user) return fail(401, { error: 'Not logged in' });
+		const guard = await guardAdminOrAmbassador(locals);
+		if ('failResult' in guard) return guard.failResult;
+		const { user } = guard;
 
 		const formData = await request.formData();
 		const batchId = formData.get('batchId') as string;
@@ -281,6 +284,14 @@ export const actions: Actions = {
 
 				// Batch inventory deduction: one update per template item instead of per-row
 				if (batch.template.items.length > 0 && validOrderCount > 0) {
+					// Fetch names up-front so the concurrent-update error is useful
+					const itemNames = new Map(
+						(await tx
+							.select({ id: warehouseItem.id, name: warehouseItem.name })
+							.from(warehouseItem)
+							.where(inArray(warehouseItem.id, batch.template.items.map((ti) => ti.warehouseItemId)))
+						).map((r) => [r.id, r.name])
+					);
 					for (const ti of batch.template.items) {
 						const totalQty = ti.quantity * validOrderCount;
 						const [updated] = await tx.update(warehouseItem)
@@ -288,7 +299,8 @@ export const actions: Actions = {
 							.where(and(eq(warehouseItem.id, ti.warehouseItemId), gte(warehouseItem.quantity, totalQty)))
 							.returning({ id: warehouseItem.id });
 						if (!updated) {
-							throw new Error('Insufficient stock (concurrent update)');
+							const name = itemNames.get(ti.warehouseItemId) ?? ti.warehouseItemId;
+							throw new Error(`Insufficient stock for "${name}" — another order claimed inventory while the batch was processing. Refresh and retry.`);
 						}
 					}
 				}
@@ -305,8 +317,9 @@ export const actions: Actions = {
 	},
 
 	calculateBatch: async ({ request, locals }) => {
-		const user = locals.user;
-		if (!user) return fail(401, { error: 'Not logged in' });
+		const guard = await guardAdminOrAmbassador(locals);
+		if ('failResult' in guard) return guard.failResult;
+		const { user } = guard;
 
 		const formData = await request.formData();
 		const batchId = formData.get('batchId') as string;

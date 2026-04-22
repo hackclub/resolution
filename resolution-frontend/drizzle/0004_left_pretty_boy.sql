@@ -1,0 +1,1 @@
+ALTER TABLE "pathway_week_content" ADD COLUMN "is_submissions_open" boolean DEFAULT true NOT NULL;

@@ -26,9 +26,10 @@ export async function getCadToUsdRate(): Promise<number> {
 			const data = await res.json();
 			const rate = data?.rates?.USD;
 			if (typeof rate === 'number' && rate > 0) {
-				cachedRate = Math.round(rate * 10000) / 10000;
+				const rounded = Math.round(rate * 10000) / 10000;
+				cachedRate = rounded;
 				cachedAt = Date.now();
-				return cachedRate;
+				return rounded;
 			}
 		}
 	} catch (err) {

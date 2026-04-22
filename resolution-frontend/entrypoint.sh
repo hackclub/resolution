@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-echo "Running database schema push..."
-echo "" | npx drizzle-kit push --verbose 2>&1 || echo "WARNING: drizzle-kit push failed with exit code $?"
-echo "Schema push complete."
+echo "Running database migrations..."
+npx drizzle-kit migrate
+echo "Migrations complete."
 
 exec node build

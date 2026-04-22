@@ -3,6 +3,10 @@ import type { RateOption } from './canada-post';
 import { getCadToUsdRate } from './exchange-rate';
 import { arrayBufferToBase64 } from './utils';
 
+// Chit Chats API quirk: Authorization header is the raw access token string, NOT `Bearer <token>`.
+// See https://chitchats.com/api/reference (they explicitly show `Authorization: your_access_token`).
+// Do not "fix" this to add a Bearer prefix — it will 401.
+
 function formatHsCode(code: string | null | undefined): string {
 	if (!code) return '7117199000';
 	const digits = code.replace(/[^0-9]/g, '');

@@ -1,0 +1,1 @@
+ALTER TABLE "pathway_week_content" ADD COLUMN "prize_image_url" text;

@@ -43,13 +43,14 @@ export function isLettermail(serviceName: string | null): boolean {
 }
 
 export function buildDestinationXml(country: string, postalCode?: string, stateCode?: string): string {
+	const normalizedPostal = (postalCode ?? '').replace(/\s/g, '').toUpperCase();
 	if (country === 'CA') {
 		return `<domestic>
-			<postal-code>${(postalCode ?? '').replace(/\s/g, '').toUpperCase()}</postal-code>
+			<postal-code>${escapeXml(normalizedPostal)}</postal-code>
 		</domestic>`;
 	} else if (country === 'US') {
 		return `<united-states>
-			<zip-code>${(postalCode ?? '').replace(/\s/g, '')}</zip-code>
+			<zip-code>${escapeXml((postalCode ?? '').replace(/\s/g, ''))}</zip-code>
 			${stateCode ? `<state-code>${escapeXml(stateCode)}</state-code>` : ''}
 		</united-states>`;
 	} else {
@@ -72,8 +73,8 @@ export function buildRateRequestXml(params: {
 	const { originPostal, country, postalCode, weightKg, lengthCm, widthCm, heightCm } = params;
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <mailing-scenario xmlns="http://www.canadapost.ca/ws/ship/rate-v4">
-  <customer-number>${env.CP_CUSTOMER_NUMBER}</customer-number>
-  ${env.CP_CONTRACT_ID ? `<contract-id>${env.CP_CONTRACT_ID}</contract-id>` : ''}
+  <customer-number>${escapeXml(env.CP_CUSTOMER_NUMBER ?? '')}</customer-number>
+  ${env.CP_CONTRACT_ID ? `<contract-id>${escapeXml(env.CP_CONTRACT_ID)}</contract-id>` : ''}
   <parcel-characteristics>
     <weight>${Math.round(weightKg * 100) / 100}</weight>
     <dimensions>
@@ -82,7 +83,7 @@ export function buildRateRequestXml(params: {
       <height>${heightCm}</height>
     </dimensions>
   </parcel-characteristics>
-  <origin-postal-code>${originPostal.replace(/\s/g, '').toUpperCase()}</origin-postal-code>
+  <origin-postal-code>${escapeXml(originPostal.replace(/\s/g, '').toUpperCase())}</origin-postal-code>
   <destination>
     ${buildDestinationXml(country, postalCode)}
   </destination>
@@ -98,7 +99,7 @@ export function buildCreateShipmentXml(params: {
 	serviceCode: string;
 }): string {
 	const { order, weightKg, lengthCm, widthCm, heightCm, serviceCode } = params;
-	const originPostal = (env.CP_ORIGIN_POSTAL_CODE || '').replace(/\s/g, '').toUpperCase();
+	const originPostal = escapeXml((env.CP_ORIGIN_POSTAL_CODE || '').replace(/\s/g, '').toUpperCase());
 	const customerNumber = env.CP_CUSTOMER_NUMBER;
 	const contractId = env.CP_CONTRACT_ID;
 
@@ -163,7 +164,7 @@ export function buildCreateShipmentXml(params: {
 				<city>${escapeXml((order.city || '').substring(0, 40))}</city>
 				<prov-state>${escapeXml(resolveStateCode(order.stateProvince || '').substring(0, 20))}</prov-state>
 				<country-code>${escapeXml(order.country)}</country-code>
-				<postal-zip-code>${(order.postalCode ?? '').replace(/\s/g, '').toUpperCase()}</postal-zip-code>
+				<postal-zip-code>${escapeXml((order.postalCode ?? '').replace(/\s/g, '').toUpperCase())}</postal-zip-code>
 			</address-details>
 		</destination>
 		${order.country !== 'CA' ? `<options>
@@ -270,7 +271,10 @@ export function getLetterMailOptions(
 	const isStandardSize = lengthMm <= 245 && widthMm <= 156 && heightMm <= 5;
 	const isOversizeSize = lengthMm <= 380 && widthMm <= 270 && heightMm <= 20;
 
-	// Lettermail prices from Canada Post's published rate card (updated periodically)
+	// Lettermail/Bubble Packet prices are hardcoded from Canada Post's published rate card
+	// (https://www.canadapost-postescanada.ca/tools/pg/manual/pglettr-e.asp and the parcel
+	// equivalents). Canada Post does not expose lettermail pricing via the rate-v4 XML API,
+	// so we maintain this table by hand. TODO: revisit annually when rate card updates.
 	if (meetsMinDimensions && isStandardSize && weightGrams <= 30 && weightGrams >= 2) {
 		let price: number;
 		if (country === 'CA') price = 1.75;
