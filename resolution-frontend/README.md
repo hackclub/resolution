@@ -1,38 +1,46 @@
-# sv
+# resolution.hackclub.com
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Choose your challenge and ship every week. Earn prizes each week, and a giant prize if you stay until the end.
 
-## Creating a project
+## Contributing to the site
 
-If you're seeing this, you've probably already done this step. Congrats!
+1. Create your own fork of this repo (by clicking the fork button)
+2. Now copy the url to your forked repo and clone it using:
 
-```sh
-# create a new project in the current directory
-npx sv create
+   ```sh
+   git clone https://github.com/your_username_here/resolution
+   cd resolution/resolution-frontend
+   ```
 
-# create a new project in my-app
-npx sv create my-app
-```
+3. Install dependencies (this project uses [Bun](https://bun.sh/)):
 
-## Developing
+   ```sh
+   bun install
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+   # or if you have npm
+   npm install
+   ```
 
-```sh
-npm run dev
+4. Start the development server:
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+   ```sh
+   bun run dev
 
-## Building
+   # or with npm
+   npm run dev
+   ```
 
-To create a production version of your app:
+5. Before opening a PR, typecheck and run tests:
 
-```sh
-npm run build
-```
+   ```sh
+   # typecheck
+   bun run check
 
-You can preview the production build with `npm run preview`.
+   # run tests
+   bun run test
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+   # build
+   bun run build
+   ```
+
+6. Start coding and make your PR, yayay!
