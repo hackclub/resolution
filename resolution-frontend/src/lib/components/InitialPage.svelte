@@ -474,7 +474,7 @@
 
 	.faq-divider {
 		width: 100%;
-		height: auto;
+		height: 1px;
 		display: block;
 		opacity: 0.8;
 	}
