@@ -4,8 +4,8 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { requireAuth } from '$lib/server/auth/guard';
 import { db } from '$lib/server/db';
-import { reviewerPathway } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { reviewerPathway, user as userTable } from '$lib/server/db/schema';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { PATHWAY_IDS } from '$lib/pathways';
 
 export const GET: RequestHandler = async (event) => {
@@ -71,22 +71,46 @@ export const GET: RequestHandler = async (event) => {
 			})
 			.all();
 
-		const submissions = records.map((record) => ({
-			id: record.id,
-			codeUrl: record.get('Code URL') as string,
-			playableUrl: record.get('Playable URL') as string,
-			description: record.get('Description') as string,
-			firstName: record.get('First Name') as string,
-			lastName: record.get('Last Name') as string,
-			email: record.get('Email') as string,
-			githubUsername: record.get('GitHub Username') as string,
-			hackatimeProject: record.get('Hackatime Project') as string,
-			pathway: record.get('Pathway') as string,
-			week: record.get('Week') as number,
-			screenshotUrl: (record.get('Screenshot') as Array<{ url: string }> | undefined)?.[0]?.url ?? null,
-			hoursSpent: (record.get('Optional - Override Hours Spent') as number | undefined) ?? null,
-			submittedAt: record._rawJson.createdTime as string
-		}));
+		const emails = Array.from(
+			new Set(
+				records
+					.map((r) => r.get('Email') as string | undefined)
+					.filter((e): e is string => typeof e === 'string' && e.length > 0)
+					.map((e) => e.toLowerCase())
+			)
+		);
+
+		const slackIdByEmail = new Map<string, string | null>();
+		if (emails.length > 0) {
+			const users = await db
+				.select({ email: userTable.email, slackId: userTable.slackId })
+				.from(userTable)
+				.where(inArray(sql`lower(${userTable.email})`, emails));
+			for (const u of users) {
+				slackIdByEmail.set(u.email.toLowerCase(), u.slackId);
+			}
+		}
+
+		const submissions = records.map((record) => {
+			const email = record.get('Email') as string;
+			return {
+				id: record.id,
+				codeUrl: record.get('Code URL') as string,
+				playableUrl: record.get('Playable URL') as string,
+				description: record.get('Description') as string,
+				firstName: record.get('First Name') as string,
+				lastName: record.get('Last Name') as string,
+				email,
+				slackId: slackIdByEmail.get(email?.toLowerCase()) ?? null,
+				githubUsername: record.get('GitHub Username') as string,
+				hackatimeProject: record.get('Hackatime Project') as string,
+				pathway: record.get('Pathway') as string,
+				week: record.get('Week') as number,
+				screenshotUrl: (record.get('Screenshot') as Array<{ url: string }> | undefined)?.[0]?.url ?? null,
+				hoursSpent: (record.get('Optional - Override Hours Spent') as number | undefined) ?? null,
+				submittedAt: record._rawJson.createdTime as string
+			};
+		});
 
 		return json(submissions);
 	} catch (err) {
