@@ -21,6 +21,7 @@
 		githubUsername: string;
 		hoursSpent: number | null;
 		submittedAt: string;
+		slackId: string | null;
 	}
 
 	const pathwayInfo = PATHWAY_INFO;
@@ -131,6 +132,10 @@
 		if (text.length <= max) return text;
 		return text.slice(0, max) + '…';
 	}
+
+	function isValidSlackId(id: string | null): id is string {
+		return typeof id === 'string' && /^[A-Z0-9]+$/.test(id);
+	}
 </script>
 
 <svelte:head>
@@ -208,6 +213,16 @@
 								<span class="hours-label">
 									<img src="https://icons.hackclub.com/api/icons/8492a6/clock" alt="Hours" width="16" height="16" />
 									{submission.hoursSpent}h reported
+								</span>
+							{/if}
+							{#if isValidSlackId(submission.slackId)}
+								<span class="slack-label">
+									<img src="https://icons.hackclub.com/api/icons/8492a6/slack-fill" alt="Slack ID" width="16" height="16" />
+									<a
+										href="https://hackclub.enterprise.slack.com/team/{submission.slackId}"
+										target="_blank"
+										rel="noopener noreferrer"
+									>{submission.slackId}</a>
 								</span>
 							{/if}
 						</div>
@@ -462,6 +477,15 @@
 		display: flex;
 		align-items: center;
 		gap: 0.25rem;
+	}
+
+	.slack-label a {
+		color: inherit;
+		text-decoration: underline;
+	}
+
+	.slack-label a:hover {
+		color: #338eda;
 	}
 
 	.description {
