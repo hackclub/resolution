@@ -132,6 +132,10 @@
 		if (text.length <= max) return text;
 		return text.slice(0, max) + '…';
 	}
+
+	function isValidSlackId(id: string | null): id is string {
+		return typeof id === 'string' && /^[A-Z0-9]+$/.test(id);
+	}
 </script>
 
 <svelte:head>
@@ -211,7 +215,7 @@
 									{submission.hoursSpent}h reported
 								</span>
 							{/if}
-							{#if submission.slackId != null}
+							{#if isValidSlackId(submission.slackId)}
 								<span class="slack-label">
 									<img src="https://icons.hackclub.com/api/icons/8492a6/slack-fill" alt="Slack ID" width="16" height="16" />
 									<a

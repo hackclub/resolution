@@ -5,7 +5,7 @@ import type { RequestHandler } from './$types';
 import { requireAuth } from '$lib/server/auth/guard';
 import { db } from '$lib/server/db';
 import { reviewerPathway, user as userTable } from '$lib/server/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { PATHWAY_IDS } from '$lib/pathways';
 
 export const GET: RequestHandler = async (event) => {
@@ -76,6 +76,7 @@ export const GET: RequestHandler = async (event) => {
 				records
 					.map((r) => r.get('Email') as string | undefined)
 					.filter((e): e is string => typeof e === 'string' && e.length > 0)
+					.map((e) => e.toLowerCase())
 			)
 		);
 
@@ -84,9 +85,9 @@ export const GET: RequestHandler = async (event) => {
 			const users = await db
 				.select({ email: userTable.email, slackId: userTable.slackId })
 				.from(userTable)
-				.where(inArray(userTable.email, emails));
+				.where(inArray(sql`lower(${userTable.email})`, emails));
 			for (const u of users) {
-				slackIdByEmail.set(u.email, u.slackId);
+				slackIdByEmail.set(u.email.toLowerCase(), u.slackId);
 			}
 		}
 
@@ -100,7 +101,7 @@ export const GET: RequestHandler = async (event) => {
 				firstName: record.get('First Name') as string,
 				lastName: record.get('Last Name') as string,
 				email,
-				slackId: slackIdByEmail.get(email) ?? null,
+				slackId: slackIdByEmail.get(email?.toLowerCase()) ?? null,
 				githubUsername: record.get('GitHub Username') as string,
 				hackatimeProject: record.get('Hackatime Project') as string,
 				pathway: record.get('Pathway') as string,
