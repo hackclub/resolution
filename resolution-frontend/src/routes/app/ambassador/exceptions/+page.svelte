@@ -39,15 +39,35 @@
 	}
 
 	function formatDate(date: Date | string) {
-		return new Date(date).toLocaleDateString('en-US', {
+		// expiresAt is a date-only string (YYYY-MM-DD); appending T00:00:00
+		// keeps it in local time so it doesn't display the previous day in
+		// negative-UTC-offset zones.
+		const d = typeof date === 'string' ? new Date(date + 'T00:00:00') : date;
+		return d.toLocaleDateString('en-US', {
 			month: 'short',
 			day: 'numeric',
 			year: 'numeric'
 		});
 	}
 
+	function todayStr() {
+		const t = new Date();
+		return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+	}
+
+	function isExpired(expiresAt: string | Date) {
+		const s = typeof expiresAt === 'string' ? expiresAt : expiresAt.toISOString().slice(0, 10);
+		return s < todayStr();
+	}
+
 	const canSubmit = $derived(
 		selectedUserId && selectedPathway && selectedWeek && reason && expiresAt
+	);
+
+	const selectedUserDisplay = $derived(
+		selectedUserId
+			? data.enrolledUsers.find((u) => u.id === selectedUserId)
+			: null
 	);
 </script>
 
@@ -144,6 +164,17 @@
 								{/if}
 							</div>
 						{/if}
+						{#if selectedUserDisplay}
+							<div class="selected-user">
+								Selected:
+								<strong>
+									{[selectedUserDisplay.firstName, selectedUserDisplay.lastName]
+										.filter(Boolean)
+										.join(' ') || selectedUserDisplay.email}
+								</strong>
+								<span class="selected-user-email">({selectedUserDisplay.email})</span>
+							</div>
+						{/if}
 					</div>
 
 					<div class="form-group">
@@ -215,17 +246,24 @@
 			</div>
 		{:else}
 			<section class="card">
-				<h2>Active Exceptions ({data.exceptions.length})</h2>
+				<h2>Exceptions ({data.exceptions.length})</h2>
 				<div class="exceptions-list">
 					{#each data.exceptions as exception}
 						{@const info = pathwayInfo[exception.pathway]}
-						<div class="exception-item" class:inactive={!exception.isActive}>
+						{@const expired = isExpired(exception.expiresAt)}
+						{@const currentlyActive = exception.isActive && !expired}
+						<div
+							class="exception-item"
+							class:inactive={!exception.isActive}
+							class:expired
+						>
 							<div class="exception-top">
 								<div class="exception-info">
 									<div class="exception-user">
 										<strong>
-                                            {[exception.userName, exception.userLastName].filter(Boolean).join(' ')}  
-
+											{[exception.userName, exception.userLastName]
+												.filter(Boolean)
+												.join(' ')}
 										</strong>
 										<span class="exception-email">{exception.userEmail}</span>
 									</div>
@@ -234,8 +272,18 @@
 											{info.label}
 										</span>
 										<span>Week {exception.weekNumber}</span>
-										<span class="status-badge" class:active={exception.isActive}>
-											{exception.isActive ? 'Active' : 'Inactive'}
+										<span
+											class="status-badge"
+											class:active={currentlyActive}
+											class:expired-badge={expired && exception.isActive}
+										>
+											{#if !exception.isActive}
+												Inactive
+											{:else if expired}
+												Expired
+											{:else}
+												Active
+											{/if}
 										</span>
 										<span class="exception-date">
 											Expires {formatDate(exception.expiresAt)}
@@ -622,6 +670,25 @@
 	.status-badge.active {
 		background: #e8f5e9;
 		color: #33d6a6;
+	}
+
+	.status-badge.expired-badge {
+		background: #fff3e0;
+		color: #ff8c37;
+	}
+
+	.selected-user {
+		margin-top: 0.375rem;
+		font-size: 0.8rem;
+		color: #1a1a2e;
+	}
+
+	.selected-user-email {
+		color: #8492a6;
+	}
+
+	.exception-item.expired {
+		opacity: 0.85;
 	}
 
 	.exception-reason {

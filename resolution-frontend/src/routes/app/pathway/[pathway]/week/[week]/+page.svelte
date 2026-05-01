@@ -16,7 +16,7 @@
 			<div class="ship-divider"></div>
 			<h2>Ready to ship?</h2>
 			
-			{#if data.isSubmissionsOpen}
+			{#if data.isSubmissionsOpen || data.hasException}
 				{#if data.exception}
 					<div class="exception-notice">
 						<img src="https://icons.hackclub.com/api/icons/ff8c37/clock" alt="" width="18" height="18" />

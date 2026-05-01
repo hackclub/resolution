@@ -52,7 +52,8 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 		weekNumber,
 		title: content.title,
 		content: content.content,
-		isSubmissionsOpen: content.isSubmissionsOpen || !!exception,
+		isSubmissionsOpen: content.isSubmissionsOpen,
+		hasException: !!exception,
 		exception
 	};
 };

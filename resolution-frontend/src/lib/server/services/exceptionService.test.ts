@@ -13,16 +13,63 @@ vi.mock('../db', () => ({
 		},
 		select: (...args: unknown[]) => {
 			mockSelect(...args);
-			return { from: (...a: unknown[]) => { mockFrom(...a); return { where: (...w: unknown[]) => { mockWhere(...w); return { limit: (...l: unknown[]) => mockLimit(...l) }; } }; } };
+			return {
+				from: (...a: unknown[]) => {
+					mockFrom(...a);
+					return {
+						where: (...w: unknown[]) => {
+							mockWhere(...w);
+							return { limit: (...l: unknown[]) => mockLimit(...l) };
+						}
+					};
+				}
+			};
 		}
 	}
 }));
 
 const { ExceptionService } = await import('./exceptionService');
+const { submissionClosureException } = await import('../db/schema');
 
 beforeEach(() => {
 	vi.clearAllMocks();
 });
+
+/**
+ * Walk a drizzle SQL/condition node and collect the columns referenced by every
+ * `eq(column, ...)`/`gte(column, ...)` operator. We assert against this so that
+ * if anyone removes one of the filters from `getActiveException`, the test fails.
+ */
+function collectReferencedColumns(
+	node: unknown,
+	out: Set<string> = new Set(),
+	seen: WeakSet<object> = new WeakSet()
+): Set<string> {
+	if (!node || typeof node !== 'object') return out;
+	if (seen.has(node as object)) return out;
+	seen.add(node as object);
+	const n = node as Record<string, unknown>;
+
+	// drizzle Column instances expose `.name` plus column-ish metadata.
+	if (typeof n.name === 'string' && (n.columnType || n.dataType)) {
+		out.add(n.name as string);
+		// don't recurse into a column's `.table` back-reference; that's the
+		// full table definition and would re-walk every other column.
+		return out;
+	}
+
+	for (const key of Object.keys(n)) {
+		// avoid drizzle internal back-references that explode the walk.
+		if (key === 'table' || key === 'schema') continue;
+		const value = n[key];
+		if (Array.isArray(value)) {
+			for (const item of value) collectReferencedColumns(item, out, seen);
+		} else if (value && typeof value === 'object') {
+			collectReferencedColumns(value, out, seen);
+		}
+	}
+	return out;
+}
 
 describe('ExceptionService.getActiveException', () => {
 	it('returns null when no active season exists', async () => {
@@ -50,7 +97,7 @@ describe('ExceptionService.getActiveException', () => {
 		expect(result).toEqual(exception);
 	});
 
-	it('queries with correct season id', async () => {
+	it('queries with limit 1', async () => {
 		mockFindFirstSeason.mockResolvedValue({ id: 'season-42', isActive: true });
 		mockLimit.mockResolvedValue([]);
 
@@ -59,6 +106,32 @@ describe('ExceptionService.getActiveException', () => {
 		expect(mockFindFirstSeason).toHaveBeenCalledTimes(1);
 		expect(mockSelect).toHaveBeenCalledTimes(1);
 		expect(mockLimit).toHaveBeenCalledWith(1);
+	});
+
+	it('filters on userId, seasonId, pathway, weekNumber, isActive, and expiresAt', async () => {
+		mockFindFirstSeason.mockResolvedValue({ id: 'season-1', isActive: true });
+		mockLimit.mockResolvedValue([]);
+
+		await ExceptionService.getActiveException('user-1', 'PYTHON', 1);
+
+		expect(mockWhere).toHaveBeenCalledTimes(1);
+		const whereArg = mockWhere.mock.calls[0][0];
+		const referenced = collectReferencedColumns(whereArg);
+
+		// Each of these filters is critical to the security/correctness of the
+		// service. Removing any of them would silently allow incorrect bypasses.
+		const expectedColumns = [
+			submissionClosureException.userId.name,
+			submissionClosureException.seasonId.name,
+			submissionClosureException.pathway.name,
+			submissionClosureException.weekNumber.name,
+			submissionClosureException.isActive.name,
+			submissionClosureException.expiresAt.name
+		];
+
+		for (const col of expectedColumns) {
+			expect(referenced.has(col), `expected where clause to reference column "${col}"`).toBe(true);
+		}
 	});
 
 	it('returns null for empty array result', async () => {
