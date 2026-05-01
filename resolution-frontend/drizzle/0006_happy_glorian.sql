@@ -1,1 +1,0 @@
-ALTER TABLE "submission_closure_exception" ALTER COLUMN "expires_at" SET DATA TYPE date;

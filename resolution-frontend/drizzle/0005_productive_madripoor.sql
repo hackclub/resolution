@@ -6,7 +6,7 @@ CREATE TABLE "submission_closure_exception" (
 	"week_number" integer NOT NULL,
 	"reason" text NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
-	"expires_at" timestamp NOT NULL,
+	"expires_at" date NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"created_by" text NOT NULL
 );
