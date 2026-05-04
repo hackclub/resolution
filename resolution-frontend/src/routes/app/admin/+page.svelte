@@ -8,6 +8,7 @@
 	import { PATHWAY_LABELS } from '$lib/pathways';
 
 	let searchQuery = $state('');
+	let roleFilter = $state<'all' | 'admin' | 'ambassador' | 'reviewer' | 'ysws' | 'none'>('all');
 	let confirmDelete = $state<string | null>(null);
 	let ambassadorModal = $state<{ userId: string; userName: string } | null>(null);
 	let reviewerModal = $state<{ userId: string; userName: string } | null>(null);
@@ -15,12 +16,32 @@
 	const pathwayLabels = PATHWAY_LABELS;
 
 	const filteredUsers = $derived(
-		data.users.filter(
-			(u) =>
+		data.users.filter((u) => {
+			const matchesSearch =
 				u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
 				(u.firstName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-				(u.lastName?.toLowerCase() || '').includes(searchQuery.toLowerCase())
-		)
+				(u.lastName?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+
+			if (!matchesSearch) return false;
+
+			const isAmbassador = (data.ambassadorsByUser[u.id]?.length ?? 0) > 0;
+			const isReviewer = (data.reviewersByUser[u.id]?.length ?? 0) > 0;
+
+			switch (roleFilter) {
+				case 'admin':
+					return u.isAdmin;
+				case 'ambassador':
+					return isAmbassador;
+				case 'reviewer':
+					return isReviewer;
+				case 'ysws':
+					return u.yswsEligible;
+				case 'none':
+					return !u.isAdmin && !isAmbassador && !isReviewer && !u.yswsEligible;
+				default:
+					return true;
+			}
+		})
 	);
 
 	function getUserAmbassadorPathways(userId: string): string[] {
@@ -67,7 +88,17 @@
 		<section class="users-section">
 			<div class="users-header">
 				<h2>Users ({filteredUsers.length})</h2>
-				<input type="text" placeholder="Search users..." bind:value={searchQuery} class="search-input" />
+				<div class="filters">
+					<select bind:value={roleFilter} class="role-filter">
+						<option value="all">All roles</option>
+						<option value="admin">Admins</option>
+						<option value="ambassador">Ambassadors</option>
+						<option value="reviewer">Reviewers</option>
+						<option value="ysws">YSWS eligible</option>
+						<option value="none">No role</option>
+					</select>
+					<input type="text" placeholder="Search users..." bind:value={searchQuery} class="search-input" />
+				</div>
 			</div>
 
 			<div class="users-table-wrapper">
@@ -305,6 +336,21 @@
 		margin-bottom: 1rem;
 		gap: 1rem;
 		flex-wrap: wrap;
+	}
+
+	.filters {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.role-filter {
+		padding: 0.5rem 1rem;
+		border: 1px solid #af98ff;
+		border-radius: 8px;
+		font-family: inherit;
+		background: rgba(255, 255, 255, 0.8);
+		cursor: pointer;
 	}
 
 	.search-input {
