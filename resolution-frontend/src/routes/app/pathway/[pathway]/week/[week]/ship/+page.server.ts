@@ -4,6 +4,7 @@ import { userPathway, pathwayWeekContent } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { redirect, error } from '@sveltejs/kit';
 import { PATHWAY_IDS, type PathwayId } from '$lib/pathways';
+import { ExceptionService } from '$lib/server/services';
 
 export const load: PageServerLoad = async ({ params, parent }) => {
 	const { user } = await parent();
@@ -44,7 +45,10 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 	}
 
 	if (!content[0].isSubmissionsOpen) {
-		throw error(403, 'Submissions have been closed for this week');
+		const exception = await ExceptionService.getActiveException(user.id, pathwayId, weekNumber);
+		if (!exception) {
+			throw error(403, 'Submissions have been closed for this week');
+		}
 	}
 
 	return {
