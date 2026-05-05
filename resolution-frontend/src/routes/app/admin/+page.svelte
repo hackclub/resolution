@@ -21,8 +21,7 @@
 		{
 			value: 'none',
 			label: 'No role',
-			match: (u: UserWithRoles) =>
-				!u.isAdmin && !u.isAmbassador && !u.isReviewer && !u.yswsEligible
+			match: (u: UserWithRoles) => !u.isAdmin && !u.isAmbassador && !u.isReviewer
 		}
 	] as const;
 
