@@ -1,6 +1,7 @@
-import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, index, jsonb } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
+import type { AddressInput } from '../validation';
 
 // Enums
 export const enrollmentRoleEnum = pgEnum('enrollment_role', ['PARTICIPANT', 'AMBASSADOR']);
@@ -180,6 +181,29 @@ export const transactionLedger = pgTable('currency_transactions', {
   refId: text('tx_ref_id'), // ID, such as for shop order
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow()
 });
+
+export const shopOrder = pgTable('shop_orders', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+  pathway: pathwayEnum('pathway').notNull().references(() => pathwayShop.pathway, { onDelete: 'cascade' }),
+  status: shopOrderStatusEnum('order_stauts').notNull().default("PENDING"),
+  totalAmount: integer('amount').notNull(),
+  item: text('shop_item_id').references(() => shopItem.id, { onDelete: 'set null' }),
+  shippingAddress: jsonb('shipping_address').$type<AddressInput>(),
+  userNotes: text('user_notes'),
+  fufillerNotes: text('fufiller_notes'),
+  // claimedBy: 
+  fufilledBy: text('fufilled_by'),
+  fufilledAt: timestamp('fufilled_at', { mode: 'date' }).defaultNow(),
+  cancelledReason: text('cancelled_reason'),
+  createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow(),
+})
+
+//currencyTransaction — id, userId, pathway, amount (signed integer), reason (enum), note (nullable), grantedBy (nullable userId), refType (nullable), refId (nullable), createdAt. Index on (userId, pathway) for fast balance lookup.
+//- shopOrder — id, userId, pathway, status (enum, default PENDING), totalAmount, containsPhysical, shippingInfo (text nullable), userNotes (nullable), fulfillerNotes (nullable), claimedBy (nullable), fulfilledBy (nullable), fulfilledAt (nullable), canceledReason (nullable), createdAt, updatedAt. Index on (pathway, status) for queue queries.
+//- shopOrderItem — id, orderId, itemId, quantity, unitPriceSnapshot, nameSnapshot, itemTypeSnapshot
+//- fulfillerPathway — mirror [reviewerPathway](file:///Users/niko/coding-projects/resolution/resolution-frontend/src/lib/server/db/schema.ts#L224-L232) shape exactly: id, userId, pathway, assignedAt, assignedBy, with unique (userId, pathway) index
 
 // Relations
 export const userRelations = relations(user, ({ many }) => ({
