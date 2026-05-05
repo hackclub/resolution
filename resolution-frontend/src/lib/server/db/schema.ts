@@ -176,7 +176,7 @@ export const transactionLedger = pgTable('currency_transactions', {
   amount: integer('tx_amount').notNull(),
   reason: currencyTxnReasonEnum('tx_reason').notNull(),
   note: text('tx_note'),
-  grantedBy: text('tx_granted_by').references(() => user.id { onDelete: 'set null' }),
+  grantedBy: text('tx_granted_by').references(() => user.id, { onDelete: 'set null' }),
   refType: text('tx_ref_type'), // SHOP, SHIP, etc.
   refId: text('tx_ref_id'), // ID, such as for shop order
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow()
@@ -189,21 +189,29 @@ export const shopOrder = pgTable('shop_orders', {
   status: shopOrderStatusEnum('order_stauts').notNull().default("PENDING"),
   totalAmount: integer('amount').notNull(),
   item: text('shop_item_id').references(() => shopItem.id, { onDelete: 'set null' }),
+  itemPriceSnapshot: integer('item_price_snapshot').notNull(),
+  itemTypeSnapshot: shopItemTypeEnum('item_type_enum'),
+  itemNameSnapshot: text('item_name_snapshot').notNull(),
   shippingAddress: jsonb('shipping_address').$type<AddressInput>(),
   userNotes: text('user_notes'),
   fufillerNotes: text('fufiller_notes'),
   // claimedBy: 
-  fufilledBy: text('fufilled_by'),
-  fufilledAt: timestamp('fufilled_at', { mode: 'date' }).defaultNow(),
+  fufilledBy: text('fufilled_by').references(() => user.id, { onDelete: 'set null' }),
+  fufilledAt: timestamp('fufilled_at', { mode: 'date' }),
   cancelledReason: text('cancelled_reason'),
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow(),
 })
 
-//currencyTransaction — id, userId, pathway, amount (signed integer), reason (enum), note (nullable), grantedBy (nullable userId), refType (nullable), refId (nullable), createdAt. Index on (userId, pathway) for fast balance lookup.
-//- shopOrder — id, userId, pathway, status (enum, default PENDING), totalAmount, containsPhysical, shippingInfo (text nullable), userNotes (nullable), fulfillerNotes (nullable), claimedBy (nullable), fulfilledBy (nullable), fulfilledAt (nullable), canceledReason (nullable), createdAt, updatedAt. Index on (pathway, status) for queue queries.
-//- shopOrderItem — id, orderId, itemId, quantity, unitPriceSnapshot, nameSnapshot, itemTypeSnapshot
-//- fulfillerPathway — mirror [reviewerPathway](file:///Users/niko/coding-projects/resolution/resolution-frontend/src/lib/server/db/schema.ts#L224-L232) shape exactly: id, userId, pathway, assignedAt, assignedBy, with unique (userId, pathway) index
+export const fufillerPathway = pgTable('fufiller_pathway', {
+	id: text('id').primaryKey().$defaultFn(() => createId()),
+	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	pathway: pathwayEnum('pathway').notNull(), // theres a chance we won't need to assign this, for now this is assigned
+	assignedAt: timestamp('assigned_at', { mode: 'date' }).notNull().defaultNow(),
+	assignedBy: text('assigned_by').notNull().references(() => user.id)
+}, (table) => [
+	uniqueIndex('fufiller_pathway_unique_idx').on(table.userId, table.pathway)
+]);
 
 // Relations
 export const userRelations = relations(user, ({ many }) => ({
@@ -215,7 +223,10 @@ export const userRelations = relations(user, ({ many }) => ({
   weeklyShips: many(weeklyShip),
   payouts: many(ambassadorPayout),
   referralLinks: many(referralLink),
-  reviewerAssignments: many(reviewerPathway)
+  reviewerAssignments: many(reviewerPathway),
+  currencyTransactions: many(transactionLedger),
+  shopOrders: many(shopOrder),
+  fufillerAssignments: many(fufillerPathway)
   }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -356,3 +367,35 @@ export const referralSignupRelations = relations(referralSignup, ({ one }) => ({
 	referralLink: one(referralLink, { fields: [referralSignup.referralLinkId], references: [referralLink.id] }),
 	user: one(user, { fields: [referralSignup.userId], references: [user.id] })
 }));
+
+export const pathwayShopRelations = relations(pathwayShop, ({ one, many }) => ({
+	editor: one(user, { fields: [pathwayShop.lastEditedBy], references: [user.id] }),
+	items: many(shopItem),
+	transactions: many(transactionLedger),
+	orders: many(shopOrder)
+}));
+
+export const shopItemRelations = relations(shopItem, ({ one, many }) => ({
+	shop: one(pathwayShop, { fields: [shopItem.pathway], references: [pathwayShop.pathway] }),
+	editor: one(user, { fields: [shopItem.lastEditedBy], references: [user.id] }),
+	orders: many(shopOrder)
+}));
+
+export const transactionLedgerRelations = relations(transactionLedger, ({ one }) => ({
+	user: one(user, { fields: [transactionLedger.userId], references: [user.id] }),
+	grantedByUser: one(user, { fields: [transactionLedger.grantedBy], references: [user.id] }),
+	shop: one(pathwayShop, { fields: [transactionLedger.pathway], references: [pathwayShop.pathway] })
+}));
+
+export const shopOrderRelations = relations(shopOrder, ({ one }) => ({
+	user: one(user, { fields: [shopOrder.userId], references: [user.id] }),
+	shop: one(pathwayShop, { fields: [shopOrder.pathway], references: [pathwayShop.pathway] }),
+	item: one(shopItem, { fields: [shopOrder.item], references: [shopItem.id] }),
+	fufiller: one(user, { fields: [shopOrder.fufilledBy], references: [user.id] })
+}));
+
+export const fufillerPathwayRelations = relations(fufillerPathway, ({ one }) => ({
+	user: one(user, { fields: [fufillerPathway.userId], references: [user.id] }),
+	assignedByUser: one(user, { fields: [fufillerPathway.assignedBy], references: [user.id] })
+}));
+
