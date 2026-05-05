@@ -25,18 +25,18 @@ const cancelSchema = z.object({
 	orderId: z.string().min(1) // needs to be a valid string
 });
 
-export const load: PageServerLoad = async ({ params, parent }) => {
-    const { user } = await parent();
-    const pathwayId = params.pathway.toUpperCase();
+// guard for load + actions
+// returns pathway ID and the shop item 
+async function assertShopAccess(userId: string, pathwayParam: string) {
+    const pathwayId = pathwayParam.toUpperCase();
     if (!PATHWAY_IDS.includes(pathwayId as PathwayId)) throw error(404, 'Pathway not found');
     const typedPathwayId = pathwayId as PathwayId;
-    
+
     const membership = await db
         .select()
         .from(userPathway)
-        .where(and(eq(userPathway.userId, user.id), eq(userPathway.pathway, typedPathwayId)))
+        .where(and(eq(userPathway.userId, userId), eq(userPathway.pathway, typedPathwayId)))
         .limit(1);
-
     if (membership.length === 0) throw redirect(302, '/app');
 
     const pathwayShopRow = await db
@@ -44,11 +44,16 @@ export const load: PageServerLoad = async ({ params, parent }) => {
         .from(pathwayShop)
         .where(eq(pathwayShop.pathway, typedPathwayId))
         .limit(1);
-    
     if (pathwayShopRow.length === 0 || !pathwayShopRow[0].isEnabled) {
         throw error(404);
     }
-    const shop = pathwayShopRow[0];
+
+    return { typedPathwayId, shop: pathwayShopRow[0] };
+}
+
+export const load: PageServerLoad = async ({ params, parent }) => {
+    const { user } = await parent();
+    const { typedPathwayId, shop } = await assertShopAccess(user.id, params.pathway);
 
     const pathwayItems = await db
         .select()
@@ -85,10 +90,11 @@ export const load: PageServerLoad = async ({ params, parent }) => {
     };
 };
 
-// ── Actions ───────────────────────────────────────────────────────────
 export const actions: Actions = {
 	purchase: async ({ request, params, locals }) => {
-		// 1. auth + pathway validation (same as load)
+        if (!locals.user) throw redirect(302, '/api/auth/login');
+        const { typedPathwayId, shop } = await assertShopAccess(locals.user.id, params.pathway);
+
 		// 2. parse FormData → purchaseSchema.safeParse → fail(400) on error
 		// 3. db.transaction(async (tx) => {
 		//      a. re-fetch shop (isEnabled), item (isActive, pathway match)
@@ -103,7 +109,9 @@ export const actions: Actions = {
 	},
 
 	cancel: async ({ request, params, locals }) => {
-		// 1. auth + pathway validation
+        if (!locals.user) throw redirect(302, '/api/auth/login');
+        const { typedPathwayId } = await assertShopAccess(locals.user.id, params.pathway);
+
 		// 2. parse FormData → cancelSchema
 		// 3. db.transaction:
 		//      a. load order; assert userId === user.id and status === 'PENDING'
