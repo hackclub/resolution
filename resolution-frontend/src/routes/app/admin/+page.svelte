@@ -46,8 +46,8 @@
 
 			const userWithRoles: UserWithRoles = {
 				...u,
-				isAmbassador: (data.ambassadorsByUser[u.id]?.length ?? 0) > 0,
-				isReviewer: (data.reviewersByUser[u.id]?.length ?? 0) > 0
+				isAmbassador: getUserAmbassadorPathways(u.id).length > 0,
+				isReviewer: getUserReviewerPathways(u.id).length > 0
 			};
 
 			const filter = ROLE_FILTERS.find((f) => f.value === roleFilter) ?? ROLE_FILTERS[0];
