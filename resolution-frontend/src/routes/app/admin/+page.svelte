@@ -35,6 +35,10 @@
 
 	const pathwayLabels = PATHWAY_LABELS;
 
+	const activeRoleFilter = $derived(
+		ROLE_FILTERS.find((f) => f.value === roleFilter) ?? ROLE_FILTERS[0]
+	);
+
 	const filteredUsers = $derived(
 		data.users.filter((u) => {
 			const matchesSearch =
@@ -50,8 +54,7 @@
 				isReviewer: getUserReviewerPathways(u.id).length > 0
 			};
 
-			const filter = ROLE_FILTERS.find((f) => f.value === roleFilter) ?? ROLE_FILTERS[0];
-			return filter.match(userWithRoles);
+			return activeRoleFilter.match(userWithRoles);
 		})
 	);
 
