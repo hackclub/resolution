@@ -24,8 +24,11 @@
 	let howDidYouHear = $state('');
 	let doingWell = $state('');
 	let improvements = $state('');
+	// svelte-ignore state_referenced_locally
 	let firstName = $state(data.user.firstName || '');
+	// svelte-ignore state_referenced_locally
 	let lastName = $state(data.user.lastName || '');
+	// svelte-ignore state_referenced_locally
 	let email = $state(data.user.email || '');
 	let description = $state('');
 	let githubUsername = $state('');
@@ -490,11 +493,6 @@
 		border-radius: 16px;
 		padding: 3rem;
 		text-align: center;
-	}
-
-	.success-icon {
-		font-size: 3rem;
-		margin-bottom: 1rem;
 	}
 
 	.success-card h1 {

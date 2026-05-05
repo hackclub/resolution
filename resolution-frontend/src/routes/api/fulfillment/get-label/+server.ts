@@ -1,0 +1,368 @@
+import { env } from '$env/dynamic/private';
+import { json, error } from '@sveltejs/kit';
+import { db } from '$lib/server/db';
+import { warehouseOrder, ambassadorPathway } from '$lib/server/db/schema';
+import { eq, and } from 'drizzle-orm';
+import type { RequestHandler } from './$types';
+import { requireAuth } from '$lib/server/auth/guard';
+import { GRAMS_TO_KG, inchesToCm, isLettermail, getServiceCode, createShipment } from '$lib/server/canada-post';
+import { createChitChatsShipment } from '$lib/server/chit-chats';
+import { arrayBufferToBase64 } from '$lib/server/utils';
+
+// Only these carriers legitimately host our label PDFs. Anything else means the label URL
+// in the DB was tampered with or misgenerated — refuse to fetch to avoid SSRF.
+const LABEL_HOST_ALLOWLIST = new Set([
+	'soa-gw.canadapost.ca',
+	'ct.soa-gw.canadapost.ca',
+	'chitchats.com',
+	'www.chitchats.com',
+	'mail.hackclub.com'
+]);
+
+function isAllowedLabelHost(url: URL): boolean {
+	if (LABEL_HOST_ALLOWLIST.has(url.hostname)) return true;
+	// Allow subdomains of canadapost.ca and chitchats.com (e.g. s3 buckets they redirect to)
+	return url.hostname.endsWith('.canadapost.ca') || url.hostname.endsWith('.chitchats.com');
+}
+
+function buildPackingSlipBase64(order: any): string {
+	const packageLine = order.packagingLabel
+		? `PACKAGE: ${order.packagingLabel}${order.packagingSubjectToChange ? ' (SUBJECT TO CHANGE — verify fit before sealing)' : ''}`
+		: undefined;
+
+	const lines: (string | undefined)[] = [
+		`PACKING SLIP`,
+		`Order #${order.fulfillmentId}`,
+		`Date: ${new Date().toLocaleDateString('en-US')}`,
+		``,
+		`SHIP TO:`,
+		`${order.firstName} ${order.lastName}`,
+		`${order.addressLine1}`,
+		order.addressLine2 || '',
+		`${order.city}, ${order.stateProvince} ${order.postalCode || ''}`,
+		`${order.country}`,
+		``,
+		packageLine,
+		packageLine ? `` : undefined,
+		`CONTENTS:`,
+		`${'Item'.padEnd(35)} ${'Size'.padEnd(10)} ${'Qty'.padEnd(5)}`,
+		`${'─'.repeat(50)}`,
+	];
+	for (const oi of order.items) {
+		const name = oi.warehouseItem.name.substring(0, 35).padEnd(35);
+		const size = (oi.sizingChoice || '—').padEnd(10);
+		const qty = String(oi.quantity).padEnd(5);
+		lines.push(`${name} ${size} ${qty}`);
+	}
+	lines.push(`${'─'.repeat(50)}`);
+	lines.push(`Total items: ${order.items.reduce((s: number, oi: any) => s + oi.quantity, 0)}`);
+	if (order.notes) {
+		lines.push(``);
+		lines.push(`NOTES: ${order.notes}`);
+	}
+	const text = lines.filter((l): l is string => l !== undefined).join('\n');
+	return btoa(unescape(encodeURIComponent(text)));
+}
+
+export const POST: RequestHandler = async (event) => {
+	const { user } = requireAuth(event);
+
+	const isAmbassador = await db
+		.select({ userId: ambassadorPathway.userId })
+		.from(ambassadorPathway)
+		.where(eq(ambassadorPathway.userId, user.id))
+		.limit(1);
+
+	if (!user.isAdmin && isAmbassador.length === 0) {
+		throw error(403, 'Access denied - admin or ambassador only');
+	}
+
+	let body: any;
+	try {
+		body = await event.request.json();
+	} catch {
+		throw error(400, 'Invalid JSON body');
+	}
+	const orderId = body?.orderId;
+	const carrier = body?.carrier;
+	if (!orderId || typeof orderId !== 'string') throw error(400, 'Order ID required');
+	if (carrier && !['auto', 'canada_post', 'chitchats', 'lettermail'].includes(carrier)) {
+		throw error(400, 'Invalid carrier');
+	}
+
+	const order = await db.query.warehouseOrder.findFirst({
+		where: eq(warehouseOrder.id, orderId),
+		with: {
+			items: {
+				with: {
+					warehouseItem: true
+				}
+			}
+		}
+	});
+
+	if (!order) throw error(404, 'Order not found');
+
+	if (!user.isAdmin && order.createdById !== user.id) {
+		throw error(403, 'Access denied - you do not own this order');
+	}
+
+	// If the order already has a label, re-fetch and return it as base64
+	if (order.labelUrl) {
+		let labelUrl = order.labelUrl;
+		if (!labelUrl.startsWith('data:')) {
+			let parsedUrl: URL;
+			try {
+				parsedUrl = new URL(labelUrl);
+			} catch {
+				throw error(400, 'Invalid label URL');
+			}
+			if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+				throw error(400, 'Invalid label URL protocol');
+			}
+			if (!isAllowedLabelHost(parsedUrl)) {
+				throw error(400, `Label host not allowed: ${parsedUrl.hostname}`);
+			}
+			const labelRes = await fetch(labelUrl);
+			console.log('Label fetch status:', labelRes.status, labelRes.statusText);
+			if (labelRes.ok) {
+				const labelBuffer = await labelRes.arrayBuffer();
+				console.log('Label PDF size:', labelBuffer.byteLength, 'bytes');
+				labelUrl = `data:application/pdf;base64,${arrayBufferToBase64(labelBuffer)}`;
+			} else {
+				const errBody = await labelRes.text();
+				console.error('Label fetch failed:', errBody);
+				throw error(502, `Failed to fetch label PDF: ${labelRes.status}`);
+			}
+		}
+		return json({
+			trackingNumber: order.trackingNumber,
+			labelUrl,
+			packingSlipBase64: buildPackingSlipBase64(order),
+			shippingMethod: order.shippingMethod || ''
+		});
+	}
+
+	// Atomically claim this order to prevent duplicate shipments from concurrent requests
+	const [claimed] = await db.update(warehouseOrder)
+		.set({ status: 'SHIPPED', updatedAt: new Date() })
+		.where(and(eq(warehouseOrder.id, orderId), eq(warehouseOrder.status, 'APPROVED')))
+		.returning({ id: warehouseOrder.id });
+
+	if (!claimed) {
+		throw error(409, 'Order has already been shipped or is not in APPROVED status');
+	}
+
+	// Total weight always comes from items. Dimensions come from the packaging
+	// record chosen at estimate time so the carrier request matches the quote.
+	// Fall back to item-derived dims for legacy orders without packaging info.
+	const MAX_HEIGHT_IN = 48;
+	let totalWeight = 0;
+	let maxLength = 0;
+	let maxWidth = 0;
+	let aggregatedHeight = 0;
+
+	for (const oi of order.items) {
+		const item = oi.warehouseItem;
+		totalWeight += item.weightGrams * oi.quantity;
+		maxLength = Math.max(maxLength, item.lengthIn);
+		maxWidth = Math.max(maxWidth, item.widthIn);
+		aggregatedHeight += item.heightIn * oi.quantity;
+	}
+	aggregatedHeight = Math.min(aggregatedHeight, MAX_HEIGHT_IN);
+
+	const hasPackaging = order.packagingLengthIn != null && order.packagingWidthIn != null && order.packagingHeightIn != null;
+	const shipLength = hasPackaging ? order.packagingLengthIn! : maxLength;
+	const shipWidth = hasPackaging ? order.packagingWidthIn! : maxWidth;
+	const shipHeight = hasPackaging ? order.packagingHeightIn! : aggregatedHeight;
+
+	const packingSlipBase64 = buildPackingSlipBase64(order);
+
+	let trackingNumber: string | null = null;
+	let labelUrl: string | null = null;
+	let shippingMethod: string;
+
+	const isChitChatsOrder = !carrier || carrier === 'auto'
+		? order.estimatedServiceCode?.startsWith('CHITCHATS.')
+		: carrier === 'chitchats';
+
+	if (isChitChatsOrder) {
+		// ── CHIT CHATS PATH ──
+		shippingMethod = 'chitchats';
+
+		try {
+			const result = await createChitChatsShipment({
+				order,
+				weightGrams: totalWeight,
+				lengthIn: shipLength,
+				widthIn: shipWidth,
+				heightIn: shipHeight
+			});
+			trackingNumber = result.trackingNumber;
+			labelUrl = result.labelBase64;
+		} catch (e: any) {
+			console.error('Chit Chats Create Shipment error:', e.message);
+			throw error(502, 'Chit Chats shipment creation failed');
+		}
+	} else if (carrier === 'lettermail' || ((!carrier || carrier === 'auto') && isLettermail(order.estimatedServiceName))) {
+		// ── LETTERMAIL PATH: Use Theseus/mail.hackclub.com ──
+		shippingMethod = 'lettermail';
+
+		const theseusApiKey = env.THESEUS_API_KEY;
+		const theseusQueueSlug = env.THESEUS_QUEUE_SLUG;
+		
+		if (!theseusApiKey || !theseusQueueSlug) {
+			throw error(500, 'Theseus API not configured (THESEUS_API_KEY and THESEUS_QUEUE_SLUG required)');
+		}
+
+		const theseusBody = {
+			address: {
+				first_name: order.firstName,
+				last_name: order.lastName,
+				line_1: order.addressLine1,
+				line_2: order.addressLine2 || undefined,
+				city: order.city,
+				state: order.stateProvince,
+				postal_code: order.postalCode || undefined,
+				country: order.country
+			},
+			idempotency_key: `warehouse-order-${order.id}`,
+			metadata: {
+				warehouse_order_id: order.id,
+				fulfillment_id: order.fulfillmentId
+			}
+		};
+
+		const theseusUrl = `${env.THESEUS_BASE_URL || 'https://mail.hackclub.com'}/api/v1/letter_queues/instant/${theseusQueueSlug}`;
+
+		const theseusRes = await fetch(theseusUrl, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${theseusApiKey}`
+			},
+			body: JSON.stringify(theseusBody)
+		});
+
+		if (!theseusRes.ok) {
+			const errBody = await theseusRes.text();
+			console.error('Theseus API error:', errBody);
+			throw error(502, `Lettermail label creation failed: ${theseusRes.status}`);
+		}
+
+		const theseusData = await theseusRes.json();
+		trackingNumber = theseusData.id || null;
+		const rawLabelUrl = theseusData.label_url || null;
+
+		if (rawLabelUrl) {
+			try {
+				const parsedUrl = new URL(rawLabelUrl);
+				if (!['http:', 'https:'].includes(parsedUrl.protocol) || !isAllowedLabelHost(parsedUrl)) {
+					console.warn('Theseus returned disallowed label URL host:', parsedUrl.hostname);
+					labelUrl = null;
+				} else {
+					const labelRes = await fetch(rawLabelUrl);
+					if (labelRes.ok) {
+						const labelBuffer = await labelRes.arrayBuffer();
+						labelUrl = `data:application/pdf;base64,${arrayBufferToBase64(labelBuffer)}`;
+					} else {
+						labelUrl = rawLabelUrl;
+					}
+				}
+			} catch {
+				labelUrl = rawLabelUrl;
+			}
+		}
+
+		// Mark the letter as printed in Theseus
+		if (trackingNumber) {
+			const theseusBaseUrl = env.THESEUS_BASE_URL || 'https://mail.hackclub.com';
+			await fetch(`${theseusBaseUrl}/api/v1/letters/${trackingNumber}/mark_printed`, {
+				method: 'POST',
+				headers: { Authorization: `Bearer ${theseusApiKey}` }
+			}).catch((e) => console.error('Failed to mark Theseus letter as printed:', e));
+		}
+
+	} else {
+		// ── CANADA POST PARCEL PATH ──
+		shippingMethod = 'canada_post';
+
+		const weightKg = totalWeight * GRAMS_TO_KG;
+		const lengthCm = inchesToCm(shipLength);
+		const widthCm = inchesToCm(shipWidth);
+		const heightCm = inchesToCm(shipHeight);
+		let serviceCode = order.estimatedServiceName
+			? getServiceCode(order.estimatedServiceName)
+			: order.country === 'CA' ? 'DOM.RP'
+			: order.country === 'US' ? 'USA.TP'
+			: 'INT.TP';
+		if (!env.CP_CONTRACT_ID) {
+			if (serviceCode === 'USA.SP.AIR') serviceCode = 'USA.TP';
+		}
+		console.log(`Creating shipment: country=${order.country}, estimatedService=${order.estimatedServiceName}, serviceCode=${serviceCode}`);
+
+		// Try creating shipment, fall back to alternate international services if unavailable
+		const fallbackCodes: string[] = [];
+		const intFallbacks = ['INT.TP', 'INT.SP.AIR', 'INT.IP', 'INT.IP.SURF'];
+		if (env.CP_CONTRACT_ID) intFallbacks.unshift('INT.XP');
+		if (serviceCode.startsWith('INT.')) {
+			for (const code of intFallbacks) {
+				if (code !== serviceCode) fallbackCodes.push(code);
+			}
+		}
+		if (serviceCode === 'INT.XP') fallbackCodes.push('INT.TP');
+		let lastError: any;
+		for (const code of [serviceCode, ...fallbackCodes]) {
+			try {
+				const result = await createShipment({ order, weightKg, lengthCm, widthCm, heightCm, serviceCode: code });
+				trackingNumber = result.trackingPin;
+				labelUrl = result.labelBase64;
+				if (code !== serviceCode) console.log(`Used fallback service ${code} instead of ${serviceCode}`);
+				lastError = null;
+				break;
+			} catch (e: any) {
+				console.error(`Canada Post Create Shipment error (${code}):`, e.message);
+				lastError = e;
+			}
+		}
+		// If Canada Post failed for international, try Chit Chats as fallback
+		if (lastError && order.country !== 'CA' && env.CHITCHATS_ACCESS_TOKEN && env.CHITCHATS_CLIENT_ID) {
+			console.log(`Canada Post unavailable for ${order.country}, trying Chit Chats fallback`);
+			try {
+				const result = await createChitChatsShipment({
+					order,
+					weightGrams: totalWeight,
+					lengthIn: shipLength,
+					widthIn: shipWidth,
+					heightIn: shipHeight
+				});
+				trackingNumber = result.trackingNumber;
+				labelUrl = result.labelBase64;
+				shippingMethod = 'chitchats';
+				lastError = null;
+			} catch (e: any) {
+				console.error('Chit Chats fallback also failed:', e.message);
+			}
+		}
+		if (lastError) {
+			throw error(502, `Shipment creation failed: ${lastError.message}`);
+		}
+	}
+
+	// Update the order with tracking info
+	await db.update(warehouseOrder)
+		.set({
+			trackingNumber,
+			labelUrl,
+			shippingMethod,
+			updatedAt: new Date()
+		})
+		.where(eq(warehouseOrder.id, orderId));
+
+	return json({
+		trackingNumber,
+		labelUrl,
+		packingSlipBase64,
+		shippingMethod
+	});
+};

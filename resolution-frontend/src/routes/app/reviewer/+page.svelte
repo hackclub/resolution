@@ -268,9 +268,9 @@
 
 	{#if approveModal}
 		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-		<div class="modal-overlay" onclick={() => approveModal = null}>
+		<div class="modal-overlay" role="button" tabindex="-1" onclick={() => approveModal = null}>
 			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-			<div class="modal" onclick={(e) => e.stopPropagation()}>
+			<div class="modal" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()}>
 				<h3>Approve Submission</h3>
 				<p class="modal-subtitle">Approving {approveModal.firstName} {approveModal.lastName}'s Week {approveModal.week} project</p>
 
@@ -299,9 +299,9 @@
 
 	{#if rejectModal}
 		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-		<div class="modal-overlay" onclick={() => rejectModal = null}>
+		<div class="modal-overlay" role="button" tabindex="-1" onclick={() => rejectModal = null}>
 			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-			<div class="modal" onclick={(e) => e.stopPropagation()}>
+			<div class="modal" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()}>
 				<h3>Reject Submission</h3>
 				<p class="modal-subtitle">Rejecting {rejectModal.firstName} {rejectModal.lastName}'s Week {rejectModal.week} project</p>
 

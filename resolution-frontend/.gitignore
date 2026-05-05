@@ -24,6 +24,10 @@ vite.config.ts.timestamp-*
 
 /docs
 
+# Coverage
+/coverage
+
 # Prisma
 *.db
 *.db-journal
+

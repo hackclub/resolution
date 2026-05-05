@@ -18,14 +18,17 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/bun.lock ./bun.lock
 
-# Drizzle files needed for runtime schema push
+# Drizzle files needed so entrypoint.sh can run drizzle-kit migrate at startup
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/src/lib/server/db/schema.ts ./src/lib/server/db/schema.ts
 
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
 EXPOSE 3000
 ENV NODE_ENV=production
 ENV BODY_SIZE_LIMIT=10M
 
-CMD ["sh", "-c", "bunx drizzle-kit push && bun build/index.js"]
+CMD ["./entrypoint.sh"]

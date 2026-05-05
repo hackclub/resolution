@@ -1,4 +1,6 @@
 .idea/
+dev-stderr.log
+dev-stdout.log
 CLAUDE.md
 AGENTS.md
 .vercel
