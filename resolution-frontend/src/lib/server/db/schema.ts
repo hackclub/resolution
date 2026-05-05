@@ -9,6 +9,9 @@ export const pathwayEnum = pgEnum('pathway', ['PYTHON', 'RUST', 'GAME_DEV', 'HAR
 export const difficultyEnum = pgEnum('difficulty', ['BEGINNER', 'INTERMEDIATE', 'ADVANCED']);
 export const shipStatusEnum = pgEnum('ship_status', ['PLANNED', 'IN_PROGRESS', 'SHIPPED', 'MISSED']);
 export const payoutStatusEnum = pgEnum('payout_status', ['DRAFT', 'PENDING', 'PAID', 'CANCELED']);
+export const shopOrderStatusEnum = pgEnum('shop_order_status', ['PENDING', 'PROCESSING', 'FULFILLED', 'CANCELED']); // order tracking for frontend (users)
+export const shopItemTypeEnum = pgEnum('shop_item_type', ['PHYSICAL', 'DIGITAL']); // for filtering
+export const currencyTxnReasonEnum = pgEnum('currency_txn_reason', ['GRANT', 'PURCHASE', 'REFUND', 'ADJUSTMENT', 'OTHER']); // logging why transaction occured
 
 // Tables
 export const user = pgTable('user', {
@@ -138,6 +141,45 @@ export const userPathway = pgTable('user_pathway', {
 }, (table) => [
   uniqueIndex('user_pathway_unique_idx').on(table.userId, table.pathway)
 ]);
+
+export const pathwayShop = pgTable('pathway_shop', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  pathway: pathwayEnum('pathway').notNull().unique(),
+  isEnabled: boolean('is_enabled').notNull().default(false), // default to not displaying unless ambassador flips switch
+  currencyName: text('currency_name').notNull().default('wish'), // bcs. idk. resolution = a wish or something idk
+  currencyNamePlural: text('currency_name_plural').notNull().default('wishes'),
+  lastEditedBy: text('last_edited_by').references(() => user.id),
+  createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
+});
+
+export const shopItem = pgTable('shop_item', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  pathway: pathwayEnum('pathway').notNull().references(() => pathwayShop.pathway, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  itemImageUrl: text('item_url'),
+  price: integer('item_price').notNull(),
+  stock: integer('item_stock'),
+  itemType: shopItemTypeEnum('item_type').notNull(),
+  isActive: boolean('is_active').notNull().default(false),
+  lastEditedBy: text('last_edited_by').references(() => user.id),
+  createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
+});
+
+export const transactionLedger = pgTable('currency_transactions', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  userId: text('tx_user_id').references(() => user.id, { onDelete: 'set null' }),
+  pathway: pathwayEnum('tx_pathway').notNull().references(() => pathwayShop.pathway, { onDelete: 'cascade' }),
+  amount: integer('tx_amount').notNull(),
+  reason: currencyTxnReasonEnum('tx_reason').notNull(),
+  note: text('tx_note'),
+  grantedBy: text('tx_granted_by').references(() => user.id { onDelete: 'set null' }),
+  refType: text('tx_ref_type'), // SHOP, SHIP, etc.
+  refId: text('tx_ref_id'), // ID, such as for shop order
+  createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow()
+});
 
 // Relations
 export const userRelations = relations(user, ({ many }) => ({
