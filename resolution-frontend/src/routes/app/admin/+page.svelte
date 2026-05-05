@@ -7,8 +7,29 @@
 
 	import { PATHWAY_LABELS } from '$lib/pathways';
 
+	type UserWithRoles = PageData['users'][number] & {
+		_isAmbassador: boolean;
+		_isReviewer: boolean;
+	};
+
+	const ROLE_FILTERS = [
+		{ value: 'all', label: 'All roles', match: () => true },
+		{ value: 'admin', label: 'Admins', match: (u: UserWithRoles) => u.isAdmin },
+		{ value: 'ambassador', label: 'Ambassadors', match: (u: UserWithRoles) => u._isAmbassador },
+		{ value: 'reviewer', label: 'Reviewers', match: (u: UserWithRoles) => u._isReviewer },
+		{ value: 'ysws', label: 'YSWS eligible', match: (u: UserWithRoles) => u.yswsEligible },
+		{
+			value: 'none',
+			label: 'No role',
+			match: (u: UserWithRoles) =>
+				!u.isAdmin && !u._isAmbassador && !u._isReviewer && !u.yswsEligible
+		}
+	] as const;
+
+	type RoleFilterValue = (typeof ROLE_FILTERS)[number]['value'];
+
 	let searchQuery = $state('');
-	let roleFilter = $state<'all' | 'admin' | 'ambassador' | 'reviewer' | 'ysws' | 'none'>('all');
+	let roleFilter = $state<RoleFilterValue>('all');
 	let confirmDelete = $state<string | null>(null);
 	let ambassadorModal = $state<{ userId: string; userName: string } | null>(null);
 	let reviewerModal = $state<{ userId: string; userName: string } | null>(null);
@@ -24,23 +45,14 @@
 
 			if (!matchesSearch) return false;
 
-			const isAmbassador = (data.ambassadorsByUser[u.id]?.length ?? 0) > 0;
-			const isReviewer = (data.reviewersByUser[u.id]?.length ?? 0) > 0;
+			const userWithRoles: UserWithRoles = {
+				...u,
+				_isAmbassador: (data.ambassadorsByUser[u.id]?.length ?? 0) > 0,
+				_isReviewer: (data.reviewersByUser[u.id]?.length ?? 0) > 0
+			};
 
-			switch (roleFilter) {
-				case 'admin':
-					return u.isAdmin;
-				case 'ambassador':
-					return isAmbassador;
-				case 'reviewer':
-					return isReviewer;
-				case 'ysws':
-					return u.yswsEligible;
-				case 'none':
-					return !u.isAdmin && !isAmbassador && !isReviewer && !u.yswsEligible;
-				default:
-					return true;
-			}
+			const filter = ROLE_FILTERS.find((f) => f.value === roleFilter) ?? ROLE_FILTERS[0];
+			return filter.match(userWithRoles);
 		})
 	);
 
@@ -89,15 +101,18 @@
 			<div class="users-header">
 				<h2>Users ({filteredUsers.length})</h2>
 				<div class="filters">
-					<select bind:value={roleFilter} class="role-filter">
-						<option value="all">All roles</option>
-						<option value="admin">Admins</option>
-						<option value="ambassador">Ambassadors</option>
-						<option value="reviewer">Reviewers</option>
-						<option value="ysws">YSWS eligible</option>
-						<option value="none">No role</option>
+					<select bind:value={roleFilter} class="role-filter" aria-label="Filter users by role">
+						{#each ROLE_FILTERS as filter (filter.value)}
+							<option value={filter.value}>{filter.label}</option>
+						{/each}
 					</select>
-					<input type="text" placeholder="Search users..." bind:value={searchQuery} class="search-input" />
+					<input
+						type="text"
+						placeholder="Search users..."
+						aria-label="Search users by name or email"
+						bind:value={searchQuery}
+						class="search-input"
+					/>
 				</div>
 			</div>
 
