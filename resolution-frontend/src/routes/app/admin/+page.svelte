@@ -100,7 +100,7 @@
 			<div class="users-header">
 				<h2>Users ({filteredUsers.length})</h2>
 				<div class="filters">
-					<select bind:value={roleFilter} class="role-filter" aria-label="Filter users by role">
+					<select bind:value={roleFilter} class="role-filter" aria-label="Filter users by role or eligibility">
 						{#each ROLE_FILTERS as filter (filter.value)}
 							<option value={filter.value}>{filter.label}</option>
 						{/each}
