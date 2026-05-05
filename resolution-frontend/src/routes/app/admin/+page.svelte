@@ -8,21 +8,21 @@
 	import { PATHWAY_LABELS } from '$lib/pathways';
 
 	type UserWithRoles = PageData['users'][number] & {
-		_isAmbassador: boolean;
-		_isReviewer: boolean;
+		isAmbassador: boolean;
+		isReviewer: boolean;
 	};
 
 	const ROLE_FILTERS = [
 		{ value: 'all', label: 'All roles', match: () => true },
 		{ value: 'admin', label: 'Admins', match: (u: UserWithRoles) => u.isAdmin },
-		{ value: 'ambassador', label: 'Ambassadors', match: (u: UserWithRoles) => u._isAmbassador },
-		{ value: 'reviewer', label: 'Reviewers', match: (u: UserWithRoles) => u._isReviewer },
+		{ value: 'ambassador', label: 'Ambassadors', match: (u: UserWithRoles) => u.isAmbassador },
+		{ value: 'reviewer', label: 'Reviewers', match: (u: UserWithRoles) => u.isReviewer },
 		{ value: 'ysws', label: 'YSWS eligible', match: (u: UserWithRoles) => u.yswsEligible },
 		{
 			value: 'none',
 			label: 'No role',
 			match: (u: UserWithRoles) =>
-				!u.isAdmin && !u._isAmbassador && !u._isReviewer && !u.yswsEligible
+				!u.isAdmin && !u.isAmbassador && !u.isReviewer && !u.yswsEligible
 		}
 	] as const;
 
@@ -47,8 +47,8 @@
 
 			const userWithRoles: UserWithRoles = {
 				...u,
-				_isAmbassador: (data.ambassadorsByUser[u.id]?.length ?? 0) > 0,
-				_isReviewer: (data.reviewersByUser[u.id]?.length ?? 0) > 0
+				isAmbassador: (data.ambassadorsByUser[u.id]?.length ?? 0) > 0,
+				isReviewer: (data.reviewersByUser[u.id]?.length ?? 0) > 0
 			};
 
 			const filter = ROLE_FILTERS.find((f) => f.value === roleFilter) ?? ROLE_FILTERS[0];
