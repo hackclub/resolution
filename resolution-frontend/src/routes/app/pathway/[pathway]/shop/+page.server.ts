@@ -228,7 +228,7 @@ export const actions: Actions = {
                 await tx.insert(transactionLedger).values({
                     userId,
                     pathway: typedPathwayId,
-                    amount: order.itemPriceSnapshot,
+                    amount: order.totalAmount, // amount that they paid
                     reason: 'REFUND',
                     refType: 'SHOP',
                     refId: order.id
