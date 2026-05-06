@@ -200,7 +200,7 @@ export const actions: Actions = {
                         eq(shopOrder.id, cancelData.orderId),
                         eq(shopOrder.userId, userId),
                         eq(shopOrder.pathway, typedPathwayId),
-                        or(eq(shopOrder.status, 'PENDING'), eq(shopOrder.status, 'PROCESSING'))
+                        eq(shopOrder.status, 'PENDING')
                     ))
                     .limit(1);
 
