@@ -7,7 +7,7 @@ import {
 	shopOrder,
 	transactionLedger
 } from '$lib/server/db/schema';
-import { and, eq, sql, desc } from 'drizzle-orm';
+import { and, eq, sql, desc, or } from 'drizzle-orm';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { PATHWAY_IDS, type PathwayId } from '$lib/pathways';
 import { z } from 'zod';
@@ -28,7 +28,8 @@ const purchaseSchema = z.object({
 });
 
 const cancelSchema = z.object({
-	orderId: z.string().min(1) // needs to be a valid string
+	orderId: z.string().min(1), // needs to be a valid string
+    cancelReason: z.string().min(1)
 });
 
 type DbOrTx = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -184,15 +185,60 @@ export const actions: Actions = {
 
 	cancel: async ({ request, params, locals }) => {
         if (!locals.user) throw redirect(302, '/api/auth/login');
-        const { typedPathwayId } = await assertShopAccess(locals.user.id, params.pathway);
+        const userId = locals.user.id;
 
-		// 2. parse FormData → cancelSchema
-		// 3. db.transaction:
-		//      a. load order; assert userId === user.id and status === 'PENDING'
-		//      b. set status = 'CANCELED', cancelledReason
-		//      c. restore item.stock if not null
-		//      d. insert transactionLedger { amount: +price, reason:'REFUND',
-		//                                    refType:'SHOP', refId: order.id }
-		// 4. return { success: true } or fail(...)
+        const cancelData = await validateFormData(cancelSchema, request);
+
+        try {
+            await db.transaction(async (tx) => {
+                const { typedPathwayId } = await assertShopAccess(userId, params.pathway, tx);
+
+                const [order] = await tx
+                    .select()
+                    .from(shopOrder)
+                    .where(and(
+                        eq(shopOrder.id, cancelData.orderId),
+                        eq(shopOrder.userId, userId),
+                        eq(shopOrder.pathway, typedPathwayId),
+                        or(eq(shopOrder.status, 'PENDING'), eq(shopOrder.status, 'PROCESSING'))
+                    ))
+                    .limit(1);
+
+                if (!order) throw new ShopError(404, { message: 'No such order' });
+
+                await tx.update(shopOrder)
+                    .set({ status: 'CANCELED', cancelledReason: cancelData.cancelReason })
+                    .where(eq(shopOrder.id, order.id));
+
+                // restore stock if the item still exists and tracks stock
+                if (order.item) {
+                    const [item] = await tx
+                        .select()
+                        .from(shopItem)
+                        .where(eq(shopItem.id, order.item))
+                        .limit(1);
+                    if (item && item.stock !== null) {
+                        await tx.update(shopItem)
+                            .set({ stock: item.stock + 1 })
+                            .where(eq(shopItem.id, item.id));
+                    }
+                }
+
+                // refund: positive ledger entry equal to what was originally charged
+                await tx.insert(transactionLedger).values({
+                    userId,
+                    pathway: typedPathwayId,
+                    amount: order.itemPriceSnapshot,
+                    reason: 'REFUND',
+                    refType: 'SHOP',
+                    refId: order.id
+                });
+            });
+        } catch (e) {
+            if (e instanceof ShopError) return fail(e.status, e.body);
+            throw e;
+        }
+
+        return { success: true };
 	}
 };
