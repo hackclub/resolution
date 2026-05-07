@@ -188,7 +188,9 @@
 					{@const info = pathwayInfo[submission.pathway]}
 					<div class="submission-card">
 						<div class="card-header">
-							<span class="submitter-name">{submission.firstName} {submission.lastName}</span>
+							<span class="project-name" title={submission.hackatimeProject || 'Untitled project'}>
+								{submission.hackatimeProject || 'Untitled project'}
+							</span>
 							{#if info}
 								<span class="pathway-badge" style="background: #{info.color}">{info.label}</span>
 							{:else}
@@ -242,12 +244,6 @@
 								<img src="https://icons.hackclub.com/api/icons/338eda/external" alt="Demo" width="16" height="16" />
 								Demo
 							</a>
-							{#if submission.hackatimeProject}
-								<span class="hackatime-label">
-									<img src="https://icons.hackclub.com/api/icons/8492a6/clock" alt="Hackatime" width="16" height="16" />
-									{submission.hackatimeProject}
-								</span>
-							{/if}
 						</div>
 
 						<div class="card-actions">
@@ -441,6 +437,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
+		min-width: 0;
+		overflow: hidden;
 	}
 
 	.card-header {
@@ -450,9 +448,13 @@
 		gap: 0.5rem;
 	}
 
-	.submitter-name {
+	.project-name {
 		font-weight: 600;
 		font-size: 1rem;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.pathway-badge {
@@ -468,20 +470,31 @@
 
 	.card-meta {
 		display: flex;
-		gap: 1rem;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
 		font-size: 0.8rem;
 		color: #8492a6;
+		min-width: 0;
 	}
 
 	.card-meta span {
-		display: flex;
+		display: inline-flex;
 		align-items: center;
 		gap: 0.25rem;
+		min-width: 0;
+		max-width: 100%;
+	}
+
+	.slack-label {
+		position: relative;
+		z-index: 1;
 	}
 
 	.slack-label a {
 		color: inherit;
 		text-decoration: underline;
+		word-break: break-all;
+		overflow-wrap: anywhere;
 	}
 
 	.slack-label a:hover {
@@ -526,14 +539,6 @@
 
 	.link-btn:hover {
 		background: rgba(255, 255, 255, 1);
-	}
-
-	.hackatime-label {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.375rem;
-		font-size: 0.8rem;
-		color: #8492a6;
 	}
 
 	.card-actions {
