@@ -4,6 +4,7 @@ import {
 	markShippedSchema,
 	updateShipStatusSchema,
 	enrollSeasonSchema,
+	shippingRateSchema,
 	projectSubmissionSchema
 } from './schemas';
 
@@ -106,6 +107,62 @@ describe('enrollSeasonSchema', () => {
 
 	it('rejects slug exceeding 50 chars', () => {
 		expect(enrollSeasonSchema.safeParse({ seasonSlug: 'a'.repeat(51) }).success).toBe(false);
+	});
+});
+
+describe('shippingRateSchema', () => {
+	const validInput = {
+		country: 'US',
+		street: '123 Main St',
+		city: 'Springfield',
+		province: 'IL',
+		postalCode: '62701',
+		items: [
+			{
+				name: 'T-shirt',
+				sku: 'TS-1',
+				costCents: 1500,
+				quantity: 1,
+				lengthIn: 9,
+				widthIn: 6,
+				heightIn: 0.3,
+				weightGrams: 180
+			}
+		]
+	};
+
+	it('accepts valid input', () => {
+		expect(shippingRateSchema.safeParse(validInput).success).toBe(true);
+	});
+
+	it('uppercases country code', () => {
+		const result = shippingRateSchema.safeParse({ ...validInput, country: 'us' });
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.country).toBe('US');
+		}
+	});
+
+	it('rejects country code not exactly 2 chars', () => {
+		expect(shippingRateSchema.safeParse({ ...validInput, country: 'USA' }).success).toBe(false);
+	});
+
+	it('rejects empty items array', () => {
+		expect(shippingRateSchema.safeParse({ ...validInput, items: [] }).success).toBe(false);
+	});
+
+	it('rejects items with non-positive dimensions', () => {
+		const bad = { ...validInput, items: [{ ...validInput.items[0], lengthIn: 0 }] };
+		expect(shippingRateSchema.safeParse(bad).success).toBe(false);
+	});
+
+	it('rejects empty street', () => {
+		expect(shippingRateSchema.safeParse({ ...validInput, street: '' }).success).toBe(false);
+	});
+
+	it('allows optional postalCode', () => {
+		const { postalCode, ...noPostal } = validInput;
+		expect(shippingRateSchema.safeParse(noPostal).success).toBe(true);
 	});
 });
 
@@ -284,5 +341,3 @@ describe('projectSubmissionSchema', () => {
 		expect(projectSubmissionSchema.safeParse({ ...valid, addressLine2: 'a'.repeat(201) }).success).toBe(false);
 	});
 });
-
-

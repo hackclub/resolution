@@ -8,7 +8,7 @@
 
 	const pathwayInfo = PATHWAY_INFO;
 
-	const info = pathwayInfo[data.pathway] || { label: data.pathway, icon: 'code', color: '5bc0de' };
+	const info = $derived(pathwayInfo[data.pathway] || { label: data.pathway, icon: 'code', color: '5bc0de' });
 </script>
 
 <svelte:head>

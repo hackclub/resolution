@@ -36,6 +36,29 @@ export const workshopIdSchema = z.object({
 	workshopId: z.string().min(1, 'Workshop ID is required')
 });
 
+const packagingItemSchema = z.object({
+	name: z.string(),
+	sku: z.string().optional(),
+	hsCode: z.string().optional(),
+	costCents: z.number(),
+	quantity: z.number().int().positive(),
+	lengthIn: z.number().positive('lengthIn must be positive'),
+	widthIn: z.number().positive('widthIn must be positive'),
+	heightIn: z.number().positive('heightIn must be positive'),
+	weightGrams: z.number().positive('weightGrams must be positive')
+});
+
+export const shippingRateSchema = z.object({
+	country: z.string().length(2, 'Country must be a 2-letter ISO code').toUpperCase(),
+	street: z.string().min(1, 'Street is required'),
+	city: z.string().min(1, 'City is required'),
+	province: z.string().min(1, 'Province/State is required'),
+	postalCode: z.string().optional(),
+	items: z.array(packagingItemSchema).min(1, 'At least one item is required')
+});
+
+export type ShippingRateInput = z.infer<typeof shippingRateSchema>;
+
 const safeUrl = z.string().url('Please enter a valid URL').max(2000).refine(
 	(val) => /^https?:\/\//i.test(val),
 	{ message: 'URL must use http or https' }

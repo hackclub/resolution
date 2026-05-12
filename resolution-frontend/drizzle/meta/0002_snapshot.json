@@ -1,5 +1,5 @@
 {
-  "id": "35dc54d2-783c-4816-8106-c7e56ffd8939",
+  "id": "0fa6b235-2de1-4477-8997-b6da9895316e",
   "prevId": "becd34cd-7692-4ef3-a912-458e58e190ad",
   "version": "7",
   "dialect": "postgresql",
@@ -1058,6 +1058,90 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.warehouse_item": {
+      "name": "warehouse_item",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sku": {
+          "name": "sku",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sizing": {
+          "name": "sizing",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weight_grams": {
+          "name": "weight_grams",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cost_cents": {
+          "name": "cost_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "image_filename": {
+          "name": "image_filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "warehouse_item_sku_unique": {
+          "name": "warehouse_item_sku_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "sku"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.weekly_ship": {
       "name": "weekly_ship",
       "schema": "",
@@ -1564,6 +1648,7 @@
       "schema": "public",
       "values": [
         "PYTHON",
+        "WEB_DEV",
         "RUST",
         "GAME_DEV",
         "HARDWARE",

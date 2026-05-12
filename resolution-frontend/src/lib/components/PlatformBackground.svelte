@@ -44,14 +44,6 @@
     flex-shrink: 0;
   }
 
-  /* Floating clouds */
-  .clouds {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-
-
   .content {
     position: relative;
     z-index: 1;
