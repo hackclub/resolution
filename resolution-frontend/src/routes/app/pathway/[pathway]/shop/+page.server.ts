@@ -101,87 +101,88 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 };
 
 export const actions: Actions = {
-	purchase: async ({ request, params, locals }) => {
-        if (!locals.user) throw redirect(302, '/api/auth/login');
-        const userId = locals.user.id;
+    // commented out as this should probably be in ./[id]
+	// purchase: async ({ request, params, locals }) => {
+    //     if (!locals.user) throw redirect(302, '/api/auth/login');
+    //     const userId = locals.user.id;
 
-        const purchaseData = await validateFormData(purchaseSchema, request);
+    //     const purchaseData = await validateFormData(purchaseSchema, request);
 
-        let orderId: string;
-        try {
-            orderId = await db.transaction(async (tx) => {
-                const { typedPathwayId } = await assertShopAccess(userId, params.pathway, tx);
+    //     let orderId: string;
+    //     try {
+    //         orderId = await db.transaction(async (tx) => {
+    //             const { typedPathwayId } = await assertShopAccess(userId, params.pathway, tx);
 
-                const [item] = await tx
-                    .select()
-                    .from(shopItem)
-                    .where(and(
-                        eq(shopItem.id, purchaseData.itemId),
-                        eq(shopItem.pathway, typedPathwayId),
-                        eq(shopItem.isActive, true)
-                    ))
-                    .limit(1);
+    //             const [item] = await tx
+    //                 .select()
+    //                 .from(shopItem)
+    //                 .where(and(
+    //                     eq(shopItem.id, purchaseData.itemId),
+    //                     eq(shopItem.pathway, typedPathwayId),
+    //                     eq(shopItem.isActive, true)
+    //                 ))
+    //                 .limit(1);
 
-                if (!item) throw new ShopError(400, { message: 'Item not found' });
+    //             if (!item) throw new ShopError(400, { message: 'Item not found' });
 
-                if (item.itemType === 'PHYSICAL' && !purchaseData.shippingAddress) {
-                    throw new ShopError(400, { message: 'Shipping address required for physical items' });
-                }
+    //             if (item.itemType === 'PHYSICAL' && !purchaseData.shippingAddress) {
+    //                 throw new ShopError(400, { message: 'Shipping address required for physical items' });
+    //             }
 
-                const [{ balance }] = await tx
-                    .select({
-                        balance: sql<number>`COALESCE(SUM(${transactionLedger.amount}), 0)`.mapWith(Number)
-                    })
-                    .from(transactionLedger)
-                    .where(and(
-                        eq(transactionLedger.userId, userId),
-                        eq(transactionLedger.pathway, typedPathwayId)
-                    ));
+    //             const [{ balance }] = await tx
+    //                 .select({
+    //                     balance: sql<number>`COALESCE(SUM(${transactionLedger.amount}), 0)`.mapWith(Number)
+    //                 })
+    //                 .from(transactionLedger)
+    //                 .where(and(
+    //                     eq(transactionLedger.userId, userId),
+    //                     eq(transactionLedger.pathway, typedPathwayId)
+    //                 ));
 
-                if (balance < item.price) {
-                    throw new ShopError(400, { message: 'Not enough currency' });
-                }
+    //             if (balance < item.price) {
+    //                 throw new ShopError(400, { message: 'Not enough currency' });
+    //             }
 
-                if (item.stock !== null) {
-                    if (item.stock <= 0) throw new ShopError(400, { message: 'No stock remaining' });
-                    await tx.update(shopItem)
-                        .set({ stock: item.stock - 1 })
-                        .where(eq(shopItem.id, item.id));
-                }
+    //             if (item.stock !== null) {
+    //                 if (item.stock <= 0) throw new ShopError(400, { message: 'No stock remaining' });
+    //                 await tx.update(shopItem)
+    //                     .set({ stock: item.stock - 1 })
+    //                     .where(eq(shopItem.id, item.id));
+    //             }
 
-                const [order] = await tx
-                    .insert(shopOrder)
-                    .values({
-                        userId,
-                        pathway: typedPathwayId,
-                        totalAmount: item.price,
-                        item: item.id,
-                        itemPriceSnapshot: item.price,
-                        itemTypeSnapshot: item.itemType,
-                        itemNameSnapshot: item.name,
-                        shippingAddress: purchaseData.shippingAddress ?? null,
-                        userNotes: purchaseData.userNotes ?? null
-                    })
-                    .returning({ id: shopOrder.id });
+    //             const [order] = await tx
+    //                 .insert(shopOrder)
+    //                 .values({
+    //                     userId,
+    //                     pathway: typedPathwayId,
+    //                     totalAmount: item.price,
+    //                     item: item.id,
+    //                     itemPriceSnapshot: item.price,
+    //                     itemTypeSnapshot: item.itemType,
+    //                     itemNameSnapshot: item.name,
+    //                     shippingAddress: purchaseData.shippingAddress ?? null,
+    //                     userNotes: purchaseData.userNotes ?? null
+    //                 })
+    //                 .returning({ id: shopOrder.id });
 
-                await tx.insert(transactionLedger).values({
-                    userId,
-                    pathway: typedPathwayId,
-                    amount: -item.price,
-                    reason: 'PURCHASE',
-                    refType: 'SHOP',
-                    refId: order.id   // ← ties the ledger entry to the order
-                });
+    //             await tx.insert(transactionLedger).values({
+    //                 userId,
+    //                 pathway: typedPathwayId,
+    //                 amount: -item.price,
+    //                 reason: 'PURCHASE',
+    //                 refType: 'SHOP',
+    //                 refId: order.id   // ← ties the ledger entry to the order
+    //             });
 
-                return order.id;
-            });
-        } catch (e) {
-            if (e instanceof ShopError) return fail(e.status, e.body);
-            throw e;
-        }
+    //             return order.id;
+    //         });
+    //     } catch (e) {
+    //         if (e instanceof ShopError) return fail(e.status, e.body);
+    //         throw e;
+    //     }
 
-        return { success: true, orderId };
-	},
+    //     return { success: true, orderId };
+	// },
 
 	cancel: async ({ request, params, locals }) => {
         if (!locals.user) throw redirect(302, '/api/auth/login');
