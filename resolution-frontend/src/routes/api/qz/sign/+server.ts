@@ -1,10 +1,10 @@
 import { env } from '$env/dynamic/private';
 import { createSign } from 'crypto';
-import { requireAuth } from '$lib/server/auth/guard';
+import { requireAdminOrAmbassador, requireAuth } from '$lib/server/auth/guard';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async (event) => {
-	requireAuth(event);
+	requireAdminOrAmbassador(event);
 
 	const toSign = await event.request.text();
 
