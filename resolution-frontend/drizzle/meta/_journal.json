@@ -43,6 +43,13 @@
       "when": 1778007365517,
       "tag": "0005_nosy_bloodstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778619728709,
+      "tag": "0006_worried_hedge_knight",
+      "breakpoints": true
     }
   ]
 }
