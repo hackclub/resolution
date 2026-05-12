@@ -112,10 +112,12 @@
                             {/if}
                         {/each}
                     </div>
-                    <button type="button" class="show-more" class:open={showAll} onclick={switchShowState}>
-                        <img class="show-more-image" src="https://icons.hackclub.com/api/icons/black/right-caret" alt="">
-                        {showAll ? 'Show less...' : 'Show more...'}
-                    </button>
+					{#if data.items.length > 3}
+						<button type="button" class="show-more" class:open={showAll} onclick={switchShowState}>
+							<img class="show-more-image" src="https://icons.hackclub.com/api/icons/black/right-caret" alt="">
+							{showAll ? 'Show less...' : 'Show more...'}
+						</button>
+					{/if}
                 {/if}
             </section>
 
