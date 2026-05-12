@@ -28,6 +28,10 @@
 				return status;
 		}
 	}
+
+	function switchShowState(e: MouseEvent) {
+		showAll = !showAll
+	}
 </script>
 
 <svelte:head>
@@ -108,22 +112,10 @@
                             {/if}
                         {/each}
                     </div>
-                    {#if showAll}
-						<div class="show-more-div"> 
-							<!-- svelte-ignore a11y_missing_attribute --> <!-- not best practice, sorry :( -->
-							<a class="show-more">
-								<img class="show-more-image" src="https://icons.hackclub.com/api/icons/black/right-caret">
-								Show less... <!--sorry this is probably confusing :pf:-->
-							</a>
-						</div>
-                    {:else}
-						<div class="show-more-div"> <!--flex time!!! :sillybleh:-->
-							<!-- svelte-ignore a11y_missing_attribute -->
-							<a class="show-more">
-							    <img class="show-more-image" src="https://icons.hackclub.com/api/icons/black/right-caret">
-								Show more...</a>
-						</div>
-                    {/if}
+                    <button type="button" class="show-more" class:open={showAll} onclick={switchShowState}>
+                        <img class="show-more-image" src="https://icons.hackclub.com/api/icons/black/right-caret" alt="">
+                        {showAll ? 'Show less...' : 'Show more...'}
+                    </button>
                 {/if}
             </section>
 
@@ -175,19 +167,13 @@
         padding: 1.5rem;
 	}
 
-	.show-more-div {
-		display: flex;
-		flex-direction: row;
-		justify-content: flex-end;
-		gap: 0.25rem;
-		align-items: center;
-	}
-
     .show-more {
 		all: unset;
-		display: block;
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
 		width: fit-content;
-		/* margin-left: auto; */
+		margin-left: auto;
 		font-style: italic;
 		cursor: pointer;
     }
@@ -196,13 +182,18 @@
 		text-decoration: underline;
 	}
 	
-	.show-more:focus {
+	.show-more:focus-visible {
 		outline: revert;
 	}
 
-	.show-more-image { /* cursed name but we ball */
+	.show-more-image {
 		height: 1rem;
 		width: 1rem;
+		transition: transform 0.15s ease;
+	}
+
+	.show-more.open .show-more-image {
+		transform: rotate(90deg);
 	}
 
 	.back-link {
