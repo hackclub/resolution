@@ -1,6 +1,6 @@
 # resolution.hackclub.com
 
-Choose your challenge and ship every week. Earn prizes each week, and a giant prize if you stay until the end.
+Choose your challenge and ship every week. Earn prizes each week, and a giant prize if you stay until the end!
 
 ## Contributing to the site
 
