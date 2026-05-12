@@ -48,7 +48,7 @@
                     </span>
                     <h1>Shop</h1>
                     <p class="subtitle">
-                        Spend your {data.shop.currencyNamePlural} on swag and other goodies.
+                        Spend your {data.shop.currencyNamePlural} on goodies!
                     </p>
                 </div>
                 <div class="balance-card">
