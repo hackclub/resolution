@@ -205,16 +205,6 @@ export const shopOrder = pgTable('shop_orders', {
   updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow(),
 })
 
-export const fufillerPathway = pgTable('fufiller_pathway', {
-	id: text('id').primaryKey().$defaultFn(() => createId()),
-	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
-	pathway: pathwayEnum('pathway').notNull(), // theres a chance we won't need to assign this, for now this is assigned
-	assignedAt: timestamp('assigned_at', { mode: 'date' }).notNull().defaultNow(),
-	assignedBy: text('assigned_by').notNull().references(() => user.id)
-}, (table) => [
-	uniqueIndex('fufiller_pathway_unique_idx').on(table.userId, table.pathway)
-]);
-
 // Relations
 export const userRelations = relations(user, ({ many }) => ({
   pathways: many(userPathway),
@@ -225,16 +215,11 @@ export const userRelations = relations(user, ({ many }) => ({
   weeklyShips: many(weeklyShip),
   payouts: many(ambassadorPayout),
   referralLinks: many(referralLink),
-<<<<<<< HEAD
   warehouseOrders: many(warehouseOrder),
-  reviewerAssignments: many(reviewerPathway)
-=======
   reviewerAssignments: many(reviewerPathway),
   currencyTransactions: many(transactionLedger),
-  shopOrders: many(shopOrder),
-  fufillerAssignments: many(fufillerPathway)
->>>>>>> a909366 (feat: relations + one more table)
-  }));
+  shopOrders: many(shopOrder)
+}));
 
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, { fields: [session.userId], references: [user.id] })
@@ -583,8 +568,4 @@ export const shopOrderRelations = relations(shopOrder, ({ one }) => ({
 	fufiller: one(user, { fields: [shopOrder.fufilledBy], references: [user.id] })
 }));
 
-export const fufillerPathwayRelations = relations(fufillerPathway, ({ one }) => ({
-	user: one(user, { fields: [fufillerPathway.userId], references: [user.id] }),
-	assignedByUser: one(user, { fields: [fufillerPathway.assignedBy], references: [user.id] })
-}));
 
