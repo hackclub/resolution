@@ -14,8 +14,11 @@
 	let isSubmitting = $state(false);
 
 	// prefill from week-submission flow style: name + email come from session user
+	// svelte-ignore state_referenced_locally
 	let firstName = $state(data.user.firstName);
+	// svelte-ignore state_referenced_locally
 	let lastName = $state(data.user.lastName);
+	// svelte-ignore state_referenced_locally
 	let email = $state(data.user.email);
 
 	// shipping address (only used for physical items)
