@@ -23,6 +23,10 @@ class ShopError extends Error {
 // always collect a shipping address regardless of item type
 const buySchema = z.object({
 	userNotes: z.string().max(500).optional().default(''),
+	phone: z
+		.string()
+		.min(1, 'Phone number is required')
+		.max(30, 'Phone number is too long'),
 	...addressSchema.shape
 });
 
@@ -165,6 +169,7 @@ export const actions = {
 						itemTypeSnapshot: item.itemType,
 						itemNameSnapshot: item.name,
 						shippingAddress,
+						phone: buyData.phone,
 						userNotes: buyData.userNotes || null
 					})
 					.returning({ id: shopOrder.id });

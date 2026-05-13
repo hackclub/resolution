@@ -195,6 +195,7 @@ export const shopOrder = pgTable('shop_orders', {
   itemTypeSnapshot: shopItemTypeEnum('item_type_enum'),
   itemNameSnapshot: text('item_name_snapshot').notNull(),
   shippingAddress: jsonb('shipping_address').$type<AddressInput>(),
+  phone: text('phone'),
   userNotes: text('user_notes'),
   fufillerNotes: text('fufiller_notes'),
   // claimedBy: 
@@ -542,6 +543,8 @@ export const warehouseBatchRelations = relations(warehouseBatch, ({ one, many })
 
 export const warehouseBatchTagRelations = relations(warehouseBatchTag, ({ one }) => ({
 	batch: one(warehouseBatch, { fields: [warehouseBatchTag.batchId], references: [warehouseBatch.id] })
+}));
+
 export const pathwayShopRelations = relations(pathwayShop, ({ one, many }) => ({
 	editor: one(user, { fields: [pathwayShop.lastEditedBy], references: [user.id] }),
 	items: many(shopItem),

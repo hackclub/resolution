@@ -20,6 +20,7 @@
 	let lastName = $state(data.user.lastName);
 	// svelte-ignore state_referenced_locally
 	let email = $state(data.user.email);
+	let phone = $state('');
 
 	// shipping address (only used for physical items)
 	let addressLine1 = $state('');
@@ -102,6 +103,10 @@
 						<div class="form-group">
 							<label for="email">Email</label>
 							<input id="email" name="email" type="email" bind:value={email} required maxlength="254" />
+						</div>
+						<div class="form-group">
+							<label for="phone">Phone number</label>
+							<input id="phone" name="phone" type="tel" bind:value={phone} required maxlength="30" placeholder="+1 555 123 4567" />
 						</div>
 					</section>
 
@@ -295,6 +300,7 @@
 
 	input[type='text'],
 	input[type='email'],
+	input[type='tel'],
 	textarea {
 		width: 100%;
 		padding: 0.625rem 0.75rem;
