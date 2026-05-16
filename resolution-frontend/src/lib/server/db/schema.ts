@@ -12,7 +12,7 @@ export const shipStatusEnum = pgEnum('ship_status', ['PLANNED', 'IN_PROGRESS', '
 export const payoutStatusEnum = pgEnum('payout_status', ['DRAFT', 'PENDING', 'PAID', 'CANCELED']);
 export const warehouseOrderStatusEnum = pgEnum('warehouse_order_status', ['DRAFT', 'ESTIMATED', 'APPROVED', 'SHIPPED', 'CANCELLED']);
 export const warehouseBatchStatusEnum = pgEnum('warehouse_batch_status', ['AWAITING_MAPPING', 'MAPPED', 'PROCESSED']);
-export const shopOrderStatusEnum = pgEnum('shop_order_status', ['PENDING', 'PROCESSING', 'FULFILLED', 'CANCELED']); // order tracking for frontend (users)
+export const shopOrderStatusEnum = pgEnum('shop_order_status', ['PENDING', 'PROCESSING', 'FULFILLED', 'CANCELED', 'REJECTED']); // order tracking for frontend (users)
 export const shopItemSourceEnum = pgEnum('shop_item_source', ['CUSTOM', 'WAREHOUSE_ITEM', 'WAREHOUSE_TEMPLATE']); // discriminator: where the item's fulfillment data comes from
 export const currencyTxnReasonEnum = pgEnum('currency_txn_reason', ['GRANT', 'PURCHASE', 'REFUND', 'ADJUSTMENT', 'OTHER']); // logging why transaction occured
 
@@ -204,6 +204,10 @@ export const shopOrder = pgTable('shop_orders', {
   // claimedBy: 
   fufilledBy: text('fufilled_by').references(() => user.id, { onDelete: 'set null' }),
   fufilledAt: timestamp('fufilled_at', { mode: 'date' }),
+  // Populated by the warehouse fulfillment flow when a label is created.
+  // Mirrors warehouseOrder.trackingNumber so the participant can see it on
+  // their order without needing access to the warehouse tables.
+  trackingNumber: text('tracking_number'),
   cancelledReason: text('cancelled_reason'),
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow().$onUpdate(() => new Date()),
@@ -399,6 +403,12 @@ export const warehouseOrder = pgTable('warehouse_order', {
 	id: text('id').primaryKey().$defaultFn(() => createId()),
 	fulfillmentId: integer('fulfillment_id').generatedAlwaysAsIdentity().unique(),
 	createdById: text('created_by_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	// Back reference to the originating shop order, set when a warehouse
+	// order is created via the shop fufill flow. Null for warehouse orders
+	// created directly (admin or ambassador swag). On shipping success the
+	// fulfillment endpoint flips the linked shop order to FULFILLED and
+	// copies trackingNumber across so the participant can see it.
+	shopOrderId: text('shop_order_id').references(() => shopOrder.id, { onDelete: 'set null' }),
 	batchId: text('batch_id'),
 	status: warehouseOrderStatusEnum('status').notNull().default('DRAFT'),
 	firstName: text('first_name').notNull(),
@@ -468,6 +478,7 @@ export const warehouseOrderTag = pgTable('warehouse_order_tag', {
 
 export const warehouseOrderRelations = relations(warehouseOrder, ({ one, many }) => ({
 	createdBy: one(user, { fields: [warehouseOrder.createdById], references: [user.id] }),
+	shopOrder: one(shopOrder, { fields: [warehouseOrder.shopOrderId], references: [shopOrder.id] }),
 	items: many(warehouseOrderItem),
 	tags: many(warehouseOrderTag)
 }));
@@ -568,10 +579,11 @@ export const transactionLedgerRelations = relations(transactionLedger, ({ one })
 }));
 
 export const shopOrderRelations = relations(shopOrder, ({ one }) => ({
-	user: one(user, { fields: [shopOrder.userId], references: [user.id] }),
-	shop: one(pathwayShop, { fields: [shopOrder.pathway], references: [pathwayShop.pathway] }),
-	item: one(shopItem, { fields: [shopOrder.item], references: [shopItem.id] }),
-	fufiller: one(user, { fields: [shopOrder.fufilledBy], references: [user.id] })
+  user: one(user, { fields: [shopOrder.userId], references: [user.id] }),
+  shop: one(pathwayShop, { fields: [shopOrder.pathway], references: [pathwayShop.pathway] }),
+  item: one(shopItem, { fields: [shopOrder.item], references: [shopItem.id] }),
+  fufiller: one(user, { fields: [shopOrder.fufilledBy], references: [user.id] }),
+  warehouseOrder: one(warehouseOrder, { fields: [shopOrder.id], references: [warehouseOrder.shopOrderId] })
 }));
 
 

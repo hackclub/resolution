@@ -8,6 +8,13 @@
       "when": 1778903874976,
       "tag": "0000_redundant_gamora",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778950267393,
+      "tag": "0001_sloppy_namora",
+      "breakpoints": true
     }
   ]
 }
