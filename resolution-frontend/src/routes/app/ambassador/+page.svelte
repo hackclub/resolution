@@ -61,6 +61,18 @@
 							height="32"
 						/>
 						<h2>{info.label}</h2>
+						<a
+							class="shop-btn"
+							href="/app/ambassador/{pathway.toLowerCase()}/shop"
+						>
+							<img
+								src="https://icons.hackclub.com/api/icons/a633d6/shopping-cart"
+								alt=""
+								width="16"
+								height="16"
+							/>
+							Shop
+						</a>
 					</div>
 
 					<div class="weeks-grid">
@@ -186,6 +198,24 @@
 		align-items: center;
 		gap: 0.75rem;
 		margin-bottom: 1.25rem;
+	}
+
+	.shop-btn {
+		margin-left: auto;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.4rem 0.85rem;
+		border-radius: 20px;
+		background: rgba(255, 255, 255, 0.8);
+		border: 1px solid #a633d6;
+		color: #a633d6;
+		font-family: 'Kodchasan', sans-serif;
+		text-decoration: none;
+		font-size: 0.85rem;
+	}
+	.shop-btn:hover {
+		background: #fff;
 	}
 
 	h2 {

@@ -1,7 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { warehouseOrder, ambassadorPathway } from '$lib/server/db/schema';
+import { warehouseOrder, ambassadorPathway, shopOrder } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 import { requireAuth } from '$lib/server/auth/guard';
@@ -358,6 +358,20 @@ export const POST: RequestHandler = async (event) => {
 			updatedAt: new Date()
 		})
 		.where(eq(warehouseOrder.id, orderId));
+
+	// If this warehouse order was created from a shop order, flip the linked
+	// shop order to FULFILLED and copy the tracking number so the participant
+	// can see it on their order page. Lettermail can ship without a tracking
+	// number, so trackingNumber may legitimately be null here.
+	if (order.shopOrderId) {
+		await db.update(shopOrder)
+			.set({
+				status: 'FULFILLED',
+				fufilledAt: new Date(),
+				trackingNumber: trackingNumber ?? null
+			})
+			.where(eq(shopOrder.id, order.shopOrderId));
+	}
 
 	return json({
 		trackingNumber,

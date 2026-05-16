@@ -1,6 +1,6 @@
 {
-  "id": "04f6d62e-e75a-447d-9462-ec816fc41e19",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "2fbbf398-fe52-49d5-bcef-27f714185921",
+  "prevId": "a3a209aa-49a0-47e6-9126-892277549771",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -262,6 +262,100 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.fufiller_pathway": {
+      "name": "fufiller_pathway",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pathway": {
+          "name": "pathway",
+          "type": "pathway",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assigned_at": {
+          "name": "assigned_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "assigned_by": {
+          "name": "assigned_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "fufiller_pathway_unique_idx": {
+          "name": "fufiller_pathway_unique_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "pathway",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "fufiller_pathway_user_id_user_id_fk": {
+          "name": "fufiller_pathway_user_id_user_id_fk",
+          "tableFrom": "fufiller_pathway",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fufiller_pathway_assigned_by_user_id_fk": {
+          "name": "fufiller_pathway_assigned_by_user_id_fk",
+          "tableFrom": "fufiller_pathway",
+          "tableTo": "user",
+          "columnsFrom": [
+            "assigned_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -1023,8 +1117,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "item_image_url": {
-          "name": "item_image_url",
+        "item_url": {
+          "name": "item_url",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -1041,32 +1135,19 @@
           "primaryKey": false,
           "notNull": false
         },
+        "item_type": {
+          "name": "item_type",
+          "type": "shop_item_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
         "is_active": {
           "name": "is_active",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "source_type": {
-          "name": "source_type",
-          "type": "shop_item_source",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'CUSTOM'"
-        },
-        "linked_warehouse_item_id": {
-          "name": "linked_warehouse_item_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "linked_warehouse_template_id": {
-          "name": "linked_warehouse_template_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "last_edited_by": {
           "name": "last_edited_by",
@@ -1100,32 +1181,6 @@
           ],
           "columnsTo": [
             "pathway"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "shop_item_linked_warehouse_item_id_warehouse_item_id_fk": {
-          "name": "shop_item_linked_warehouse_item_id_warehouse_item_id_fk",
-          "tableFrom": "shop_item",
-          "tableTo": "warehouse_item",
-          "columnsFrom": [
-            "linked_warehouse_item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "shop_item_linked_warehouse_template_id_warehouse_order_template_id_fk": {
-          "name": "shop_item_linked_warehouse_template_id_warehouse_order_template_id_fk",
-          "tableFrom": "shop_item",
-          "tableTo": "warehouse_order_template",
-          "columnsFrom": [
-            "linked_warehouse_template_id"
-          ],
-          "columnsTo": [
-            "id"
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -1173,8 +1228,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "order_status": {
-          "name": "order_status",
+        "order_stauts": {
+          "name": "order_stauts",
           "type": "shop_order_status",
           "typeSchema": "public",
           "primaryKey": false,
@@ -1199,6 +1254,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "item_type_enum": {
+          "name": "item_type_enum",
+          "type": "shop_item_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
         "item_name_snapshot": {
           "name": "item_name_snapshot",
           "type": "text",
@@ -1208,12 +1270,6 @@
         "shipping_address": {
           "name": "shipping_address",
           "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "phone": {
-          "name": "phone",
-          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -1596,948 +1652,6 @@
             "id"
           ],
           "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.warehouse_batch": {
-      "name": "warehouse_batch",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "created_by_id": {
-          "name": "created_by_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "template_id": {
-          "name": "template_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "title": {
-          "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "warehouse_batch_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'AWAITING_MAPPING'"
-        },
-        "csv_data": {
-          "name": "csv_data",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "field_mapping": {
-          "name": "field_mapping",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "address_count": {
-          "name": "address_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "warehouse_batch_created_by_id_user_id_fk": {
-          "name": "warehouse_batch_created_by_id_user_id_fk",
-          "tableFrom": "warehouse_batch",
-          "tableTo": "user",
-          "columnsFrom": [
-            "created_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "warehouse_batch_template_id_warehouse_order_template_id_fk": {
-          "name": "warehouse_batch_template_id_warehouse_order_template_id_fk",
-          "tableFrom": "warehouse_batch",
-          "tableTo": "warehouse_order_template",
-          "columnsFrom": [
-            "template_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.warehouse_batch_tag": {
-      "name": "warehouse_batch_tag",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "batch_id": {
-          "name": "batch_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tag": {
-          "name": "tag",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "warehouse_batch_tag_unique_idx": {
-          "name": "warehouse_batch_tag_unique_idx",
-          "columns": [
-            {
-              "expression": "batch_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "tag",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "warehouse_batch_tag_batch_id_warehouse_batch_id_fk": {
-          "name": "warehouse_batch_tag_batch_id_warehouse_batch_id_fk",
-          "tableFrom": "warehouse_batch_tag",
-          "tableTo": "warehouse_batch",
-          "columnsFrom": [
-            "batch_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.warehouse_category": {
-      "name": "warehouse_category",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "sort_order": {
-          "name": "sort_order",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.warehouse_item": {
-      "name": "warehouse_item",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "category_id": {
-          "name": "category_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "sku": {
-          "name": "sku",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "sizing": {
-          "name": "sizing",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "package_type": {
-          "name": "package_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'box'"
-        },
-        "length_in": {
-          "name": "length_in",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "width_in": {
-          "name": "width_in",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "height_in": {
-          "name": "height_in",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "weight_grams": {
-          "name": "weight_grams",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "cost_cents": {
-          "name": "cost_cents",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "hs_code": {
-          "name": "hs_code",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "quantity": {
-          "name": "quantity",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "image_url": {
-          "name": "image_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "warehouse_item_category_id_warehouse_category_id_fk": {
-          "name": "warehouse_item_category_id_warehouse_category_id_fk",
-          "tableFrom": "warehouse_item",
-          "tableTo": "warehouse_category",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "warehouse_item_sku_unique": {
-          "name": "warehouse_item_sku_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "sku"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.warehouse_order": {
-      "name": "warehouse_order",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "fulfillment_id": {
-          "name": "fulfillment_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "identity": {
-            "type": "always",
-            "name": "warehouse_order_fulfillment_id_seq",
-            "schema": "public",
-            "increment": "1",
-            "startWith": "1",
-            "minValue": "1",
-            "maxValue": "2147483647",
-            "cache": "1",
-            "cycle": false
-          }
-        },
-        "created_by_id": {
-          "name": "created_by_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "batch_id": {
-          "name": "batch_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "warehouse_order_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'DRAFT'"
-        },
-        "first_name": {
-          "name": "first_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "last_name": {
-          "name": "last_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "phone": {
-          "name": "phone",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "address_line_1": {
-          "name": "address_line_1",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "address_line_2": {
-          "name": "address_line_2",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "city": {
-          "name": "city",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "state_province": {
-          "name": "state_province",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "postal_code": {
-          "name": "postal_code",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "country": {
-          "name": "country",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "estimated_shipping_cents": {
-          "name": "estimated_shipping_cents",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "estimated_duties_cents": {
-          "name": "estimated_duties_cents",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "estimated_service_name": {
-          "name": "estimated_service_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "estimated_service_code": {
-          "name": "estimated_service_code",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "estimated_package_type": {
-          "name": "estimated_package_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "estimated_total_length_in": {
-          "name": "estimated_total_length_in",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "estimated_total_width_in": {
-          "name": "estimated_total_width_in",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "estimated_total_height_in": {
-          "name": "estimated_total_height_in",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "estimated_total_weight_grams": {
-          "name": "estimated_total_weight_grams",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "packaging_category": {
-          "name": "packaging_category",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "packaging_label": {
-          "name": "packaging_label",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "packaging_length_in": {
-          "name": "packaging_length_in",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "packaging_width_in": {
-          "name": "packaging_width_in",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "packaging_height_in": {
-          "name": "packaging_height_in",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "packaging_subject_to_change": {
-          "name": "packaging_subject_to_change",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "tracking_number": {
-          "name": "tracking_number",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "label_url": {
-          "name": "label_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "shipping_method": {
-          "name": "shipping_method",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "billing_status": {
-          "name": "billing_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'PENDING'"
-        },
-        "billing_failure_reason": {
-          "name": "billing_failure_reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "warehouse_order_created_by_id_user_id_fk": {
-          "name": "warehouse_order_created_by_id_user_id_fk",
-          "tableFrom": "warehouse_order",
-          "tableTo": "user",
-          "columnsFrom": [
-            "created_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "warehouse_order_fulfillment_id_unique": {
-          "name": "warehouse_order_fulfillment_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "fulfillment_id"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.warehouse_order_item": {
-      "name": "warehouse_order_item",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "order_id": {
-          "name": "order_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "warehouse_item_id": {
-          "name": "warehouse_item_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "quantity": {
-          "name": "quantity",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "sizing_choice": {
-          "name": "sizing_choice",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "warehouse_order_item_order_id_idx": {
-          "name": "warehouse_order_item_order_id_idx",
-          "columns": [
-            {
-              "expression": "order_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "warehouse_order_item_warehouse_item_id_idx": {
-          "name": "warehouse_order_item_warehouse_item_id_idx",
-          "columns": [
-            {
-              "expression": "warehouse_item_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "warehouse_order_item_order_id_warehouse_order_id_fk": {
-          "name": "warehouse_order_item_order_id_warehouse_order_id_fk",
-          "tableFrom": "warehouse_order_item",
-          "tableTo": "warehouse_order",
-          "columnsFrom": [
-            "order_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "warehouse_order_item_warehouse_item_id_warehouse_item_id_fk": {
-          "name": "warehouse_order_item_warehouse_item_id_warehouse_item_id_fk",
-          "tableFrom": "warehouse_order_item",
-          "tableTo": "warehouse_item",
-          "columnsFrom": [
-            "warehouse_item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.warehouse_order_tag": {
-      "name": "warehouse_order_tag",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "order_id": {
-          "name": "order_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tag": {
-          "name": "tag",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "warehouse_order_tag_unique_idx": {
-          "name": "warehouse_order_tag_unique_idx",
-          "columns": [
-            {
-              "expression": "order_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "tag",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "warehouse_order_tag_tag_idx": {
-          "name": "warehouse_order_tag_tag_idx",
-          "columns": [
-            {
-              "expression": "tag",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "warehouse_order_tag_order_id_warehouse_order_id_fk": {
-          "name": "warehouse_order_tag_order_id_warehouse_order_id_fk",
-          "tableFrom": "warehouse_order_tag",
-          "tableTo": "warehouse_order",
-          "columnsFrom": [
-            "order_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.warehouse_order_template": {
-      "name": "warehouse_order_template",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "created_by_id": {
-          "name": "created_by_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "is_public": {
-          "name": "is_public",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "warehouse_order_template_created_by_id_user_id_fk": {
-          "name": "warehouse_order_template_created_by_id_user_id_fk",
-          "tableFrom": "warehouse_order_template",
-          "tableTo": "user",
-          "columnsFrom": [
-            "created_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.warehouse_order_template_item": {
-      "name": "warehouse_order_template_item",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "template_id": {
-          "name": "template_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "warehouse_item_id": {
-          "name": "warehouse_item_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "quantity": {
-          "name": "quantity",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "warehouse_order_template_item_template_id_warehouse_order_template_id_fk": {
-          "name": "warehouse_order_template_item_template_id_warehouse_order_template_id_fk",
-          "tableFrom": "warehouse_order_template_item",
-          "tableTo": "warehouse_order_template",
-          "columnsFrom": [
-            "template_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "warehouse_order_template_item_warehouse_item_id_warehouse_item_id_fk": {
-          "name": "warehouse_order_template_item_warehouse_item_id_warehouse_item_id_fk",
-          "tableFrom": "warehouse_order_template_item",
-          "tableTo": "warehouse_item",
-          "columnsFrom": [
-            "warehouse_item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
@@ -3091,13 +2205,12 @@
         "MISSED"
       ]
     },
-    "public.shop_item_source": {
-      "name": "shop_item_source",
+    "public.shop_item_type": {
+      "name": "shop_item_type",
       "schema": "public",
       "values": [
-        "CUSTOM",
-        "WAREHOUSE_ITEM",
-        "WAREHOUSE_TEMPLATE"
+        "PHYSICAL",
+        "DIGITAL"
       ]
     },
     "public.shop_order_status": {
@@ -3108,26 +2221,6 @@
         "PROCESSING",
         "FULFILLED",
         "CANCELED"
-      ]
-    },
-    "public.warehouse_batch_status": {
-      "name": "warehouse_batch_status",
-      "schema": "public",
-      "values": [
-        "AWAITING_MAPPING",
-        "MAPPED",
-        "PROCESSED"
-      ]
-    },
-    "public.warehouse_order_status": {
-      "name": "warehouse_order_status",
-      "schema": "public",
-      "values": [
-        "DRAFT",
-        "ESTIMATED",
-        "APPROVED",
-        "SHIPPED",
-        "CANCELLED"
       ]
     }
   },

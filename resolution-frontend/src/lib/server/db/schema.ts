@@ -1,6 +1,7 @@
-import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, index, jsonb } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
+import type { AddressInput } from '../validation';
 
 // Enums
 export const enrollmentRoleEnum = pgEnum('enrollment_role', ['PARTICIPANT', 'AMBASSADOR']);
@@ -11,6 +12,9 @@ export const shipStatusEnum = pgEnum('ship_status', ['PLANNED', 'IN_PROGRESS', '
 export const payoutStatusEnum = pgEnum('payout_status', ['DRAFT', 'PENDING', 'PAID', 'CANCELED']);
 export const warehouseOrderStatusEnum = pgEnum('warehouse_order_status', ['DRAFT', 'ESTIMATED', 'APPROVED', 'SHIPPED', 'CANCELLED']);
 export const warehouseBatchStatusEnum = pgEnum('warehouse_batch_status', ['AWAITING_MAPPING', 'MAPPED', 'PROCESSED']);
+export const shopOrderStatusEnum = pgEnum('shop_order_status', ['PENDING', 'PROCESSING', 'FULFILLED', 'CANCELED', 'REJECTED']); // order tracking for frontend (users)
+export const shopItemSourceEnum = pgEnum('shop_item_source', ['CUSTOM', 'WAREHOUSE_ITEM', 'WAREHOUSE_TEMPLATE']); // discriminator: where the item's fulfillment data comes from
+export const currencyTxnReasonEnum = pgEnum('currency_txn_reason', ['GRANT', 'PURCHASE', 'REFUND', 'ADJUSTMENT', 'OTHER']); // logging why transaction occured
 
 // Tables
 export const user = pgTable('user', {
@@ -141,6 +145,74 @@ export const userPathway = pgTable('user_pathway', {
   uniqueIndex('user_pathway_unique_idx').on(table.userId, table.pathway)
 ]);
 
+export const pathwayShop = pgTable('pathway_shop', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  pathway: pathwayEnum('pathway').notNull().unique(),
+  isEnabled: boolean('is_enabled').notNull().default(false), // default to not displaying unless ambassador flips switch
+  currencyName: text('currency_name').notNull().default('wish'), // bcs. idk. resolution = a wish or something idk
+  currencyNamePlural: text('currency_name_plural').notNull().default('wishes'),
+  lastEditedBy: text('last_edited_by').references(() => user.id),
+  createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow().$onUpdate(() => new Date())
+});
+
+export const shopItem = pgTable('shop_item', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  pathway: pathwayEnum('pathway').notNull().references(() => pathwayShop.pathway, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  itemImageUrl: text('item_image_url'),
+  price: integer('item_price').notNull(),
+  // stock is nullable — null means unlimited stock
+  stock: integer('item_stock'),
+  isActive: boolean('is_active').notNull().default(false),
+  sourceType: shopItemSourceEnum('source_type').notNull().default('CUSTOM'),
+  linkedWarehouseItemId: text('linked_warehouse_item_id').references(() => warehouseItem.id, { onDelete: 'cascade' }), // TODO: ADD WARNING WHEN DELETING WAREHOUSE ITEM OR TEMPLATE
+  linkedWarehouseTemplateId: text('linked_warehouse_template_id').references(() => warehouseOrderTemplate.id, { onDelete: 'cascade' }),
+  lastEditedBy: text('last_edited_by').references(() => user.id),
+  createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow().$onUpdate(() => new Date())
+});
+
+export const transactionLedger = pgTable('currency_transactions', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  userId: text('tx_user_id').references(() => user.id, { onDelete: 'set null' }),
+  pathway: pathwayEnum('tx_pathway').notNull().references(() => pathwayShop.pathway, { onDelete: 'cascade' }),
+  amount: integer('tx_amount').notNull(),
+  reason: currencyTxnReasonEnum('tx_reason').notNull(),
+  note: text('tx_note'),
+  grantedBy: text('tx_granted_by').references(() => user.id, { onDelete: 'set null' }),
+  refType: text('tx_ref_type'), // SHOP, SHIP, etc.
+  refId: text('tx_ref_id'), // ID, such as for shop order
+  createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow()
+});
+
+//TODO: evalute if this should have the shipping address encrypted
+export const shopOrder = pgTable('shop_orders', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+  pathway: pathwayEnum('pathway').notNull().references(() => pathwayShop.pathway, { onDelete: 'cascade' }),
+  status: shopOrderStatusEnum('order_status').notNull().default("PENDING"),
+  totalAmount: integer('amount').notNull(),
+  item: text('shop_item_id').references(() => shopItem.id, { onDelete: 'set null' }),
+  itemPriceSnapshot: integer('item_price_snapshot').notNull(),
+  itemNameSnapshot: text('item_name_snapshot').notNull(),
+  shippingAddress: jsonb('shipping_address').$type<AddressInput>(),
+  phone: text('phone'),
+  userNotes: text('user_notes'),
+  fufillerNotes: text('fufiller_notes'),
+  // claimedBy: 
+  fufilledBy: text('fufilled_by').references(() => user.id, { onDelete: 'set null' }),
+  fufilledAt: timestamp('fufilled_at', { mode: 'date' }),
+  // Populated by the warehouse fulfillment flow when a label is created.
+  // Mirrors warehouseOrder.trackingNumber so the participant can see it on
+  // their order without needing access to the warehouse tables.
+  trackingNumber: text('tracking_number'),
+  cancelledReason: text('cancelled_reason'),
+  createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow().$onUpdate(() => new Date()),
+})
+
 // Relations
 export const userRelations = relations(user, ({ many }) => ({
   pathways: many(userPathway),
@@ -152,8 +224,10 @@ export const userRelations = relations(user, ({ many }) => ({
   payouts: many(ambassadorPayout),
   referralLinks: many(referralLink),
   warehouseOrders: many(warehouseOrder),
-  reviewerAssignments: many(reviewerPathway)
-  }));
+  reviewerAssignments: many(reviewerPathway),
+  currencyTransactions: many(transactionLedger),
+  shopOrders: many(shopOrder)
+}));
 
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, { fields: [session.userId], references: [user.id] })
@@ -329,6 +403,12 @@ export const warehouseOrder = pgTable('warehouse_order', {
 	id: text('id').primaryKey().$defaultFn(() => createId()),
 	fulfillmentId: integer('fulfillment_id').generatedAlwaysAsIdentity().unique(),
 	createdById: text('created_by_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	// Back reference to the originating shop order, set when a warehouse
+	// order is created via the shop fufill flow. Null for warehouse orders
+	// created directly (admin or ambassador swag). On shipping success the
+	// fulfillment endpoint flips the linked shop order to FULFILLED and
+	// copies trackingNumber across so the participant can see it.
+	shopOrderId: text('shop_order_id').references(() => shopOrder.id, { onDelete: 'set null' }),
 	batchId: text('batch_id'),
 	status: warehouseOrderStatusEnum('status').notNull().default('DRAFT'),
 	firstName: text('first_name').notNull(),
@@ -398,6 +478,7 @@ export const warehouseOrderTag = pgTable('warehouse_order_tag', {
 
 export const warehouseOrderRelations = relations(warehouseOrder, ({ one, many }) => ({
 	createdBy: one(user, { fields: [warehouseOrder.createdById], references: [user.id] }),
+	shopOrder: one(shopOrder, { fields: [warehouseOrder.shopOrderId], references: [shopOrder.id] }),
 	items: many(warehouseOrderItem),
 	tags: many(warehouseOrderTag)
 }));
@@ -477,4 +558,32 @@ export const warehouseBatchRelations = relations(warehouseBatch, ({ one, many })
 export const warehouseBatchTagRelations = relations(warehouseBatchTag, ({ one }) => ({
 	batch: one(warehouseBatch, { fields: [warehouseBatchTag.batchId], references: [warehouseBatch.id] })
 }));
+
+export const pathwayShopRelations = relations(pathwayShop, ({ one, many }) => ({
+	editor: one(user, { fields: [pathwayShop.lastEditedBy], references: [user.id] }),
+	items: many(shopItem),
+	transactions: many(transactionLedger),
+	orders: many(shopOrder)
+}));
+
+export const shopItemRelations = relations(shopItem, ({ one, many }) => ({
+	shop: one(pathwayShop, { fields: [shopItem.pathway], references: [pathwayShop.pathway] }),
+	editor: one(user, { fields: [shopItem.lastEditedBy], references: [user.id] }),
+	orders: many(shopOrder)
+}));
+
+export const transactionLedgerRelations = relations(transactionLedger, ({ one }) => ({
+	user: one(user, { fields: [transactionLedger.userId], references: [user.id] }),
+	grantedByUser: one(user, { fields: [transactionLedger.grantedBy], references: [user.id] }),
+	shop: one(pathwayShop, { fields: [transactionLedger.pathway], references: [pathwayShop.pathway] })
+}));
+
+export const shopOrderRelations = relations(shopOrder, ({ one }) => ({
+  user: one(user, { fields: [shopOrder.userId], references: [user.id] }),
+  shop: one(pathwayShop, { fields: [shopOrder.pathway], references: [pathwayShop.pathway] }),
+  item: one(shopItem, { fields: [shopOrder.item], references: [shopItem.id] }),
+  fufiller: one(user, { fields: [shopOrder.fufilledBy], references: [user.id] }),
+  warehouseOrder: one(warehouseOrder, { fields: [shopOrder.id], references: [warehouseOrder.shopOrderId] })
+}));
+
 

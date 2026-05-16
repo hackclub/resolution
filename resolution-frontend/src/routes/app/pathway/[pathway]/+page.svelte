@@ -90,6 +90,25 @@
 			<p class="curator">brought to you by <span>{data.curator}</span></p>
 		</header>
 
+		<a href="/app/pathway/{data.pathwayId.toLowerCase()}/shop" class="shop-link">
+			<img
+				src="https://icons.hackclub.com/api/icons/{pathway.color}/bag"
+				alt=""
+				aria-hidden="true"
+				class="shop-icon"
+			/>
+			<div class="shop-text">
+				<span class="shop-title">Visit the shop</span>
+				<span class="shop-sub">Spend what you've earned on swag and goodies</span>
+			</div>
+			<img
+				src="https://icons.hackclub.com/api/icons/8492a6/forward"
+				alt=""
+				aria-hidden="true"
+				class="shop-chevron"
+			/>
+		</a>
+
 		<div class="weeks-grid">
 			{#each weeks as week}
 				{@const published = isWeekPublished(week)}
@@ -170,6 +189,54 @@
 	.curator span {
 		color: #af98ff;
 		font-weight: 600;
+	}
+
+	.shop-link {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		width: 100%;
+		max-width: 800px;
+		padding: 1rem 1.25rem;
+		margin-bottom: 2rem;
+		background: rgba(255, 255, 255, 0.85);
+		border: 2px solid #af98ff;
+		border-radius: 16px;
+		text-decoration: none;
+		color: #1a1a2e;
+		font-family: 'Kodchasan', sans-serif;
+		transition: transform 0.15s, border-color 0.15s;
+	}
+
+	.shop-link:hover {
+		transform: translateY(-2px);
+		border-color: #33d6a6;
+	}
+
+	.shop-icon {
+		width: 32px;
+		height: 32px;
+	}
+
+	.shop-text {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+	}
+
+	.shop-title {
+		font-weight: 600;
+		font-size: 1rem;
+	}
+
+	.shop-sub {
+		font-size: 0.85rem;
+		color: #8492a6;
+	}
+
+	.shop-chevron {
+		width: 20px;
+		height: 20px;
 	}
 
 	.weeks-grid {

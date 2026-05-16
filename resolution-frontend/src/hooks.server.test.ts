@@ -17,6 +17,10 @@ vi.mock('$lib/server/season', () => ({
 	ensureSeasonFromEnv: () => Promise.resolve()
 }));
 
+vi.mock('$lib/server/devSeed', () => ({
+	seedDevShops: () => Promise.resolve()
+}));
+
 const { handle } = await import('./hooks.server');
 
 function createMockEvent() {
