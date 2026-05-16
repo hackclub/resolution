@@ -1,5 +1,5 @@
 {
-  "id": "04f6d62e-e75a-447d-9462-ec816fc41e19",
+  "id": "e2384d76-2d19-41ed-bd29-897f1528c49d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1023,8 +1023,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "item_image_url": {
-          "name": "item_image_url",
+        "item_url": {
+          "name": "item_url",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -1041,32 +1041,19 @@
           "primaryKey": false,
           "notNull": false
         },
+        "item_type": {
+          "name": "item_type",
+          "type": "shop_item_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
         "is_active": {
           "name": "is_active",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "source_type": {
-          "name": "source_type",
-          "type": "shop_item_source",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'CUSTOM'"
-        },
-        "linked_warehouse_item_id": {
-          "name": "linked_warehouse_item_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "linked_warehouse_template_id": {
-          "name": "linked_warehouse_template_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "last_edited_by": {
           "name": "last_edited_by",
@@ -1100,32 +1087,6 @@
           ],
           "columnsTo": [
             "pathway"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "shop_item_linked_warehouse_item_id_warehouse_item_id_fk": {
-          "name": "shop_item_linked_warehouse_item_id_warehouse_item_id_fk",
-          "tableFrom": "shop_item",
-          "tableTo": "warehouse_item",
-          "columnsFrom": [
-            "linked_warehouse_item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "shop_item_linked_warehouse_template_id_warehouse_order_template_id_fk": {
-          "name": "shop_item_linked_warehouse_template_id_warehouse_order_template_id_fk",
-          "tableFrom": "shop_item",
-          "tableTo": "warehouse_order_template",
-          "columnsFrom": [
-            "linked_warehouse_template_id"
-          ],
-          "columnsTo": [
-            "id"
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -1173,8 +1134,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "order_status": {
-          "name": "order_status",
+        "order_stauts": {
+          "name": "order_stauts",
           "type": "shop_order_status",
           "typeSchema": "public",
           "primaryKey": false,
@@ -1198,6 +1159,13 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true
+        },
+        "item_type_enum": {
+          "name": "item_type_enum",
+          "type": "shop_item_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
         },
         "item_name_snapshot": {
           "name": "item_name_snapshot",
@@ -3091,13 +3059,12 @@
         "MISSED"
       ]
     },
-    "public.shop_item_source": {
-      "name": "shop_item_source",
+    "public.shop_item_type": {
+      "name": "shop_item_type",
       "schema": "public",
       "values": [
-        "CUSTOM",
-        "WAREHOUSE_ITEM",
-        "WAREHOUSE_TEMPLATE"
+        "PHYSICAL",
+        "DIGITAL"
       ]
     },
     "public.shop_order_status": {
