@@ -48,7 +48,7 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 
     const pendingOrders = await db.query.shopOrder.findMany({
         where: and(eq(shopOrder.pathway, pathwayId), eq(shopOrder.status, 'PENDING')),
-        with: { item: true }
+        with: { item: true, user: true }
     });
 
     // Collect every warehouse item and template needed across all orders so

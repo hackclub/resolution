@@ -33,11 +33,11 @@ const addWarehouseItemSchema = z.object({
     // auto pull from warehouse but add optional overrides
     name: z.string().min(1).max(50).or(z.string().max(0)),
     description: z.string().min(1), // required bcs warehouse doesn't provide
-    imageUrl: z.url().optional(),
-    price: z.int(),
+    imageUrl: z.union([z.url(), z.literal('')]).optional(),
+    price: z.coerce.number().int(),
     // stock should be auto populated
     // stock: z.int().optional(), // optional stock override, check later that this is not over current stock
-    isActive: z.boolean().default(false)
+    isActive: z.coerce.boolean().default(false)
 })
 
 const addWarehouseTemplateSchema = z.object({
@@ -45,10 +45,10 @@ const addWarehouseTemplateSchema = z.object({
     name: z.string().min(1).max(50).or(z.string().max(0)), // not necessarily going to match template name
     description: z.string().min(1).max(2000),
     imageUrl: z.url(),
-    price: z.int(),
+    price: z.coerce.number().int(),
     // should be autopopulated
     // stock: z.int(), // set max as current stock
-    isActive: z.boolean().default(false)
+    isActive: z.coerce.boolean().default(false)
 })
 
 export const load: PageServerLoad = async ({ parent }) => {
