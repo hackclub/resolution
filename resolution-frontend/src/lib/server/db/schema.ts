@@ -187,6 +187,7 @@ export const transactionLedger = pgTable('currency_transactions', {
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow()
 });
 
+//TODO: evalute if this should have the shipping address encrypted
 export const shopOrder = pgTable('shop_orders', {
   id: text('id').primaryKey().$defaultFn(() => createId()),
   userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
