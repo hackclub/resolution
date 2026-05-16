@@ -13,7 +13,7 @@ export const payoutStatusEnum = pgEnum('payout_status', ['DRAFT', 'PENDING', 'PA
 export const warehouseOrderStatusEnum = pgEnum('warehouse_order_status', ['DRAFT', 'ESTIMATED', 'APPROVED', 'SHIPPED', 'CANCELLED']);
 export const warehouseBatchStatusEnum = pgEnum('warehouse_batch_status', ['AWAITING_MAPPING', 'MAPPED', 'PROCESSED']);
 export const shopOrderStatusEnum = pgEnum('shop_order_status', ['PENDING', 'PROCESSING', 'FULFILLED', 'CANCELED']); // order tracking for frontend (users)
-export const shopItemTypeEnum = pgEnum('shop_item_type', ['PHYSICAL', 'DIGITAL']); // for filtering
+export const shopItemSourceEnum = pgEnum('shop_item_source', ['CUSTOM', 'WAREHOUSE_ITEM', 'WAREHOUSE_TEMPLATE']); // discriminator: where the item's fulfillment data comes from
 export const currencyTxnReasonEnum = pgEnum('currency_txn_reason', ['GRANT', 'PURCHASE', 'REFUND', 'ADJUSTMENT', 'OTHER']); // logging why transaction occured
 
 // Tables
@@ -153,7 +153,7 @@ export const pathwayShop = pgTable('pathway_shop', {
   currencyNamePlural: text('currency_name_plural').notNull().default('wishes'),
   lastEditedBy: text('last_edited_by').references(() => user.id),
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
+  updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow().$onUpdate(() => new Date())
 });
 
 export const shopItem = pgTable('shop_item', {
@@ -161,14 +161,17 @@ export const shopItem = pgTable('shop_item', {
   pathway: pathwayEnum('pathway').notNull().references(() => pathwayShop.pathway, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   description: text('description').notNull(),
-  itemImageUrl: text('item_url'),
+  itemImageUrl: text('item_image_url'),
   price: integer('item_price').notNull(),
+  // stock is nullable — null means unlimited stock
   stock: integer('item_stock'),
-  itemType: shopItemTypeEnum('item_type').notNull(),
   isActive: boolean('is_active').notNull().default(false),
+  sourceType: shopItemSourceEnum('source_type').notNull().default('CUSTOM'),
+  linkedWarehouseItemId: text('linked_warehouse_item_id').references(() => warehouseItem.id, { onDelete: 'cascade' }), // TODO: ADD WARNING WHEN DELETING WAREHOUSE ITEM OR TEMPLATE
+  linkedWarehouseTemplateId: text('linked_warehouse_template_id').references(() => warehouseOrderTemplate.id, { onDelete: 'cascade' }),
   lastEditedBy: text('last_edited_by').references(() => user.id),
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
+  updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow().$onUpdate(() => new Date())
 });
 
 export const transactionLedger = pgTable('currency_transactions', {
@@ -188,11 +191,10 @@ export const shopOrder = pgTable('shop_orders', {
   id: text('id').primaryKey().$defaultFn(() => createId()),
   userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
   pathway: pathwayEnum('pathway').notNull().references(() => pathwayShop.pathway, { onDelete: 'cascade' }),
-  status: shopOrderStatusEnum('order_stauts').notNull().default("PENDING"),
+  status: shopOrderStatusEnum('order_status').notNull().default("PENDING"),
   totalAmount: integer('amount').notNull(),
   item: text('shop_item_id').references(() => shopItem.id, { onDelete: 'set null' }),
   itemPriceSnapshot: integer('item_price_snapshot').notNull(),
-  itemTypeSnapshot: shopItemTypeEnum('item_type_enum'),
   itemNameSnapshot: text('item_name_snapshot').notNull(),
   shippingAddress: jsonb('shipping_address').$type<AddressInput>(),
   phone: text('phone'),
@@ -203,7 +205,7 @@ export const shopOrder = pgTable('shop_orders', {
   fufilledAt: timestamp('fufilled_at', { mode: 'date' }),
   cancelledReason: text('cancelled_reason'),
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow().$onUpdate(() => new Date()),
 })
 
 // Relations

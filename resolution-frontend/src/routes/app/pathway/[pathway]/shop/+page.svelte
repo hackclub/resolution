@@ -94,9 +94,6 @@
                                     <div class="item-body">
                                         <div class="item-top">
                                             <h3>{item.name}</h3>
-                                            <span class="type-tag">
-                                                {item.itemType === 'PHYSICAL' ? 'Physical' : 'Digital'}
-                                            </span>
                                         </div>
                                         <p class="item-desc">{item.description}</p>
                                         <div class="item-foot">

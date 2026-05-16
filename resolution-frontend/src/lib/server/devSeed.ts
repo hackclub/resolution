@@ -41,7 +41,6 @@ export async function seedDevShops() {
 				description: `A test ${label} sticker seeded automatically in dev. Remove me before going live.`,
 				price: 5,
 				stock: 25,
-				itemType: 'PHYSICAL',
 				isActive: true
 			});
 		}

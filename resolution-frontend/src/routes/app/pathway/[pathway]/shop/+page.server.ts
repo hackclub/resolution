@@ -12,14 +12,8 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import { PATHWAY_IDS, type PathwayId } from '$lib/pathways';
 import { z } from 'zod';
 import { addressSchema, validateFormData } from '$lib/server/validation';
-
-// thrown inside transactions to abort + roll back; caught outside to convert to fail()
-class ShopError extends Error {
-    constructor(public status: number, public body: { message: string }) {
-        super(body.message);
-    }
-}
-
+import { assertShopAccess, shopError } from '$lib/shop/utils' 
+import { guardAdminOrAmbassador } from '$lib/server/auth/guard';
 
 const purchaseSchema = z.object({
 	itemId: z.string().min(1),
@@ -31,35 +25,6 @@ const cancelSchema = z.object({
 	orderId: z.string().min(1), // needs to be a valid string
     cancelReason: z.string().min(1)
 });
-
-type DbOrTx = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-// guard for load + actions
-// returns pathway ID and the shop item
-// pass `tx` when calling inside a transaction so the re-check uses the same snapshot
-async function assertShopAccess(userId: string, pathwayParam: string, conn: DbOrTx = db) {
-    const pathwayId = pathwayParam.toUpperCase();
-    if (!PATHWAY_IDS.includes(pathwayId as PathwayId)) throw error(404, 'Pathway not found');
-    const typedPathwayId = pathwayId as PathwayId;
-
-    const membership = await conn
-        .select()
-        .from(userPathway)
-        .where(and(eq(userPathway.userId, userId), eq(userPathway.pathway, typedPathwayId)))
-        .limit(1);
-    if (membership.length === 0) throw redirect(302, '/app');
-
-    const pathwayShopRow = await conn
-        .select()
-        .from(pathwayShop)
-        .where(eq(pathwayShop.pathway, typedPathwayId))
-        .limit(1);
-    if (pathwayShopRow.length === 0 || !pathwayShopRow[0].isEnabled) {
-        throw error(404);
-    }
-
-    return { typedPathwayId, shop: pathwayShopRow[0] };
-}
 
 export const load: PageServerLoad = async ({ params, parent }) => {
     const { user } = await parent();
@@ -205,7 +170,7 @@ export const actions: Actions = {
                     ))
                     .limit(1);
 
-                if (!order) throw new ShopError(404, { message: 'No such order' });
+                if (!order) throw new shopError(404, { message: 'No such order' });
 
                 await tx.update(shopOrder)
                     .set({ status: 'CANCELED', cancelledReason: cancelData.cancelReason })
@@ -236,7 +201,7 @@ export const actions: Actions = {
                 });
             });
         } catch (e) {
-            if (e instanceof ShopError) return fail(e.status, e.body);
+            if (e instanceof shopError) return fail(e.status, e.body);
             throw e;
         }
 

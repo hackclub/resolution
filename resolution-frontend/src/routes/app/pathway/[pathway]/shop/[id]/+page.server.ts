@@ -166,7 +166,6 @@ export const actions = {
 						totalAmount: item.price,
 						item: item.id,
 						itemPriceSnapshot: item.price,
-						itemTypeSnapshot: item.itemType,
 						itemNameSnapshot: item.name,
 						shippingAddress,
 						phone: buyData.phone,

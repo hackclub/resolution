@@ -66,9 +66,6 @@
 			}}>
 				<div class="form-area">
 					<header>
-						<span class="badge">
-							{data.item.itemType === 'PHYSICAL' ? 'Physical item' : 'Digital item'}
-						</span>
 						<h1>Complete your order</h1>
 						<p class="subtitle">{data.item.description}</p>
 					</header>
