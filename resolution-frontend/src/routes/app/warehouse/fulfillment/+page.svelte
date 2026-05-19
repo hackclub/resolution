@@ -38,6 +38,11 @@
 		return name || creator.email;
 	}
 
+	function labelDownloadName(labelUrl: string | null, fulfillmentId: string | number): string {
+		const ext = labelUrl?.startsWith('data:image/png') ? 'png' : 'pdf';
+		return `label-${fulfillmentId}.${ext}`;
+	}
+
 	const statuses = ['ESTIMATED', 'APPROVED', 'SHIPPED', 'CANCELLED'];
 
 	const filteredOrders = $derived(() => {
@@ -100,7 +105,7 @@
 		} catch { qzStatus = 'error'; }
 	}
 
-	async function printAll(result: { labelUrl: string | null; packingSlipBase64: string }) {
+	async function printAll(orderId: string, result: { labelUrl: string | null; packingSlipBase64: string }) {
 		if (!qz || qzStatus !== 'connected') return;
 		const settings = getQZSettings();
 		if (!settings.printer) { alert('No printer selected. Go to Settings to configure.'); return; }
@@ -113,7 +118,11 @@
 		if (result.labelUrl) {
 			const base64Data = result.labelUrl.replace(/^data:(application\/pdf|image\/png);base64,/, '');
 			const format = result.labelUrl.startsWith('data:image/png') ? 'image' : 'pdf';
-			await qz.print(config(), [{ type: 'pixel', format, flavor: 'base64', data: base64Data }]);
+			try {
+				await qz.print(config(), [{ type: 'pixel', format, flavor: 'base64', data: base64Data }]);
+			} catch (e: any) {
+				labelErrors[orderId] = `Label print failed: ${e?.message || e}`;
+			}
 		}
 
 		// Print packing slip
@@ -121,7 +130,11 @@
 			const rawText = decodeURIComponent(escape(atob(result.packingSlipBase64)));
 			const escapedText = rawText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 			const html = `<pre style="font-family:monospace;font-size:11px;padding:10px;white-space:pre-wrap;">${escapedText}</pre>`;
-			await qz.print(config(), [{ type: 'html', format: 'plain', data: html }]);
+			try {
+				await qz.print(config(), [{ type: 'html', format: 'plain', data: html }]);
+			} catch (e: any) {
+				labelErrors[orderId] = `Packing slip print failed: ${e?.message || e}`;
+			}
 		}
 	}
 
@@ -311,14 +324,14 @@
 											{/if}
 										</div>
 										<div class="label-actions">
-											<button type="button" class="action-btn print-btn" onclick={() => printAll(labelResults[order.id])}>
+											<button type="button" class="action-btn print-btn" onclick={() => printAll(order.id, labelResults[order.id])}>
 												🖨️ Print
 											</button>
 											{#if labelResults[order.id].labelUrl}
 												<a
 													class="action-btn download-btn"
 													href={labelResults[order.id].labelUrl}
-													download={`label-${order.fulfillmentId}.pdf`}
+													download={labelDownloadName(labelResults[order.id].labelUrl, order.fulfillmentId)}
 												>📥 Label</a>
 											{/if}
 											{#if labelResults[order.id].packingSlipBase64}
