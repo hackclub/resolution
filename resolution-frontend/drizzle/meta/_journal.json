@@ -43,6 +43,13 @@
       "when": 1776740262163,
       "tag": "0005_productive_madripoor",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779936188006,
+      "tag": "0006_modern_paibok",
+      "breakpoints": true
     }
   ]
 }

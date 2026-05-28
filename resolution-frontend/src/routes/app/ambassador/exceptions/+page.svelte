@@ -299,6 +299,10 @@
 											class="btn btn-small"
 											class:btn-active={exception.isActive}
 											class:btn-inactive={!exception.isActive}
+											disabled={!exception.isActive && expired}
+											title={!exception.isActive && expired
+												? 'Cannot re-activate an expired exception. Delete it and create a new one.'
+												: ''}
 										>
 											{exception.isActive ? 'Deactivate' : 'Activate'}
 										</button>

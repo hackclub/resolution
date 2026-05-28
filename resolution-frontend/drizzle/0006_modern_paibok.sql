@@ -1,0 +1,2 @@
+DROP INDEX "submission_exception_unique_idx";--> statement-breakpoint
+CREATE UNIQUE INDEX "submission_exception_unique_idx" ON "submission_closure_exception" USING btree ("user_id","season_id","pathway","week_number") WHERE "submission_closure_exception"."is_active" = true;

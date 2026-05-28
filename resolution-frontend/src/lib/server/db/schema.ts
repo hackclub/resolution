@@ -1,5 +1,5 @@
 import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, index, date } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
 // Enums
@@ -151,12 +151,14 @@ export const submissionClosureException = pgTable('submission_closure_exception'
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   createdBy: text('created_by').notNull().references(() => user.id, { onDelete: 'cascade' })
 }, (table) => [
-  uniqueIndex('submission_exception_unique_idx').on(
-    table.userId,
-    table.seasonId,
-    table.pathway,
-    table.weekNumber
-  ),
+  // Partial unique: only one *active* exception per (user, season, pathway, week).
+  // Allows ambassadors to issue a new exception after a previous one is
+  // deactivated, while still preventing duplicate active extensions.
+  uniqueIndex('submission_exception_unique_idx')
+    .on(table.userId, table.seasonId, table.pathway, table.weekNumber)
+    // raw SQL: drizzle's `eq()` parameterizes the literal as `$1`, but Postgres
+    // index predicates must be immutable and cannot contain bind parameters.
+    .where(sql`${table.isActive} = true`),
   index('submission_exception_lookup_idx').on(
     table.seasonId,
     table.pathway,

@@ -253,6 +253,20 @@ export const actions: Actions = {
 		}
 
 		const newState = !exception.isActive;
+
+		// Re-activating an expired exception is a no-op (the runtime check filters
+		// on `expiresAt >= CURRENT_DATE`), so reject it explicitly to avoid
+		// misleading the ambassador into thinking the user can submit.
+		if (newState) {
+			const today = new Date();
+			const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+			if (exception.expiresAt < todayStr) {
+				return fail(400, {
+					error: 'Cannot re-activate an expired exception. Delete it and create a new one with a future expiration date.'
+				});
+			}
+		}
+
 		await db
 			.update(submissionClosureException)
 			.set({ isActive: newState })
