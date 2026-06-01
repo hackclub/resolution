@@ -1,5 +1,5 @@
-import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, index } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, index, date } from 'drizzle-orm/pg-core';
+import { relations, sql } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
 // Enums
@@ -141,6 +141,37 @@ export const userPathway = pgTable('user_pathway', {
   uniqueIndex('user_pathway_unique_idx').on(table.userId, table.pathway)
 ]);
 
+export const submissionClosureException = pgTable('submission_closure_exception', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  seasonId: text('season_id').notNull().references(() => programSeason.id, { onDelete: 'cascade' }),
+  pathway: pathwayEnum('pathway').notNull(),
+  weekNumber: integer('week_number').notNull(),
+  reason: text('reason').notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  expiresAt: date('expires_at').notNull(), // we only care abt date + want to avoid timezone issues, date returns str vs Date obj
+  createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+  createdBy: text('created_by').notNull().references(() => user.id, { onDelete: 'cascade' })
+}, (table) => [
+  // Partial unique: only one *active* exception per (user, season, pathway, week).
+  // Allows ambassadors to issue a new exception after a previous one is
+  // deactivated, while still preventing duplicate active extensions.
+  uniqueIndex('submission_exception_unique_idx')
+    .on(table.userId, table.seasonId, table.pathway, table.weekNumber)
+    // raw SQL: drizzle's `eq()` parameterizes the literal as `$1`, but Postgres
+    // index predicates must be immutable and cannot contain bind parameters.
+    .where(sql`${table.isActive} = true`),
+  index('submission_exception_lookup_idx').on(
+    table.seasonId,
+    table.pathway,
+    table.weekNumber
+  ),
+  index('submission_exception_user_idx').on(
+    table.userId,
+    table.seasonId
+  )
+]);
+
 // Relations
 export const userRelations = relations(user, ({ many }) => ({
   pathways: many(userPathway),
@@ -152,7 +183,9 @@ export const userRelations = relations(user, ({ many }) => ({
   payouts: many(ambassadorPayout),
   referralLinks: many(referralLink),
   warehouseOrders: many(warehouseOrder),
-  reviewerAssignments: many(reviewerPathway)
+  reviewerAssignments: many(reviewerPathway),
+  exceptions: many(submissionClosureException, { relationName: 'exceptionUser' }),
+  createdExceptions: many(submissionClosureException, { relationName: 'exceptionCreator' })
   }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -164,7 +197,8 @@ export const programSeasonRelations = relations(programSeason, ({ many }) => ({
   workshops: many(workshop),
   completions: many(workshopCompletion),
   weeklyShips: many(weeklyShip),
-  payouts: many(ambassadorPayout)
+  payouts: many(ambassadorPayout),
+  exceptions: many(submissionClosureException)
 }));
 
 export const programEnrollmentRelations = relations(programEnrollment, ({ one }) => ({
@@ -210,6 +244,12 @@ export const ambassadorPayoutItemRelations = relations(ambassadorPayoutItem, ({ 
 
 export const userPathwayRelations = relations(userPathway, ({ one }) => ({
 	user: one(user, { fields: [userPathway.userId], references: [user.id] })
+}));
+
+export const submissionClosureExceptionRelations = relations(submissionClosureException, ({ one }) => ({
+  user: one(user, { fields: [submissionClosureException.userId], references: [user.id], relationName: 'exceptionUser' }),
+  creator: one(user, { fields: [submissionClosureException.createdBy], references: [user.id], relationName: 'exceptionCreator' }),
+  season: one(programSeason, { fields: [submissionClosureException.seasonId], references: [programSeason.id]})
 }));
 
 // Ambassador pathway assignments - which pathways an ambassador can edit
