@@ -7,8 +7,24 @@
 
 	let { data }: { data: PageData } = $props();
 
+	type SearchUser = {
+		id: string;
+		firstName: string | null;
+		lastName: string | null;
+		email: string;
+	};
+
 	let searchQuery = $state('');
 	let selectedUserId = $state('');
+	// Cache the chosen user's details so we can show "Selected: X" without
+	// re-fetching after the form is submitted.
+	let selectedUser = $state<SearchUser | null>(null);
+	let searchResults = $state<SearchUser[]>([]);
+	let isSearching = $state(false);
+	let searchError = $state<string | null>(null);
+	let searchSeq = 0;
+	let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+
 	let selectedPathway = $state('');
 	let selectedWeek = $state('');
 	let reason = $state('');
@@ -17,25 +33,70 @@
 	const pathwayInfo = PATHWAY_INFO;
 	const weeks = $derived(Array.from({ length: data.season.totalWeeks }, (_, i) => i + 1));
 
-	const filteredUsers = $derived(
-		searchQuery.length < 2
-			? []
-			: data.enrolledUsers.filter(
-					(u) =>
-						(u.firstName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-						(u.lastName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-						u.email.toLowerCase().includes(searchQuery.toLowerCase())
-				)
-	);
+	async function runSearch(q: string, seq: number) {
+		try {
+			const res = await fetch(
+				`/api/ambassador/users/search?q=${encodeURIComponent(q)}`
+			);
+			if (seq !== searchSeq) return; // stale
+			if (!res.ok) {
+				searchResults = [];
+				searchError = 'Search failed';
+				return;
+			}
+			const body = (await res.json()) as { users: SearchUser[] };
+			if (seq !== searchSeq) return; // stale
+			searchResults = body.users;
+			searchError = null;
+		} catch {
+			if (seq !== searchSeq) return;
+			searchResults = [];
+			searchError = 'Search failed';
+		} finally {
+			if (seq === searchSeq) isSearching = false;
+		}
+	}
 
-	function selectUser(userId: string, name: string) {
-		selectedUserId = userId;
+	function onSearchInput() {
+		// Typing in the search box implicitly clears any previously selected user.
+		if (selectedUserId) {
+			selectedUserId = '';
+			selectedUser = null;
+		}
+
+		if (searchDebounce) clearTimeout(searchDebounce);
+		const q = searchQuery.trim();
+
+		if (q.length < 2) {
+			searchSeq++;
+			searchResults = [];
+			isSearching = false;
+			searchError = null;
+			return;
+		}
+
+		isSearching = true;
+		searchError = null;
+		const seq = ++searchSeq;
+		searchDebounce = setTimeout(() => runSearch(q, seq), 200);
+	}
+
+	function selectUser(u: SearchUser, name: string) {
+		selectedUserId = u.id;
+		selectedUser = u;
 		searchQuery = name;
+		searchResults = [];
+		searchSeq++; // invalidate in-flight requests
+		isSearching = false;
 	}
 
 	function clearUser() {
 		selectedUserId = '';
+		selectedUser = null;
 		searchQuery = '';
+		searchResults = [];
+		searchSeq++;
+		isSearching = false;
 	}
 
 	function formatDate(date: Date | string) {
@@ -65,9 +126,7 @@
 	);
 
 	const selectedUserDisplay = $derived(
-		selectedUserId
-			? data.enrolledUsers.find((u) => u.id === selectedUserId)
-			: null
+		selectedUserId && selectedUser ? selectedUser : null
 	);
 </script>
 
@@ -101,8 +160,7 @@
 				use:enhance={() => {
 					return async ({ update }) => {
 						await update();
-						selectedUserId = '';
-						searchQuery = '';
+						clearUser();
 						selectedPathway = '';
 						selectedWeek = '';
 						reason = '';
@@ -122,6 +180,7 @@
 								type="text"
 								placeholder="Search by name or email..."
 								bind:value={searchQuery}
+								oninput={onSearchInput}
 								onfocus={() => {
 									if (selectedUserId) clearUser();
 								}}
@@ -141,16 +200,20 @@
 						</div>
 						{#if searchQuery.length >= 2 && !selectedUserId}
 							<div class="search-results">
-								{#if filteredUsers.length === 0}
+								{#if isSearching}
+									<div class="search-empty">Searching…</div>
+								{:else if searchError}
+									<div class="search-empty">{searchError}</div>
+								{:else if searchResults.length === 0}
 									<div class="search-empty">No users found</div>
 								{:else}
-									{#each filteredUsers.slice(0, 8) as u}
+									{#each searchResults.slice(0, 8) as u}
 										<button
 											type="button"
 											class="search-result"
 											onclick={() =>
 												selectUser(
-													u.id,
+													u,
 													[u.firstName, u.lastName].filter(Boolean).join(' ') ||
 														u.email
 												)}
@@ -290,6 +353,15 @@
 										</span>
 									</div>
 									<div class="exception-reason">{exception.reason}</div>
+									<div class="exception-audit">
+										Created by
+										<strong>
+											{[exception.createdByName, exception.createdByLastName]
+												.filter(Boolean)
+												.join(' ') || exception.createdByEmail}
+										</strong>
+										on {formatDate(exception.createdAt)}
+									</div>
 								</div>
 								<div class="exception-actions">
 									<form method="POST" action="?/toggleException" use:enhance>
@@ -699,6 +771,17 @@
 		font-size: 0.85rem;
 		color: #1a1a2e;
 		font-style: italic;
+	}
+
+	.exception-audit {
+		font-size: 0.75rem;
+		color: #8492a6;
+		margin-top: 0.375rem;
+	}
+
+	.exception-audit strong {
+		color: #1a1a2e;
+		font-weight: 600;
 	}
 
 	.exception-actions {

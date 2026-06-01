@@ -3,12 +3,12 @@ import { db } from '$lib/server/db';
 import {
 	ambassadorPathway,
 	submissionClosureException,
-	programEnrollment,
 	programSeason,
 	user,
 	userPathway
 } from '$lib/server/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { error, fail } from '@sveltejs/kit';
 import { PATHWAY_IDS, type PathwayId } from '$lib/pathways';
 
@@ -45,68 +45,39 @@ export const load: PageServerLoad = async ({ parent }) => {
 		throw error(500, 'No active season configured');
 	}
 
-	const enrolledUsersBaseWhere = and(
-		eq(programEnrollment.seasonId, season.id),
-		eq(programEnrollment.status, 'ACTIVE')
-	);
+	// Alias the user table so we can join it twice: once for the exception's
+	// target user, and once for the ambassador who created it (audit trail).
+	const creator = alias(user, 'creator');
 
-	const enrolledUsersQuery = currentUser.isAdmin
-		? db
-				.select({
-					id: user.id,
-					firstName: user.firstName,
-					lastName: user.lastName,
-					email: user.email
-				})
-				.from(programEnrollment)
-				.innerJoin(user, eq(programEnrollment.userId, user.id))
-				.where(enrolledUsersBaseWhere)
-		: db
-				.selectDistinct({
-					id: user.id,
-					firstName: user.firstName,
-					lastName: user.lastName,
-					email: user.email
-				})
-				.from(programEnrollment)
-				.innerJoin(user, eq(programEnrollment.userId, user.id))
-				.innerJoin(userPathway, eq(userPathway.userId, user.id))
-				.where(
-					and(
-						enrolledUsersBaseWhere,
-						inArray(userPathway.pathway, assignedPathways)
+	const exceptions = await db
+		.select({
+			id: submissionClosureException.id,
+			userId: submissionClosureException.userId,
+			pathway: submissionClosureException.pathway,
+			weekNumber: submissionClosureException.weekNumber,
+			reason: submissionClosureException.reason,
+			isActive: submissionClosureException.isActive,
+			expiresAt: submissionClosureException.expiresAt,
+			createdAt: submissionClosureException.createdAt,
+			createdBy: submissionClosureException.createdBy,
+			userName: user.firstName,
+			userLastName: user.lastName,
+			userEmail: user.email,
+			createdByName: creator.firstName,
+			createdByLastName: creator.lastName,
+			createdByEmail: creator.email
+		})
+		.from(submissionClosureException)
+		.innerJoin(user, eq(submissionClosureException.userId, user.id))
+		.innerJoin(creator, eq(submissionClosureException.createdBy, creator.id))
+		.where(
+			currentUser.isAdmin
+				? eq(submissionClosureException.seasonId, season.id)
+				: and(
+						eq(submissionClosureException.seasonId, season.id),
+						inArray(submissionClosureException.pathway, assignedPathways)
 					)
-				);
-
-	const [enrolledUsers, exceptions] = await Promise.all([
-		enrolledUsersQuery,
-
-		db
-			.select({
-				id: submissionClosureException.id,
-				userId: submissionClosureException.userId,
-				pathway: submissionClosureException.pathway,
-				weekNumber: submissionClosureException.weekNumber,
-				reason: submissionClosureException.reason,
-				isActive: submissionClosureException.isActive,
-				expiresAt: submissionClosureException.expiresAt,
-				createdAt: submissionClosureException.createdAt,
-				createdBy: submissionClosureException.createdBy,
-				userName: user.firstName,
-				userLastName: user.lastName,
-				userEmail: user.email
-			})
-			.from(submissionClosureException)
-			.innerJoin(user, eq(submissionClosureException.userId, user.id))
-			.where(
-				currentUser.isAdmin
-					? eq(submissionClosureException.seasonId, season.id)
-					: and(
-							eq(submissionClosureException.seasonId, season.id),
-							inArray(submissionClosureException.pathway, assignedPathways)
-						)
-			)
-	]);
+		);
 
 	return {
 		assignments: assignedPathways,
@@ -115,7 +86,6 @@ export const load: PageServerLoad = async ({ parent }) => {
 			name: season.name,
 			totalWeeks: season.totalWeeks
 		},
-		enrolledUsers,
 		exceptions
 	};
 };
