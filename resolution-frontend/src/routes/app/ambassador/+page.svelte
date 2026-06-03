@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
+
 	let { data }: { data: PageData } = $props();
 
 	const pathwayInfo: Record<string, { label: string; icon: string; color: string }> = {
@@ -25,7 +27,8 @@
 	<title>Ambassador Dashboard - Resolution</title>
 </svelte:head>
 
-<div class="ambassador-container">
+<PlatformBackground>
+	<div class="ambassador-container">
 		<a href="/app" class="back-link">
 			<img src="https://icons.hackclub.com/api/icons/8492a6/back" alt="Back" width="20" height="20" />
 			Back to Dashboard
@@ -37,10 +40,16 @@
 					<h1>Ambassador Dashboard</h1>
 					<p class="subtitle">Manage your pathway content</p>
 				</div>
-				<a href="/app/ambassador/referrals" class="referrals-btn">
-					<img src="https://icons.hackclub.com/api/icons/a633d6/share" alt="Referrals" width="18" height="18" />
-					Referral Links
-				</a>
+				<div class="header-actions">
+					<a href="/app/ambassador/referrals" class="referrals-btn">
+						<img src="https://icons.hackclub.com/api/icons/a633d6/share" alt="Referrals" width="18" height="18" />
+						Referral Links
+					</a>
+					<a href="/app/ambassador/exceptions" class="exceptions-btn">
+						<img src="https://icons.hackclub.com/api/icons/ff8c37/clock" alt="Exceptions" width="18" height="18" />
+						Exceptions
+					</a>
+				</div>
 			</div>
 		</header>
 
@@ -90,16 +99,15 @@
 			{/each}
 		{/if}
 	</div>
+</PlatformBackground>
 
 <style>
 	.ambassador-container {
 		min-height: 100vh;
 		padding: 2rem;
-		color: #1f2d3d;
+		color: #1a1a2e;
 		max-width: 1000px;
 		margin: 0 auto;
-		font-family: 'Phantom Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-		background: #fff;
 	}
 
 	.back-link {
@@ -153,6 +161,30 @@
 	}
 
 	.referrals-btn:hover {
+		background: rgba(255, 255, 255, 1);
+	}
+
+	.header-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.exceptions-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		background: rgba(255, 255, 255, 0.8);
+		border: 1px solid #ff8c37;
+		color: #ff8c37;
+		border-radius: 20px;
+		font-family: 'Kodchasan', sans-serif;
+		text-decoration: none;
+		white-space: nowrap;
+		font-size: 0.9rem;
+	}
+
+	.exceptions-btn:hover {
 		background: rgba(255, 255, 255, 1);
 	}
 
