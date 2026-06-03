@@ -5,8 +5,15 @@ import { z } from 'zod';
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 import { requireAuth } from '$lib/server/auth/guard';
+import { safeUrl } from '$lib/server/validation';
 
 const emailSchema = z.string().email().max(254);
+
+function sanitizeUrl(v: unknown): string | null {
+    if (typeof v !== 'string') return null;
+    const result = safeUrl.safeParse(v);
+    return result.success ? result.data : null;
+}
 
 const SAMPLE_SUBMISSIONS = [
 	{
@@ -135,8 +142,8 @@ export const load: PageServerLoad = async (event) => {
         const submissions = records.map((record) => {
             return {
                 id: record.id,
-                codeUrl: record.get('Code URL') as string,
-                playableUrl: record.get('Playable URL') as string,
+                codeUrl: sanitizeUrl(record.get('Code URL')),
+                playableUrl: sanitizeUrl(record.get('Playable URL')),
                 description: record.get('Description') as string,
                 firstName: record.get('First Name') as string,
                 lastName: record.get('Last Name') as string,
@@ -145,7 +152,7 @@ export const load: PageServerLoad = async (event) => {
                 hackatimeProject: record.get('Hackatime Project') as string,
                 pathway: record.get('Pathway') as string,
                 week: record.get('Week') as number,
-                screenshotUrl: (record.get('Screenshot') as Array<{ url: string }> | undefined)?.[0]?.url ?? null,
+                screenshotUrl: sanitizeUrl((record.get('Screenshot') as Array<{ url: string }> | undefined)?.[0]?.url),
                 hoursSpent: (record.get('Optional - Override Hours Spent') as number | undefined) ?? null,
                 submittedAt: record._rawJson.createdTime as string,
                 isSubmittedYSWS: record.get('Automation - Status') === '2–Submitted',

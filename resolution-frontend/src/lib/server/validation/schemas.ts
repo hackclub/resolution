@@ -59,7 +59,7 @@ export const shippingRateSchema = z.object({
 
 export type ShippingRateInput = z.infer<typeof shippingRateSchema>;
 
-const safeUrl = z.string().url('Please enter a valid URL').max(2000).refine(
+export const safeUrl = z.string().url('Please enter a valid URL').max(2000).refine(
 	(val) => /^https?:\/\//i.test(val),
 	{ message: 'URL must use http or https' }
 );
