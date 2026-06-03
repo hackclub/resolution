@@ -174,7 +174,7 @@
 
 	.weeks-grid {
 		display: grid;
-		grid-template-columns: repeat(4, 1fr);
+		grid-template-columns: repeat(4, minmax(0, 1fr));
 		gap: 1.5rem;
 		max-width: 800px;
 		width: 100%;
@@ -258,7 +258,7 @@
 
 	@media (max-width: 768px) {
 		.weeks-grid {
-			grid-template-columns: repeat(2, 1fr);
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 	}
 </style>

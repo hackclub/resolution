@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
 	let { data }: { data: PageData } = $props();
 
 	const pathwayInfo: Record<string, { label: string; icon: string; color: string }> = {
@@ -25,6 +26,7 @@
 	<title>Ambassador Dashboard - Resolution</title>
 </svelte:head>
 
+<PlatformBackground>
 <div class="ambassador-container">
 		<a href="/app" class="back-link">
 			<img src="https://icons.hackclub.com/api/icons/8492a6/back" alt="Back" width="20" height="20" />
@@ -90,6 +92,7 @@
 			{/each}
 		{/if}
 	</div>
+</PlatformBackground>
 
 <style>
 	.ambassador-container {
@@ -99,7 +102,6 @@
 		max-width: 1000px;
 		margin: 0 auto;
 		font-family: 'Phantom Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-		background: #fff;
 	}
 
 	.back-link {
@@ -195,7 +197,7 @@
 
 	.weeks-grid {
 		display: grid;
-		grid-template-columns: repeat(4, 1fr);
+		grid-template-columns: repeat(4, minmax(0, 1fr));
 		gap: 1rem;
 	}
 
@@ -247,7 +249,7 @@
 
 	@media (max-width: 768px) {
 		.weeks-grid {
-			grid-template-columns: repeat(2, 1fr);
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 	}
 </style>
