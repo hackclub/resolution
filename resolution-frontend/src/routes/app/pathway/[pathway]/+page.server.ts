@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
-import { userPathway, pathwayWeekContent } from '$lib/server/db/schema';
+import { userPathway, pathwayWeekContent, pathwayShop } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { redirect, error } from '@sveltejs/kit';
 import { PATHWAY_IDS, type PathwayId } from '$lib/pathways';
@@ -50,9 +50,19 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 		return acc;
 	}, {} as Record<number, { title: string; prizeImageUrl: string | null; isPublished: boolean }>);
 
+	// Only show the shop CTA when the pathway actually has an enabled shop;
+	// otherwise following the link would 404 via assertShopAccess.
+	const [shopRow] = await db
+		.select({ isEnabled: pathwayShop.isEnabled })
+		.from(pathwayShop)
+		.where(eq(pathwayShop.pathway, typedPathwayId))
+		.limit(1);
+	const shopEnabled = !!shopRow?.isEnabled;
+
 	return {
 		pathwayId,
 		curator: pathwayCurators[pathwayId] || 'Unknown',
-		publishedWeeks
+		publishedWeeks,
+		shopEnabled
 	};
 };

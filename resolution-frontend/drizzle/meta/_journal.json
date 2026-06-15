@@ -78,6 +78,13 @@
       "when": 1777000000000,
       "tag": "0010_warehouse_indexes_and_tags",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1779000000000,
+      "tag": "0011_add_shop",
+      "breakpoints": true
     }
   ]
 }
