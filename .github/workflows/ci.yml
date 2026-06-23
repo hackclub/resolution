@@ -16,7 +16,7 @@ jobs:
     env:
       HACK_CLUB_CDN_API_KEY: ${{ github.event_name == 'pull_request' && 'placeholder-key' || secrets.HACK_CLUB_CDN_API_KEY }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun run check
@@ -25,7 +25,7 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun test --coverage
@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun audit --audit-level=critical
@@ -47,7 +47,7 @@ jobs:
     env:
       HACK_CLUB_CDN_API_KEY: ${{ github.event_name == 'pull_request' && 'placeholder-key' || secrets.HACK_CLUB_CDN_API_KEY }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun run build
