@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import InitialPage from '$lib/components/InitialPage.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	import { PATHWAY_INFO } from '$lib/pathways';
 
@@ -17,12 +18,7 @@
 
 <div class="page-container">
 	<div class="referral-banner">
-		<img
-			src={`https://icons.hackclub.com/api/icons/${info.color}/${info.icon}`}
-			alt={info.label}
-			width="32"
-			height="32"
-		/>
+		<Icon icon={info.icon} color={info.color} alt={info.label} size={32} />
 		<p>
 			<strong>{data.ambassadorName}</strong> invited you to join the <strong>{info.label}</strong> pathway!
 		</p>

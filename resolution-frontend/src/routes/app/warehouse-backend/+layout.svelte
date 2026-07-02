@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { children }: { children: Snippet } = $props();
 
@@ -12,11 +13,12 @@
 
 <svelte:head>
 	<title>Warehouse Backend - Resolution</title>
+	<link rel="stylesheet" href="https://css.hackclub.com/fonts.css" />
 </svelte:head>
 
 <div class="warehouse-container">
 	<a href="/app" class="back-link">
-		<img src="https://icons.hackclub.com/api/icons/8492a6/back" alt="Back" width="20" height="20" />
+		<Icon icon="back" alt="Back" size={20} />
 		Back to Dashboard
 	</a>
 

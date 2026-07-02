@@ -11,8 +11,11 @@ import { error, fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import { guardAdminOrAmbassador } from '$lib/server/auth/guard';
 
-export const load: PageServerLoad = async ({ parent }) => {
-	const { user } = await parent();
+export const load: PageServerLoad = async ({ locals }) => {
+	const user = locals.user;
+	if (!user) {
+		throw error(401, 'Unauthorized');
+	}
 
 	const ambassadorCheck = await db
 		.select({ userId: ambassadorPathway.userId })

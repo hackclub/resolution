@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
+	import Icon from '$lib/components/Icon.svelte';
 
 	import { PATHWAY_INFO } from '$lib/pathways';
 
@@ -56,16 +57,12 @@
 
 <svelte:head>
 	<title>Referral Links - Resolution</title>
+	<link rel="stylesheet" href="https://css.hackclub.com/fonts.css" />
 </svelte:head>
 
 <div class="referrals-container">
 		<a href="/app/ambassador" class="back-link">
-			<img
-				src="https://icons.hackclub.com/api/icons/8492a6/back"
-				alt="Back"
-				width="20"
-				height="20"
-			/>
+			<Icon icon="back" alt="Back" size={20} />
 			Back to Ambassador Dashboard
 		</a>
 
@@ -112,12 +109,7 @@
 						/>
 					</div>
 					<button type="submit" class="btn btn-primary create-btn" disabled={!selectedPathway}>
-						<img
-							src="https://icons.hackclub.com/api/icons/ffffff/add"
-							alt=""
-							width="16"
-							height="16"
-						/>
+						<Icon icon="plus" color="ffffff" size={16} />
 						Create Link
 					</button>
 				</div>
@@ -136,12 +128,7 @@
 				{@const links = getLinksByPathway(pathway)}
 				<section class="card pathway-section">
 					<div class="pathway-header">
-						<img
-							src="https://icons.hackclub.com/api/icons/{info.color}/{info.icon}"
-							alt={info.label}
-							width="28"
-							height="28"
-						/>
+						<Icon icon={info.icon} color={info.color} alt={info.label} size={28} />
 						<h2>{info.label}</h2>
 						<span class="link-count">{links.length} link{links.length !== 1 ? 's' : ''}</span>
 					</div>
@@ -160,20 +147,10 @@
 												onclick={() => copyLink(link.code, link.id)}
 											>
 												{#if copiedId === link.id}
-													<img
-														src="https://icons.hackclub.com/api/icons/33d6a6/checkmark"
-														alt=""
-														width="14"
-														height="14"
-													/>
+													<Icon icon="checkmark" color="33d6a6" size={14} />
 													Copied!
 												{:else}
-													<img
-														src="https://icons.hackclub.com/api/icons/338eda/copy"
-														alt=""
-														width="14"
-														height="14"
-													/>
+													<Icon icon="copy" color="338eda" size={14} />
 													Copy
 												{/if}
 											</button>
@@ -186,12 +163,7 @@
 												{link.isActive ? 'Active' : 'Inactive'}
 											</span>
 											<span class="signup-count">
-												<img
-													src="https://icons.hackclub.com/api/icons/8492a6/person"
-													alt=""
-													width="14"
-													height="14"
-												/>
+											<Icon icon="person" size={14} />
 												{link.signups.length} signup{link.signups.length !== 1
 													? 's'
 													: ''}
@@ -229,12 +201,7 @@
 										>
 											<input type="hidden" name="linkId" value={link.id} />
 											<button type="submit" class="btn btn-small btn-danger">
-												<img
-													src="https://icons.hackclub.com/api/icons/ec3750/delete"
-													alt=""
-													width="14"
-													height="14"
-												/>
+											<Icon icon="delete" color="ec3750" size={14} />
 											</button>
 										</form>
 									</div>
@@ -245,12 +212,7 @@
 										class="expand-btn"
 										onclick={() => toggleExpanded(link.id)}
 									>
-										<img
-											src="https://icons.hackclub.com/api/icons/8492a6/{expandedLinks.has(link.id) ? 'up-caret' : 'down-caret'}"
-											alt=""
-											width="14"
-											height="14"
-										/>
+										<Icon icon={expandedLinks.has(link.id) ? 'up-caret' : 'down-caret'} size={14} />
 										{expandedLinks.has(link.id) ? 'Hide' : 'Show'} signups
 									</button>
 

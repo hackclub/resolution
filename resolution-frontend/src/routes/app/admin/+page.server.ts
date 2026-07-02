@@ -8,8 +8,11 @@ import { PATHWAY_IDS, type PathwayId } from '$lib/pathways';
 const validPathways = PATHWAY_IDS;
 type Pathway = PathwayId;
 
-export const load: PageServerLoad = async ({ parent }) => {
-	const { user: currentUser } = await parent();
+export const load: PageServerLoad = async ({ locals }) => {
+	const currentUser = locals.user;
+	if (!currentUser) {
+		throw error(401, 'Unauthorized');
+	}
 
 	if (!currentUser.isAdmin) {
 		throw error(403, 'Access denied');

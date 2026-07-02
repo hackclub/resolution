@@ -12,8 +12,11 @@ import { z } from 'zod';
 // from Canada Post / Chit Chats is well below this for any sane package.
 const MAX_SHIPPING_CENTS = 50_000;
 
-export const load: PageServerLoad = async ({ parent }) => {
-	const { user } = await parent();
+export const load: PageServerLoad = async ({ locals }) => {
+	const user = locals.user;
+	if (!user) {
+		throw error(401, 'Unauthorized');
+	}
 
 	if (!user.isAdmin) {
 		const rows = await db

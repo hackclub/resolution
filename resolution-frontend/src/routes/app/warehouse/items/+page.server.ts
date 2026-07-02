@@ -4,8 +4,11 @@ import { warehouseItem, warehouseCategory, ambassadorPathway } from '$lib/server
 import { eq, desc, asc } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
 
-export const load: PageServerLoad = async ({ parent }) => {
-	const { user } = await parent();
+export const load: PageServerLoad = async ({ locals }) => {
+	const user = locals.user;
+	if (!user) {
+		throw error(401, 'Unauthorized');
+	}
 
 	const ambassadorCheck = await db
 		.select({ userId: ambassadorPathway.userId })
@@ -19,15 +22,16 @@ export const load: PageServerLoad = async ({ parent }) => {
 		throw error(403, 'Access denied');
 	}
 
-	const items = await db
-		.select()
-		.from(warehouseItem)
-		.orderBy(desc(warehouseItem.createdAt));
-
-	const categories = await db
-		.select()
-		.from(warehouseCategory)
-		.orderBy(asc(warehouseCategory.sortOrder), asc(warehouseCategory.name));
+	const [items, categories] = await Promise.all([
+		db
+			.select()
+			.from(warehouseItem)
+			.orderBy(desc(warehouseItem.createdAt)),
+		db
+			.select()
+			.from(warehouseCategory)
+			.orderBy(asc(warehouseCategory.sortOrder), asc(warehouseCategory.name))
+	]);
 
 	return {
 		items,

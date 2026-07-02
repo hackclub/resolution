@@ -1,7 +1,7 @@
 import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
 import { ambassadorPathway, referralLink, referralSignup, user } from '$lib/server/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import { createId } from '@paralleldrive/cuid2';
 import { PATHWAY_IDS } from '$lib/pathways';
@@ -10,44 +10,55 @@ function generateReferralCode(): string {
 	return createId().slice(0, 8);
 }
 
-export const load: PageServerLoad = async ({ parent }) => {
-	const { user: currentUser } = await parent();
+export const load: PageServerLoad = async ({ locals }) => {
+	const currentUser = locals.user;
+	if (!currentUser) {
+		throw error(401, 'Unauthorized');
+	}
 
-	const assignments = await db
-		.select()
-		.from(ambassadorPathway)
-		.where(eq(ambassadorPathway.userId, currentUser.id));
+	const [assignments, links] = await Promise.all([
+		db
+			.select()
+			.from(ambassadorPathway)
+			.where(eq(ambassadorPathway.userId, currentUser.id)),
+		db
+			.select()
+			.from(referralLink)
+			.where(eq(referralLink.ambassadorId, currentUser.id))
+	]);
 
 	if (assignments.length === 0 && !currentUser.isAdmin) {
 		throw error(403, 'You are not an ambassador');
 	}
 
-	const links = await db
-		.select()
-		.from(referralLink)
-		.where(eq(referralLink.ambassadorId, currentUser.id));
+	const signupRows = links.length > 0
+		? await db
+			.select({
+				referralLinkId: referralSignup.referralLinkId,
+				id: referralSignup.id,
+				createdAt: referralSignup.createdAt,
+				userId: user.id,
+				firstName: user.firstName,
+				lastName: user.lastName,
+				email: user.email
+			})
+			.from(referralSignup)
+			.innerJoin(user, eq(referralSignup.userId, user.id))
+			.where(inArray(referralSignup.referralLinkId, links.map((link) => link.id)))
+		: [];
 
-	const linksWithSignups = await Promise.all(
-		links.map(async (link) => {
-			const signups = await db
-				.select({
-					id: referralSignup.id,
-					createdAt: referralSignup.createdAt,
-					userId: user.id,
-					firstName: user.firstName,
-					lastName: user.lastName,
-					email: user.email
-				})
-				.from(referralSignup)
-				.innerJoin(user, eq(referralSignup.userId, user.id))
-				.where(eq(referralSignup.referralLinkId, link.id));
+	const signupsByLinkId = new Map<string, Omit<(typeof signupRows)[number], 'referralLinkId'>[]>();
+	for (const row of signupRows) {
+		const { referralLinkId, ...signup } = row;
+		const signups = signupsByLinkId.get(referralLinkId) ?? [];
+		signups.push(signup);
+		signupsByLinkId.set(referralLinkId, signups);
+	}
 
-			return {
-				...link,
-				signups
-			};
-		})
-	);
+	const linksWithSignups = links.map((link) => ({
+		...link,
+		signups: signupsByLinkId.get(link.id) ?? []
+	}));
 
 	return {
 		assignments: assignments.map((a) => a.pathway),

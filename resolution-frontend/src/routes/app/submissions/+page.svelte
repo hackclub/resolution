@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { PATHWAYS, PATHWAY_INFO } from '$lib/pathways';
 
 	let { data }: { data: PageData } = $props();
@@ -105,11 +106,10 @@
 										style="--pathway-color: #{p.color}"
 										onclick={() => (pathwayFilter = p.id)}
 									>
-										<img
-											src="https://icons.hackclub.com/api/icons/{pathwayFilter === p.id ? 'fff' : p.color}/{p.icon}"
-											alt=""
-											width="14"
-											height="14"
+										<Icon
+											icon={p.icon}
+											color={pathwayFilter === p.id ? 'fff' : p.color}
+											size={14}
 										/>
 										{p.label}
 									</button>
@@ -135,12 +135,7 @@
 						<header class="submission-header">
 							<span class="pathway-pill" style="--pathway-color: #{color}">
 								{#if info}
-									<img
-										src="https://icons.hackclub.com/api/icons/fff/{info.icon}"
-										alt=""
-										width="14"
-										height="14"
-									/>
+									<Icon icon={info.icon} color="fff" size={14} />
 								{/if}
 								{info?.label ?? submission.pathway}
 							</span>

@@ -3,7 +3,7 @@
 	import note1 from '$lib/assets/sticky_note_1.png';
 	import note2 from '$lib/assets/sticky_note_2.png';
 	import note3 from '$lib/assets/sticky_note_3.png';
-	import starImg from '$lib/assets/Asset 1@4x.png';
+	import starImg from '$lib/assets/Asset 1@4x.avif';
 
 	interface Props {
 		title: string;

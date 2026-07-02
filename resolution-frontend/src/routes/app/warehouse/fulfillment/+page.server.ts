@@ -6,8 +6,11 @@ import { error } from '@sveltejs/kit';
 
 const PAGE_SIZE = 50;
 
-export const load: PageServerLoad = async ({ parent, url }) => {
-	const { user } = await parent();
+export const load: PageServerLoad = async ({ locals, url }) => {
+	const user = locals.user;
+	if (!user) {
+		throw error(401, 'Unauthorized');
+	}
 
 	if (!user.isAdmin) {
 		throw error(403, 'Access denied - admin only');

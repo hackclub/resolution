@@ -4,8 +4,11 @@ import { warehouseItem, warehouseOrder, warehouseOrderTag, ambassadorPathway } f
 import { eq, desc } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
 
-export const load: PageServerLoad = async ({ parent }) => {
-	const { user } = await parent();
+export const load: PageServerLoad = async ({ locals }) => {
+	const user = locals.user;
+	if (!user) {
+		throw error(401, 'Unauthorized');
+	}
 
 	const ambassadorCheck = await db
 		.select({ userId: ambassadorPathway.userId })
@@ -19,36 +22,36 @@ export const load: PageServerLoad = async ({ parent }) => {
 		throw error(403, 'Access denied');
 	}
 
-	const items = await db
-		.select()
-		.from(warehouseItem)
-		.orderBy(warehouseItem.name);
-
-	const orders = await db.query.warehouseOrder.findMany({
-		where: user.isAdmin ? undefined : eq(warehouseOrder.createdById, user.id),
-		with: {
-			createdBy: {
-				columns: {
-					id: true,
-					firstName: true,
-					lastName: true,
-					email: true
-				}
+	const [items, orders, allTags] = await Promise.all([
+		db
+			.select()
+			.from(warehouseItem)
+			.orderBy(warehouseItem.name),
+		db.query.warehouseOrder.findMany({
+			where: user.isAdmin ? undefined : eq(warehouseOrder.createdById, user.id),
+			with: {
+				createdBy: {
+					columns: {
+						id: true,
+						firstName: true,
+						lastName: true,
+						email: true
+					}
+				},
+				items: {
+					with: {
+						warehouseItem: true
+					}
+				},
+				tags: true
 			},
-			items: {
-				with: {
-					warehouseItem: true
-				}
-			},
-			tags: true
-		},
-		orderBy: [desc(warehouseOrder.createdAt)]
-	});
-
-	const allTags = await db
-		.selectDistinct({ tag: warehouseOrderTag.tag })
-		.from(warehouseOrderTag)
-		.orderBy(warehouseOrderTag.tag);
+			orderBy: [desc(warehouseOrder.createdAt)]
+		}),
+		db
+			.selectDistinct({ tag: warehouseOrderTag.tag })
+			.from(warehouseOrderTag)
+			.orderBy(warehouseOrderTag.tag)
+	]);
 
 	return {
 		items,

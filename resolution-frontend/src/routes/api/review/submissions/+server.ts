@@ -4,7 +4,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { requireAuth } from '$lib/server/auth/guard';
 import { db } from '$lib/server/db';
-import { reviewerPathway, user as userTable } from '$lib/server/db/schema';
+import { reviewerPathway, ambassadorPathway, user as userTable } from '$lib/server/db/schema';
 import { eq, inArray, sql } from 'drizzle-orm';
 import { PATHWAY_IDS } from '$lib/pathways';
 
@@ -28,6 +28,13 @@ export const GET: RequestHandler = async (event) => {
 			return json({ error: 'You do not have reviewer access to any pathways' }, { status: 403 });
 		}
 
+		const ambassadorRows = await db
+			.select({ userId: ambassadorPathway.userId })
+			.from(ambassadorPathway)
+			.where(eq(ambassadorPathway.userId, user.id))
+			.limit(1);
+		const isAmbassador = ambassadorRows.length > 0;
+
 		const pathwayParam = event.url.searchParams.get('pathway');
 		let pathwaysToQuery: string[];
 
@@ -45,11 +52,45 @@ export const GET: RequestHandler = async (event) => {
 			pathwaysToQuery = assignedPathways;
 		}
 
+		const statusParam = event.url.searchParams.get('status') ?? 'pending';
+		const validStatuses = ['pending', 'approved', 'rejected', 'all'];
+		if (!validStatuses.includes(statusParam)) {
+			return json({ error: 'Invalid status' }, { status: 400 });
+		}
+
+		let statusCondition: string | null;
+		switch (statusParam) {
+			case 'approved':
+				statusCondition = `AND({Automation - Submit to Unified YSWS} = TRUE(), NOT({Rejected}))`;
+				break;
+			case 'rejected':
+				statusCondition = `{Rejected} = TRUE()`;
+				break;
+			case 'all':
+				statusCondition = null;
+				break;
+			case 'pending':
+			default:
+				statusCondition = `AND({Automation - Status} = "1–Pending Submission", NOT({Rejected}))`;
+				break;
+		}
+
 		const pathwayConditions = pathwaysToQuery.map((p) => `{Pathway} = "${p}"`).join(', ');
-		const pathwayFilter = pathwaysToQuery.length > 0 ? `, OR(${pathwayConditions})` : '';
-		const filterByFormula = `AND({Automation - Status} = "1–Pending Submission", NOT({Rejected})${pathwayFilter})`;
+		const pathwayCondition = pathwaysToQuery.length > 0 ? `OR(${pathwayConditions})` : null;
+
+		const conditions = [statusCondition, pathwayCondition].filter((c): c is string => c !== null);
+		const filterByFormula = conditions.length > 0 ? `AND(${conditions.join(', ')})` : '';
 
 		const base = new Airtable({ apiKey: env.AIRTABLE_API_TOKEN }).base(env.AIRTABLE_BASE_ID);
+
+		const addressFields = [
+			'Address (Line 1)',
+			'Address (Line 2)',
+			'City',
+			'State / Province',
+			'Country',
+			'ZIP / Postal Code'
+		];
 
 		const records = await base(env.AIRTABLE_YSWS_TABLE_ID)
 			.select({
@@ -66,7 +107,10 @@ export const GET: RequestHandler = async (event) => {
 					'Pathway',
 					'Week',
 					'Screenshot',
-					'Optional - Override Hours Spent'
+					'Optional - Override Hours Spent',
+					'Rejected',
+					'Automation - Submit to Unified YSWS',
+					...(isAmbassador ? addressFields : [])
 				]
 			})
 			.all();
@@ -93,6 +137,9 @@ export const GET: RequestHandler = async (event) => {
 
 		const submissions = records.map((record) => {
 			const email = record.get('Email') as string;
+			const rejected = record.get('Rejected') === true;
+			const approved = record.get('Automation - Submit to Unified YSWS') === true;
+			const status = rejected ? 'rejected' : approved ? 'approved' : 'pending';
 			return {
 				id: record.id,
 				codeUrl: record.get('Code URL') as string,
@@ -108,7 +155,20 @@ export const GET: RequestHandler = async (event) => {
 				week: record.get('Week') as number,
 				screenshotUrl: (record.get('Screenshot') as Array<{ url: string }> | undefined)?.[0]?.url ?? null,
 				hoursSpent: (record.get('Optional - Override Hours Spent') as number | undefined) ?? null,
-				submittedAt: record._rawJson.createdTime as string
+				submittedAt: record._rawJson.createdTime as string,
+				status,
+				...(isAmbassador
+					? {
+							address: {
+								line1: (record.get('Address (Line 1)') as string | undefined) ?? null,
+								line2: (record.get('Address (Line 2)') as string | undefined) ?? null,
+								city: (record.get('City') as string | undefined) ?? null,
+								stateProvince: (record.get('State / Province') as string | undefined) ?? null,
+								country: (record.get('Country') as string | undefined) ?? null,
+								zipPostalCode: (record.get('ZIP / Postal Code') as string | undefined) ?? null
+							}
+						}
+					: {})
 			};
 		});
 

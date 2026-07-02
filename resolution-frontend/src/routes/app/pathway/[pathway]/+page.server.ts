@@ -11,8 +11,11 @@ const pathwayCurators: Record<string, string> = Object.fromEntries(
 
 const validPathways = PATHWAY_IDS;
 
-export const load: PageServerLoad = async ({ params, parent }) => {
-	const { user } = await parent();
+export const load: PageServerLoad = async ({ params, locals }) => {
+	const user = locals.user;
+	if (!user) {
+		throw error(401, 'Unauthorized');
+	}
 	const pathwayId = params.pathway.toUpperCase();
 
 	if (!validPathways.includes(pathwayId)) {
@@ -21,25 +24,26 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 
 	const typedPathwayId = pathwayId as PathwayId;
 
-	const userPathwayRecord = await db
-		.select()
-		.from(userPathway)
-		.where(and(eq(userPathway.userId, user.id), eq(userPathway.pathway, typedPathwayId)))
-		.limit(1);
+	const [userPathwayRecord, weekContents] = await Promise.all([
+		db
+			.select()
+			.from(userPathway)
+			.where(and(eq(userPathway.userId, user.id), eq(userPathway.pathway, typedPathwayId)))
+			.limit(1),
+		db
+			.select({
+				weekNumber: pathwayWeekContent.weekNumber,
+				title: pathwayWeekContent.title,
+				prizeImageUrl: pathwayWeekContent.prizeImageUrl,
+				isPublished: pathwayWeekContent.isPublished
+			})
+			.from(pathwayWeekContent)
+			.where(eq(pathwayWeekContent.pathway, typedPathwayId))
+	]);
 
 	if (userPathwayRecord.length === 0) {
 		throw redirect(302, '/app');
 	}
-
-	const weekContents = await db
-		.select({
-			weekNumber: pathwayWeekContent.weekNumber,
-			title: pathwayWeekContent.title,
-			prizeImageUrl: pathwayWeekContent.prizeImageUrl,
-			isPublished: pathwayWeekContent.isPublished
-		})
-		.from(pathwayWeekContent)
-		.where(eq(pathwayWeekContent.pathway, typedPathwayId));
 
 	const publishedWeeks = weekContents.reduce((acc, w) => {
 		acc[w.weekNumber] = {

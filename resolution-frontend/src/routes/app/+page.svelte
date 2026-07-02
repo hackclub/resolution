@@ -3,19 +3,15 @@
 	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
 	import { enhance } from '$app/forms';
 	import { PATHWAYS } from '$lib/pathways';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { data }: { data: PageData } = $props();
 
 	const pathways = PATHWAYS;
 
-	let selectedPathways = $state<string[]>([]);
-	let isEditing = $state(true);
+	let selectedPathways = $state<string[]>([...data.selectedPathways]);
+	let isEditing = $state(data.selectedPathways.length === 0);
 	let isSaving = $state(false);
-
-	$effect(() => {
-		selectedPathways = [...data.selectedPathways];
-		isEditing = data.selectedPathways.length === 0;
-	});
 
 	function togglePathway(id: string) {
 		if (!isEditing) return;
@@ -72,7 +68,7 @@
 					<h2>{isEditing ? 'Choose your pathways (You can change these later)' : 'Your Pathways'}</h2>
 					{#if !isEditing && data.selectedPathways.length > 0}
 						<button type="button" class="edit-btn" onclick={startEditing}>
-							<img src="https://icons.hackclub.com/api/icons/8492a6/edit" alt="Edit" width="16" height="16" />
+							<Icon icon="edit" alt="Edit" size={16} />
 							Edit
 						</button>
 					{/if}
@@ -90,10 +86,11 @@
 								class:selectable={!isSelected}
 								onclick={() => togglePathway(pathway.id)}
 							>
-								<img
-									src="https://icons.hackclub.com/api/icons/{isSelected ? pathway.color : '8492a6'}/{pathway.icon}"
+								<Icon
+									icon={pathway.icon}
+									color={isSelected ? pathway.color : '8492a6'}
 									alt={pathway.label}
-									class="icon"
+									size={48}
 								/>
 								<span class="label">{pathway.label}</span>
 								{#if isSelected}
@@ -105,10 +102,11 @@
 								href="/app/pathway/{pathway.id.toLowerCase()}"
 								class="option-card selected"
 							>
-								<img
-									src="https://icons.hackclub.com/api/icons/{pathway.color}/{pathway.icon}"
+								<Icon
+									icon={pathway.icon}
+									color={pathway.color}
 									alt={pathway.label}
-									class="icon"
+									size={48}
 								/>
 								<span class="label">{pathway.label}</span>
 							</a>
@@ -318,15 +316,11 @@
 		border-style: dashed;
 	}
 
-	.option-card .icon {
-		width: 48px;
-		height: 48px;
-	}
-
 	.option-card .label {
 		font-size: 1.1rem;
 		font-weight: 600;
 		color: #1a1a2e;
+		text-align: center;
 	}
 
 	.check-badge {
@@ -377,5 +371,30 @@
 		border-color: #8492a6;
 		color: #8492a6;
 		padding: 0.75rem 2rem;
+	}
+
+	@media (max-width: 768px) {
+		.app-container {
+			padding: 1.25rem;
+		}
+
+		header {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 1rem;
+		}
+
+		.header-actions {
+			flex-wrap: wrap;
+		}
+
+		.options-grid {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 1rem;
+		}
+
+		.option-card {
+			padding: 1.75rem 1rem;
+		}
 	}
 </style>

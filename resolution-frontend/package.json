@@ -37,6 +37,8 @@
 		"vitest": "^4.1.6"
 	},
 	"dependencies": {
+		"@fontsource/kodchasan": "^5.2.8",
+		"@fontsource/patrick-hand": "^5.2.8",
 		"@lucia-auth/adapter-drizzle": "^1.1.0",
 		"@monaco-editor/loader": "^1.7.0",
 		"@paralleldrive/cuid2": "^3.3.0",

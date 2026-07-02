@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { Step, FAQ } from '$lib/types';
-	import heroBg from '$lib/assets/hero_bg.png';
-	import darkBg from '$lib/assets/dark_bg.png';
-	import swirlBg from '$lib/assets/swirl_overlay.png';
-	import lightBlueBg from '$lib/assets/light_blue_bg.png';
-	import fireworks from '$lib/assets/firework_burst.png';
-	import fireworksGif from '$lib/assets/fireworks_gif.png';
-	import sparklyBorder from '$lib/assets/gold_glitter_border.png';
+	import heroBg from '$lib/assets/hero_bg.avif';
+	import darkBg from '$lib/assets/dark_bg.webp';
+	import swirlBg from '$lib/assets/swirl_overlay.avif';
+	import lightBlueBg from '$lib/assets/light_blue_bg.webp';
+	import fireworks from '$lib/assets/firework_burst.avif';
+	import fireworksGif from '$lib/assets/fireworks_gif.webp';
+	import sparklyBorder from '$lib/assets/gold_glitter_border.avif';
 	import vectorLine from '$lib/assets/vector_divider.svg';
 
 
@@ -513,9 +513,21 @@
 			right: 0;
 		}
 
+		/* The hero art is too short on mobile to overlay 4 lines of copy + the
+		   CTA, and overflow:hidden was clipping the button. Drop the content into
+		   normal flow below the art on a matching dark backdrop. */
+		.hero {
+			overflow: visible;
+			background: #15123a;
+		}
+
 		.hero-content {
-			top: 55%;
-			max-width: 90%;
+			position: static;
+			transform: none;
+			width: 90%;
+			max-width: 560px;
+			margin: 0 auto;
+			padding: 1.5rem 0 2.5rem;
 		}
 
 		.step {
@@ -549,6 +561,7 @@
 			flex-direction: column;
 			left: 5%;
 			width: 90%;
+			transform: none;
 		}
 
 		.faq-list {

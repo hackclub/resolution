@@ -13,8 +13,11 @@ function parseCsv(raw: string): string[][] {
 	return result.data;
 }
 
-export const load: PageServerLoad = async (event) => {
-	const { user } = await event.parent();
+export const load: PageServerLoad = async ({ locals }) => {
+	const user = locals.user;
+	if (!user) {
+		throw error(401, 'Unauthorized');
+	}
 
 	if (!user.isAdmin) {
 		const rows = await db
@@ -27,39 +30,39 @@ export const load: PageServerLoad = async (event) => {
 		}
 	}
 
-	const batches = await db.query.warehouseBatch.findMany({
-		where: eq(warehouseBatch.createdById, user.id),
-		with: {
-			createdBy: true,
-			template: {
-				with: {
-					items: {
-						with: {
-							warehouseItem: true
+	const [batches, templates, allTags] = await Promise.all([
+		db.query.warehouseBatch.findMany({
+			where: eq(warehouseBatch.createdById, user.id),
+			with: {
+				createdBy: true,
+				template: {
+					with: {
+						items: {
+							with: {
+								warehouseItem: true
+							}
 						}
+					}
+				},
+				tags: true
+			},
+			orderBy: [desc(warehouseBatch.createdAt)]
+		}),
+		db.query.warehouseOrderTemplate.findMany({
+			with: {
+				items: {
+					with: {
+						warehouseItem: true
 					}
 				}
 			},
-			tags: true
-		},
-		orderBy: [desc(warehouseBatch.createdAt)]
-	});
-
-	const templates = await db.query.warehouseOrderTemplate.findMany({
-		with: {
-			items: {
-				with: {
-					warehouseItem: true
-				}
-			}
-		},
-		orderBy: [asc(warehouseOrderTemplate.name)]
-	});
-
-	const allTags = await db
-		.selectDistinct({ tag: warehouseOrderTag.tag })
-		.from(warehouseOrderTag)
-		.orderBy(asc(warehouseOrderTag.tag));
+			orderBy: [asc(warehouseOrderTemplate.name)]
+		}),
+		db
+			.selectDistinct({ tag: warehouseOrderTag.tag })
+			.from(warehouseOrderTag)
+			.orderBy(asc(warehouseOrderTag.tag))
+	]);
 
 	return {
 		batches,

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -132,7 +133,7 @@
 <PlatformBackground>
 	<div class="ship-container">
 		<a href="/app/pathway/{data.pathwayId.toLowerCase()}/week/{data.weekNumber}" class="back-link">
-			<img src="https://icons.hackclub.com/api/icons/8492a6/back" alt="Back" width="20" height="20" />
+			<Icon icon="back" alt="Back" size={20} />
 			Back to Week {data.weekNumber}
 		</a>
 

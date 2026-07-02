@@ -81,8 +81,11 @@ function parsePrizeImageUrl(rawValue: FormDataEntryValue | null) {
 	}
 }
 
-export const load: PageServerLoad = async ({ params, parent }) => {
-	const { user } = await parent();
+export const load: PageServerLoad = async ({ params, locals }) => {
+	const user = locals.user;
+	if (!user) {
+		throw error(401, 'Unauthorized');
+	}
 	const pathwayId = params.pathway.toUpperCase() as Pathway;
 	const weekNumber = parseInt(params.week);
 
@@ -94,21 +97,22 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 		throw error(404, 'Invalid week number');
 	}
 
-	const assignment = await db
-		.select()
-		.from(ambassadorPathway)
-		.where(and(eq(ambassadorPathway.userId, user.id), eq(ambassadorPathway.pathway, pathwayId)))
-		.limit(1);
+	const [assignment, content] = await Promise.all([
+		db
+			.select()
+			.from(ambassadorPathway)
+			.where(and(eq(ambassadorPathway.userId, user.id), eq(ambassadorPathway.pathway, pathwayId)))
+			.limit(1),
+		db
+			.select()
+			.from(pathwayWeekContent)
+			.where(and(eq(pathwayWeekContent.pathway, pathwayId), eq(pathwayWeekContent.weekNumber, weekNumber)))
+			.limit(1)
+	]);
 
 	if (assignment.length === 0 && !user.isAdmin) {
 		throw error(403, 'You are not assigned to this pathway');
 	}
-
-	const content = await db
-		.select()
-		.from(pathwayWeekContent)
-		.where(and(eq(pathwayWeekContent.pathway, pathwayId), eq(pathwayWeekContent.weekNumber, weekNumber)))
-		.limit(1);
 
 	return {
 		pathwayId,

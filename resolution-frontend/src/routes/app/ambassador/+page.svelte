@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	let { data }: { data: PageData } = $props();
 
 	const pathwayInfo: Record<string, { label: string; icon: string; color: string }> = {
@@ -24,12 +25,13 @@
 
 <svelte:head>
 	<title>Ambassador Dashboard - Resolution</title>
+	<link rel="stylesheet" href="https://css.hackclub.com/fonts.css" />
 </svelte:head>
 
 <PlatformBackground>
 <div class="ambassador-container">
 		<a href="/app" class="back-link">
-			<img src="https://icons.hackclub.com/api/icons/8492a6/back" alt="Back" width="20" height="20" />
+			<Icon icon="back" alt="Back" size={20} />
 			Back to Dashboard
 		</a>
 
@@ -40,7 +42,7 @@
 					<p class="subtitle">Manage your pathway content</p>
 				</div>
 				<a href="/app/ambassador/referrals" class="referrals-btn">
-					<img src="https://icons.hackclub.com/api/icons/a633d6/share" alt="Referrals" width="18" height="18" />
+					<Icon icon="share" color="a633d6" alt="Referrals" size={18} />
 					Referral Links
 				</a>
 			</div>
@@ -56,12 +58,7 @@
 				{@const info = pathwayInfo[pathway]}
 				<section class="pathway-section">
 					<div class="pathway-header">
-						<img
-							src="https://icons.hackclub.com/api/icons/{info.color}/{info.icon}"
-							alt={info.label}
-							width="32"
-							height="32"
-						/>
+						<Icon icon={info.icon} color={info.color} alt={info.label} size={32} />
 						<h2>{info.label}</h2>
 					</div>
 
@@ -75,13 +72,13 @@
 								{/if}
 								<span class="week-status">
 									{#if weekStatus.status === 'published'}
-										<img src="https://icons.hackclub.com/api/icons/33d6a6/checkmark" alt="Published" width="16" height="16" />
+										<Icon icon="checkmark" color="33d6a6" alt="Published" size={16} />
 										Published
 									{:else if weekStatus.status === 'draft'}
-										<img src="https://icons.hackclub.com/api/icons/ff8c37/edit" alt="Draft" width="16" height="16" />
+										<Icon icon="edit" color="ff8c37" alt="Draft" size={16} />
 										Draft
 									{:else}
-										<img src="https://icons.hackclub.com/api/icons/8492a6/add" alt="Empty" width="16" height="16" />
+										<Icon icon="plus" alt="Empty" size={16} />
 										Empty
 									{/if}
 								</span>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import loadingBg from '$lib/assets/loading-bg.avif';
 
   interface Props {
     onComplete?: () => void;
@@ -27,7 +28,7 @@
 </script>
 
 <div class="loading-container">
-  <img src="/loading-bg.png" alt="" class="background" />
+  <img src={loadingBg} alt="" class="background" />
   
   <div class="progress-wrapper">
     <div class="progress-bar">

@@ -1,5 +1,11 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
+	import faviconPng from '$lib/assets/resolution_favicon.png';
+	import '@fontsource/kodchasan/latin-400.css';
+	import '@fontsource/kodchasan/latin-500.css';
+	import '@fontsource/kodchasan/latin-600.css';
+	import '@fontsource/kodchasan/latin-700.css';
+	import '@fontsource/patrick-hand/latin-400.css';
 	import '$lib/styles/tokens.css';
 	import '$lib/styles/utilities.css';
 	import '../app.css';
@@ -8,6 +14,7 @@
 </script>
 
 <svelte:head>
+	<link rel="icon" type="image/png" href={faviconPng} />
 	<link rel="icon" href={favicon} />
 	<title>Resolution - Ship Every Week, Earn Prizes</title>
 	<meta name="description" content="Resolution is an 8-week personal goal-setting challenge for teenage hackers. Pick workshops, commit to weekly goals, and earn prizes for following through." />

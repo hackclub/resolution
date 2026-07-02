@@ -4,20 +4,24 @@ import { ambassadorPathway, pathwayWeekContent } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
 
-export const load: PageServerLoad = async ({ parent }) => {
-	const { user } = await parent();
+export const load: PageServerLoad = async ({ locals }) => {
+	const user = locals.user;
+	if (!user) {
+		throw error(401, 'Unauthorized');
+	}
 
-	const assignments = await db
-		.select()
-		.from(ambassadorPathway)
-		.where(eq(ambassadorPathway.userId, user.id));
+	const [assignments, weekContents] = await Promise.all([
+		db
+			.select()
+			.from(ambassadorPathway)
+			.where(eq(ambassadorPathway.userId, user.id)),
+		db.select().from(pathwayWeekContent)
+	]);
 
 	if (assignments.length === 0 && !user.isAdmin) {
 		throw error(403, 'You are not an ambassador');
 	}
 
-	const weekContents = await db.select().from(pathwayWeekContent);
-	
 	const contentByPathway = weekContents.reduce((acc, c) => {
 		if (!acc[c.pathway]) acc[c.pathway] = {};
 		acc[c.pathway][c.weekNumber] = {

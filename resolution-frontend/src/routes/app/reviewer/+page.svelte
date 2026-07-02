@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	import { PATHWAY_INFO, PATHWAY_IDS } from '$lib/pathways';
 
@@ -22,6 +23,15 @@
 		hoursSpent: number | null;
 		submittedAt: string;
 		slackId: string | null;
+		status: 'pending' | 'approved' | 'rejected';
+		address?: {
+			line1: string | null;
+			line2: string | null;
+			city: string | null;
+			stateProvince: string | null;
+			country: string | null;
+			zipPostalCode: string | null;
+		};
 	}
 
 	const pathwayInfo = PATHWAY_INFO;
@@ -33,6 +43,35 @@
 	let isLoading = $state(true);
 	let errorMessage = $state('');
 	let pathwayFilter = $state('');
+	let weekFilter = $state('');
+	let statusFilter = $state('pending');
+	let sortBy = $state('');
+	let expandedAddress = $state<string | null>(null);
+
+	const STATUS_LABELS: Record<string, string> = {
+		pending: 'Pending',
+		approved: 'Approved',
+		rejected: 'Rejected'
+	};
+
+	const availableWeeks = $derived(
+		Array.from(
+			new Set([
+				...Array.from({ length: data.totalWeeks }, (_, index) => index + 1),
+				...submissions.map(s => s.week).filter(w => w != null)
+			])
+		).sort((a, b) => a - b)
+	);
+
+	const visibleSubmissions = $derived.by(() => {
+		const filtered = weekFilter
+			? submissions.filter(s => String(s.week) === weekFilter)
+			: submissions;
+		if (sortBy === 'hours-desc') {
+			return [...filtered].sort((a, b) => (b.hoursSpent ?? 0) - (a.hoursSpent ?? 0));
+		}
+		return filtered;
+	});
 
 	let approveModal = $state<Submission | null>(null);
 	let rejectModal = $state<Submission | null>(null);
@@ -42,14 +81,18 @@
 	let isActionLoading = $state(false);
 
 	$effect(() => {
-		fetchSubmissions(pathwayFilter);
+		fetchSubmissions(pathwayFilter, statusFilter);
 	});
 
-	async function fetchSubmissions(pathway: string) {
+	async function fetchSubmissions(pathway: string, status: string) {
 		isLoading = true;
 		errorMessage = '';
 		try {
-			const url = pathway ? `/api/review/submissions?pathway=${pathway}` : '/api/review/submissions';
+			const params = new URLSearchParams();
+			if (pathway) params.set('pathway', pathway);
+			if (status) params.set('status', status);
+			const query = params.toString();
+			const url = query ? `/api/review/submissions?${query}` : '/api/review/submissions';
 			const res = await fetch(url);
 			if (!res.ok) {
 				const result = await res.json();
@@ -136,6 +179,21 @@
 	function isValidSlackId(id: string | null): id is string {
 		return typeof id === 'string' && /^[A-Z0-9]+$/.test(id);
 	}
+
+	function hasAddress(address: Submission['address']): address is NonNullable<Submission['address']> {
+		return !!address && Object.values(address).some(v => typeof v === 'string' && v.trim().length > 0);
+	}
+
+	function formatAddress(address: NonNullable<Submission['address']>): string {
+		const parts = [
+			address.line1,
+			address.line2,
+			[address.city, address.stateProvince].filter(Boolean).join(', '),
+			address.zipPostalCode,
+			address.country
+		];
+		return parts.filter(p => typeof p === 'string' && p.trim().length > 0).join('\n');
+	}
 </script>
 
 <svelte:head>
@@ -145,7 +203,7 @@
 <PlatformBackground>
 	<div class="reviewer-container">
 		<a href="/app" class="back-link">
-			<img src="https://icons.hackclub.com/api/icons/8492a6/back" alt="Back" width="20" height="20" />
+			<Icon icon="back" alt="Back" size={20} />
 			Back to Dashboard
 		</a>
 
@@ -155,19 +213,46 @@
 		</header>
 
 		<div class="filter-bar">
-			<label for="pathway-filter" class="filter-label">Filter by pathway</label>
-			<select id="pathway-filter" bind:value={pathwayFilter} class="filter-select">
-				<option value="">All Pathways</option>
-				{#each availablePathways as pw}
-					{@const info = pathwayInfo[pw]}
-					<option value={pw}>{info?.label ?? pw}</option>
-				{/each}
-			</select>
+			<div class="filter-group">
+				<label for="pathway-filter" class="filter-label">Filter by pathway</label>
+				<select id="pathway-filter" bind:value={pathwayFilter} class="filter-select">
+					<option value="">All Pathways</option>
+					{#each availablePathways as pw}
+						{@const info = pathwayInfo[pw]}
+						<option value={pw}>{info?.label ?? pw}</option>
+					{/each}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label for="week-filter" class="filter-label">Filter by week</label>
+				<select id="week-filter" bind:value={weekFilter} class="filter-select">
+					<option value="">All Weeks</option>
+					{#each availableWeeks as wk}
+						<option value={String(wk)}>Week {wk}</option>
+					{/each}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label for="status-filter" class="filter-label">Filter by status</label>
+				<select id="status-filter" bind:value={statusFilter} class="filter-select">
+					<option value="pending">Pending</option>
+					<option value="approved">Approved</option>
+					<option value="rejected">Rejected</option>
+					<option value="all">All</option>
+				</select>
+			</div>
+			<div class="filter-group">
+				<label for="sort-by" class="filter-label">Sort by</label>
+				<select id="sort-by" bind:value={sortBy} class="filter-select">
+					<option value="">Default</option>
+					<option value="hours-desc">Hours (high to low)</option>
+				</select>
+			</div>
 		</div>
 
 		{#if errorMessage}
 			<div class="error-banner">
-				<img src="https://icons.hackclub.com/api/icons/ec3750/important" alt="Error" width="18" height="18" />
+				<Icon icon="important" color="ec3750" alt="Error" size={18} />
 				{errorMessage}
 			</div>
 		{/if}
@@ -176,48 +261,51 @@
 			<div class="loading-state">
 				<p>Loading submissions…</p>
 			</div>
-		{:else if submissions.length === 0}
+		{:else if visibleSubmissions.length === 0}
 			<div class="empty-state">
-				<img src="https://icons.hackclub.com/api/icons/8492a6/checkmark" alt="All clear" width="48" height="48" />
+				<Icon icon="checkmark" alt="All clear" size={48} />
 				<p>No pending submissions</p>
 				<p class="hint">All caught up! Check back later.</p>
 			</div>
 		{:else}
 			<div class="submissions-grid">
-				{#each submissions as submission (submission.id)}
+				{#each visibleSubmissions as submission (submission.id)}
 					{@const info = pathwayInfo[submission.pathway]}
 					<div class="submission-card">
 						<div class="card-header">
 							<span class="submitter-name">{submission.firstName} {submission.lastName}</span>
-							{#if info}
-								<span class="pathway-badge" style="background: #{info.color}">{info.label}</span>
-							{:else}
-								<span class="pathway-badge">{submission.pathway}</span>
-							{/if}
+							<div class="card-badges">
+								<span class="status-badge status-{submission.status}">{STATUS_LABELS[submission.status]}</span>
+								{#if info}
+									<span class="pathway-badge" style="background: #{info.color}">{info.label}</span>
+								{:else}
+									<span class="pathway-badge">{submission.pathway}</span>
+								{/if}
+							</div>
 						</div>
 
 						<div class="card-meta">
 							<span class="email-label">
-								<img src="https://icons.hackclub.com/api/icons/8492a6/email" alt="Email" width="16" height="16" />
+								<Icon icon="email" alt="Email" size={16} />
 								{submission.email}
 							</span>
 							<span class="week-label">
-								<img src="https://icons.hackclub.com/api/icons/8492a6/event-code" alt="Week" width="16" height="16" />
+								<Icon icon="event-code" alt="Week" size={16} />
 								Week {submission.week}
 							</span>
 							<span class="date-label">
-								<img src="https://icons.hackclub.com/api/icons/8492a6/clock" alt="Date" width="16" height="16" />
+								<Icon icon="clock" alt="Date" size={16} />
 								{new Date(submission.submittedAt).toLocaleDateString()}
 							</span>
 							{#if submission.hoursSpent != null}
 								<span class="hours-label">
-									<img src="https://icons.hackclub.com/api/icons/8492a6/clock" alt="Hours" width="16" height="16" />
+									<Icon icon="clock" alt="Hours" size={16} />
 									{submission.hoursSpent}h reported
 								</span>
 							{/if}
 							{#if isValidSlackId(submission.slackId)}
 								<span class="slack-label">
-									<img src="https://icons.hackclub.com/api/icons/8492a6/slack-fill" alt="Slack ID" width="16" height="16" />
+									<Icon icon="slack-fill" alt="Slack ID" size={16} />
 									<a
 										href="https://hackclub.enterprise.slack.com/team/{submission.slackId}"
 										target="_blank"
@@ -235,31 +323,47 @@
 
 						<div class="card-links">
 							<a href={submission.codeUrl} target="_blank" rel="noopener noreferrer" class="link-btn">
-								<img src="https://icons.hackclub.com/api/icons/338eda/code" alt="Code" width="16" height="16" />
+								<Icon icon="code" color="338eda" alt="Code" size={16} />
 								Code
 							</a>
 							<a href={submission.playableUrl} target="_blank" rel="noopener noreferrer" class="link-btn">
-								<img src="https://icons.hackclub.com/api/icons/338eda/external" alt="Demo" width="16" height="16" />
+								<Icon icon="external" color="338eda" alt="Demo" size={16} />
 								Demo
 							</a>
 							{#if submission.hackatimeProject}
 								<span class="hackatime-label">
-									<img src="https://icons.hackclub.com/api/icons/8492a6/clock" alt="Hackatime" width="16" height="16" />
+									<Icon icon="clock" alt="Hackatime" size={16} />
 									{submission.hackatimeProject}
 								</span>
 							{/if}
+							{#if data.isAmbassador && hasAddress(submission.address)}
+								<button
+									type="button"
+									class="link-btn address-btn"
+									onclick={() => expandedAddress = expandedAddress === submission.id ? null : submission.id}
+								>
+									<Icon icon="home" color="338eda" alt="Address" size={16} />
+									{expandedAddress === submission.id ? 'Hide address' : 'View address'}
+								</button>
+							{/if}
 						</div>
 
-						<div class="card-actions">
-							<button class="approve-btn" onclick={() => openApprove(submission)}>
-								<img src="https://icons.hackclub.com/api/icons/ffffff/checkmark" alt="Approve" width="16" height="16" />
-								Approve
-							</button>
-							<button class="reject-btn" onclick={() => openReject(submission)}>
-								<img src="https://icons.hackclub.com/api/icons/ffffff/delete" alt="Reject" width="16" height="16" />
-								Reject
-							</button>
-						</div>
+						{#if data.isAmbassador && expandedAddress === submission.id && hasAddress(submission.address)}
+							<pre class="address-block">{formatAddress(submission.address)}</pre>
+						{/if}
+
+						{#if submission.status === 'pending'}
+							<div class="card-actions">
+								<button class="approve-btn" onclick={() => openApprove(submission)}>
+									<Icon icon="checkmark" color="ffffff" alt="Approve" size={16} />
+									Approve
+								</button>
+								<button class="reject-btn" onclick={() => openReject(submission)}>
+									<Icon icon="delete" color="ffffff" alt="Reject" size={16} />
+									Reject
+								</button>
+							</div>
+						{/if}
 					</div>
 				{/each}
 			</div>
@@ -362,9 +466,16 @@
 
 	.filter-bar {
 		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		gap: 1.5rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.filter-group {
+		display: flex;
 		align-items: center;
 		gap: 0.75rem;
-		margin-bottom: 1.5rem;
 	}
 
 	.filter-label {
@@ -455,6 +566,13 @@
 		font-size: 1rem;
 	}
 
+	.card-badges {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.375rem;
+		justify-content: flex-end;
+	}
+
 	.pathway-badge {
 		display: inline-block;
 		padding: 0.2rem 0.625rem;
@@ -466,9 +584,38 @@
 		white-space: nowrap;
 	}
 
+	.status-badge {
+		display: inline-block;
+		padding: 0.2rem 0.625rem;
+		border-radius: 999px;
+		font-size: 0.7rem;
+		font-weight: 600;
+		white-space: nowrap;
+		border: 1px solid transparent;
+	}
+
+	.status-pending {
+		background: #fff4e0;
+		color: #b56a00;
+		border-color: #ffd591;
+	}
+
+	.status-approved {
+		background: #e3f9f0;
+		color: #1a9b6c;
+		border-color: #9be3c8;
+	}
+
+	.status-rejected {
+		background: #fef2f2;
+		color: #ec3750;
+		border-color: #fecaca;
+	}
+
 	.card-meta {
 		display: flex;
-		gap: 1rem;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
 		font-size: 0.8rem;
 		color: #8492a6;
 	}
@@ -477,6 +624,12 @@
 		display: flex;
 		align-items: center;
 		gap: 0.25rem;
+		min-width: 0;
+	}
+
+	.email-label {
+		overflow-wrap: anywhere;
+		word-break: break-word;
 	}
 
 	.slack-label a {
@@ -534,6 +687,25 @@
 		gap: 0.375rem;
 		font-size: 0.8rem;
 		color: #8492a6;
+	}
+
+	.address-btn {
+		cursor: pointer;
+		font-weight: 600;
+	}
+
+	.address-block {
+		margin: 0;
+		padding: 0.75rem 1rem;
+		background: rgba(175, 152, 255, 0.08);
+		border: 1px solid #af98ff;
+		border-radius: 8px;
+		font-family: 'Kodchasan', sans-serif;
+		font-size: 0.8rem;
+		line-height: 1.5;
+		color: #1a1a2e;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
 	}
 
 	.card-actions {

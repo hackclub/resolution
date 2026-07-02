@@ -1,5 +1,5 @@
 import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, index } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
 // Enums
@@ -24,13 +24,19 @@ export const user = pgTable('user', {
   yswsEligible: boolean('ysws_eligible').notNull().default(false),
   isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow()
-});
+}, (table) => [
+  index('user_created_at_idx').on(table.createdAt),
+  index('user_lower_email_idx').on(sql`lower(${table.email})`)
+]);
 
 export const session = pgTable('session', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
   expiresAt: timestamp('expires_at', { mode: 'date' }).notNull()
-});
+}, (table) => [
+  index('session_user_id_idx').on(table.userId),
+  index('session_expires_at_idx').on(table.expiresAt)
+]);
 
 export const programSeason = pgTable('program_season', {
   id: text('id').primaryKey().$defaultFn(() => createId()),
@@ -43,7 +49,9 @@ export const programSeason = pgTable('program_season', {
   totalWeeks: integer('total_weeks').notNull().default(8),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow()
-});
+}, (table) => [
+  index('program_season_is_active_idx').on(table.isActive)
+]);
 
 export const programEnrollment = pgTable('program_enrollment', {
   id: text('id').primaryKey().$defaultFn(() => createId()),
@@ -55,7 +63,8 @@ export const programEnrollment = pgTable('program_enrollment', {
   startingWeek: integer('starting_week').notNull().default(1),
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow()
 }, (table) => [
-  uniqueIndex('enrollment_user_season_role_idx').on(table.userId, table.seasonId, table.role)
+  uniqueIndex('enrollment_user_season_role_idx').on(table.userId, table.seasonId, table.role),
+  index('enrollment_status_idx').on(table.status)
 ]);
 
 export const workshop = pgTable('workshop', {
@@ -81,7 +90,8 @@ export const workshopCompletion = pgTable('workshop_completion', {
   startedAt: timestamp('started_at', { mode: 'date' }).notNull().defaultNow(),
   completedAt: timestamp('completed_at', { mode: 'date' })
 }, (table) => [
-  uniqueIndex('completion_workshop_participant_season_idx').on(table.workshopId, table.participantId, table.seasonId)
+  uniqueIndex('completion_workshop_participant_season_idx').on(table.workshopId, table.participantId, table.seasonId),
+  index('completion_completed_at_idx').on(table.completedAt).where(sql`${table.completedAt} IS NOT NULL`)
 ]);
 
 export const workshopAnalytics = pgTable('workshop_analytics', {
@@ -108,7 +118,9 @@ export const weeklyShip = pgTable('weekly_ship', {
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
 }, (table) => [
-  index('ship_user_season_week_idx').on(table.userId, table.seasonId, table.weekNumber)
+  index('ship_user_season_week_idx').on(table.userId, table.seasonId, table.weekNumber),
+  index('ship_status_idx').on(table.status),
+  index('ship_workshop_created_at_idx').on(table.workshopId, table.createdAt)
 ]);
 
 export const ambassadorPayout = pgTable('ambassador_payout', {
@@ -259,7 +271,9 @@ export const referralLink = pgTable('referral_link', {
 	label: text('label'),
 	isActive: boolean('is_active').notNull().default(true),
 	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow()
-});
+}, (table) => [
+	index('referral_link_ambassador_id_idx').on(table.ambassadorId)
+]);
 
 export const referralSignup = pgTable('referral_signup', {
 	id: text('id').primaryKey().$defaultFn(() => createId()),
@@ -322,7 +336,9 @@ export const warehouseItem = pgTable('warehouse_item', {
 	imageUrl: text('image_url'),
 	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
-});
+}, (table) => [
+	index('warehouse_item_name_idx').on(table.name)
+]);
 
 // Warehouse orders
 export const warehouseOrder = pgTable('warehouse_order', {
@@ -369,7 +385,10 @@ export const warehouseOrder = pgTable('warehouse_order', {
 	notes: text('notes'),
 	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
-});
+}, (table) => [
+	index('warehouse_order_created_by_created_at_idx').on(table.createdById, table.createdAt),
+	index('warehouse_order_fulfillment_created_at_idx').on(table.createdAt).where(sql`${table.status} <> 'DRAFT'`)
+]);
 
 // Warehouse order line items
 export const warehouseOrderItem = pgTable('warehouse_order_item', {
@@ -424,14 +443,20 @@ export const warehouseOrderTemplate = pgTable('warehouse_order_template', {
 	isPublic: boolean('is_public').notNull().default(false),
 	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
-});
+}, (table) => [
+	index('warehouse_order_template_name_idx').on(table.name),
+	index('warehouse_order_template_created_at_idx').on(table.createdAt)
+]);
 
 export const warehouseOrderTemplateItem = pgTable('warehouse_order_template_item', {
 	id: text('id').primaryKey().$defaultFn(() => createId()),
 	templateId: text('template_id').notNull().references(() => warehouseOrderTemplate.id, { onDelete: 'cascade' }),
 	warehouseItemId: text('warehouse_item_id').notNull().references(() => warehouseItem.id, { onDelete: 'restrict' }),
 	quantity: integer('quantity').notNull().default(1)
-});
+}, (table) => [
+	index('warehouse_order_template_item_template_id_idx').on(table.templateId),
+	index('warehouse_order_template_item_warehouse_item_id_idx').on(table.warehouseItemId)
+]);
 
 export const warehouseOrderTemplateRelations = relations(warehouseOrderTemplate, ({ one, many }) => ({
 	createdBy: one(user, { fields: [warehouseOrderTemplate.createdById], references: [user.id] }),
@@ -458,7 +483,10 @@ export const warehouseBatch = pgTable('warehouse_batch', {
 	addressCount: integer('address_count').notNull().default(0),
 	createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow()
-});
+}, (table) => [
+	index('warehouse_batch_created_by_created_at_idx').on(table.createdById, table.createdAt),
+	index('warehouse_batch_template_id_idx').on(table.templateId)
+]);
 
 export const warehouseBatchTag = pgTable('warehouse_batch_tag', {
 	id: text('id').primaryKey().$defaultFn(() => createId()),
@@ -477,4 +505,3 @@ export const warehouseBatchRelations = relations(warehouseBatch, ({ one, many })
 export const warehouseBatchTagRelations = relations(warehouseBatchTag, ({ one }) => ({
 	batch: one(warehouseBatch, { fields: [warehouseBatchTag.batchId], references: [warehouseBatch.id] })
 }));
-

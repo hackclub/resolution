@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
 	import PlatformBackground from '$lib/components/PlatformBackground.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -76,15 +77,17 @@
 <PlatformBackground>
 	<div class="pathway-container">
 		<a href="/app" class="back-link">
-			<img src="https://icons.hackclub.com/api/icons/8492a6/back" alt="Back" width="20" height="20" />
+			<Icon icon="back" alt="Back" size={20} />
 			Back to Dashboard
 		</a>
 
 		<header>
-			<img
-				src="https://icons.hackclub.com/api/icons/{pathway.color}/{pathway.icon}"
+			<Icon
+				icon={pathway.icon}
+				color={pathway.color}
 				alt={pathway.label}
-				class="pathway-icon"
+				size={64}
+				style="margin-bottom: 1rem;"
 			/>
 			<h1>{pathway.label}</h1>
 			<p class="curator">brought to you by <span>{data.curator}</span></p>
@@ -100,7 +103,7 @@
 						{#if prizeImageUrl && loadedImages.has(prizeImageUrl)}
 							<img src={prizeImageUrl} alt="" aria-hidden="true" class="prize-image" />
 						{/if}
-						<img src="https://icons.hackclub.com/api/icons/{pathway.color}/checkmark" alt="Available" class="status-icon" />
+						<Icon icon="checkmark" color={pathway.color} alt="Available" size={32} />
 						<span class="week-number">Week {week}</span>
 						{#if title}
 							<span class="week-title">{title}</span>
@@ -111,7 +114,7 @@
 						{#if prizeImageUrl && loadedImages.has(prizeImageUrl)}
 							<img src={prizeImageUrl} alt="" aria-hidden="true" class="prize-image locked" />
 						{/if}
-						<img src="https://icons.hackclub.com/api/icons/8492a6/private" alt="Locked" class="lock-icon" />
+						<Icon icon="private" alt="Locked" size={32} />
 						<span class="week-number">Week {week}</span>
 					</div>
 				{/if}
@@ -148,12 +151,6 @@
 	header {
 		text-align: center;
 		margin-bottom: 3rem;
-	}
-
-	.pathway-icon {
-		width: 64px;
-		height: 64px;
-		margin-bottom: 1rem;
 	}
 
 	h1 {
@@ -228,12 +225,6 @@
 
 	.prize-image.locked {
 		opacity: 0.5;
-	}
-
-	.lock-icon,
-	.status-icon {
-		width: 32px;
-		height: 32px;
 	}
 
 	.week-number {

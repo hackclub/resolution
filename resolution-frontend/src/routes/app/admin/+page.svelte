@@ -68,6 +68,7 @@
 
 <svelte:head>
 	<title>Admin - Resolution</title>
+	<link rel="stylesheet" href="https://css.hackclub.com/fonts.css" />
 </svelte:head>
 
 <div class="admin-container">
